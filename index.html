@@ -2976,6 +2976,44 @@
       grid-template-columns: 1fr;
     }
   }
+
+  /* Keep EV results immediately under the filter criteria */
+  #pre_match_ev > *,
+  #live_ev > * {
+    order: 20;
+  }
+
+  #pre_match_ev > .mode-title,
+  #live_ev > .mode-title {
+    order: 1;
+  }
+
+  #live_ev > .help {
+    order: 2;
+  }
+
+  #pre_match_ev > .toolbar,
+  #live_ev > .toolbar {
+    order: 3;
+  }
+
+  #pre_match_ev > .summary-grid,
+  #live_ev > .summary-grid {
+    order: 4;
+    margin-top: 2px;
+  }
+
+  #pre_match_ev > #scan_results,
+  #live_ev > #live_results {
+    order: 5;
+  }
+
+  #pre_match_ev > .card,
+  #pre_match_ev > #scanner_book_links,
+  #live_ev > .card,
+  #live_ev > #live_book_links {
+    order: 6;
+  }
 </style>
 </head>
 <body>
