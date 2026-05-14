@@ -1,0 +1,5565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>+EV Scanner</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #090a0f;
+    --panel: #11131b;
+    --panel-2: #151924;
+    --panel-3: #1b2030;
+    --line: #272d3d;
+    --line-soft: #1e2431;
+    --text: #f3f5f8;
+    --muted: #9aa3b2;
+    --faint: #677080;
+    --green: #4ade80;
+    --green-2: #22c55e;
+    --amber: #fbbf24;
+    --red: #f87171;
+    --blue: #60a5fa;
+    --purple: #c084fc;
+    --shadow: 0 18px 44px rgba(0,0,0,.28);
+  }
+
+  * { box-sizing: border-box; }
+  html { background: var(--bg); }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    background:
+      radial-gradient(circle at 18% -10%, rgba(74,222,128,.14), transparent 34rem),
+      linear-gradient(180deg, #0c0e15 0%, var(--bg) 42%);
+    color: var(--text);
+    font-size: 14px;
+  }
+
+  button, input, select { font: inherit; }
+  button {
+    border: 0;
+    cursor: pointer;
+    transition: background .15s ease, border-color .15s ease, color .15s ease, transform .15s ease;
+  }
+  button:active { transform: translateY(1px); }
+  button:disabled { cursor: not-allowed; opacity: .55; transform: none; }
+  input, select {
+    min-height: 38px;
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: #0b0d13;
+    color: var(--text);
+    padding: 8px 10px;
+    outline: none;
+  }
+  input:focus, select:focus {
+    border-color: rgba(74,222,128,.8);
+    box-shadow: 0 0 0 3px rgba(74,222,128,.12);
+  }
+  textarea {
+    min-height: 110px;
+    width: 100%;
+    resize: vertical;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: #090d11;
+    color: var(--text);
+    padding: 10px;
+    outline: none;
+    font: inherit;
+    line-height: 1.45;
+  }
+  textarea:focus {
+    border-color: rgba(74,222,128,.8);
+    box-shadow: 0 0 0 3px rgba(74,222,128,.12);
+  }
+  #api_keys {
+    -webkit-text-security: disc;
+  }
+  #api_keys:focus {
+    -webkit-text-security: none;
+  }
+  label {
+    display: block;
+    margin-top: 10px;
+    margin-bottom: 5px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 650;
+  }
+  label:first-child { margin-top: 0; }
+
+  .app-shell { max-width: 1440px; margin: 0 auto; padding: 14px; }
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    background: rgba(9,10,15,.9);
+    backdrop-filter: blur(16px);
+  }
+  .topbar {
+    max-width: 1440px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+  }
+  .brand { min-width: 0; }
+  h1 {
+    margin: 0;
+    color: var(--green);
+    font-size: 18px;
+    letter-spacing: 0;
+  }
+  .subtitle { margin-top: 2px; color: var(--faint); font-size: 12px; }
+  .api-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    max-width: 50vw;
+    min-height: 30px;
+    padding: 6px 10px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--muted);
+    background: #0b0d13;
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .api-status::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .api-status.ok { color: var(--green); border-color: rgba(74,222,128,.35); }
+  .api-status.warn { color: var(--amber); border-color: rgba(251,191,36,.35); }
+  .api-status.err { color: var(--red); border-color: rgba(248,113,113,.35); }
+
+  .tabs {
+    max-width: 1440px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 6px;
+    padding: 0 14px 12px;
+  }
+  .tab {
+    min-height: 38px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--muted);
+    font-weight: 700;
+  }
+  .tab:hover { background: rgba(255,255,255,.04); color: var(--text); }
+  .tab.active {
+    border-color: rgba(74,222,128,.38);
+    background: rgba(74,222,128,.1);
+    color: var(--green);
+  }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .page-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+    gap: 16px;
+    margin: 12px 0 14px;
+  }
+  .page-head h2 { margin: 0 0 4px; font-size: 20px; }
+  .page-head p { margin: 0; color: var(--muted); line-height: 1.45; }
+
+  .toolbar,
+  .card,
+  .table-wrap,
+  .empty,
+  .loading,
+  .toast {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: rgba(17,19,27,.92);
+    box-shadow: var(--shadow);
+  }
+  .toolbar {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr .9fr .7fr .7fr auto auto;
+    gap: 10px;
+    align-items: end;
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+  .toolbar-actions { display: flex; gap: 8px; align-items: center; }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+  .btn.primary { background: var(--green); color: #07100b; }
+  .btn.primary:hover { background: var(--green-2); }
+  .btn.secondary { border: 1px solid var(--line); background: var(--panel-3); color: var(--text); }
+  .btn.secondary:hover { background: #22283a; }
+  .btn.danger { border: 1px solid rgba(248,113,113,.35); background: rgba(248,113,113,.1); color: var(--red); }
+  .btn.danger:hover { background: rgba(248,113,113,.16); }
+  .btn.ghost { background: transparent; color: var(--muted); border: 1px solid transparent; }
+  .btn.ghost:hover { background: rgba(255,255,255,.05); color: var(--text); }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .summary-tile,
+  .stat {
+    border: 1px solid var(--line-soft);
+    border-radius: 8px;
+    background: linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.01));
+    padding: 12px;
+  }
+  .summary-tile .val,
+  .stat .val { font-size: 19px; font-weight: 850; }
+  .summary-tile .lbl,
+  .stat .lbl { color: var(--muted); font-size: 11px; margin-top: 3px; }
+
+  .table-wrap { overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    position: sticky;
+    top: 102px;
+    z-index: 3;
+    padding: 10px 11px;
+    border-bottom: 1px solid var(--line);
+    background: #171b27;
+    color: var(--muted);
+    font-size: 11px;
+    text-align: left;
+    text-transform: uppercase;
+    user-select: none;
+  }
+  th.sortable { cursor: pointer; }
+  th.sortable:hover { color: var(--text); }
+  td {
+    padding: 11px;
+    border-bottom: 1px solid rgba(255,255,255,.045);
+    vertical-align: middle;
+    font-size: 13px;
+  }
+  tbody tr:hover { background: rgba(255,255,255,.025); }
+  tbody tr:last-child td { border-bottom: 0; }
+  .nowrap { white-space: nowrap; }
+  .muted { color: var(--muted); }
+  .faint { color: var(--faint); }
+  .pos, .ev-high { color: var(--green); }
+  .ev-med { color: #a3e635; }
+  .ev-low { color: var(--amber); }
+  .neg, .ev-neg { color: var(--red); }
+  .blue { color: var(--blue); }
+  .ev-cell { font-size: 14px; font-weight: 900; }
+  .meta-row { display: flex; gap: 8px; flex-wrap: wrap; color: var(--faint); font-size: 11px; margin-top: 4px; }
+  .tag, .book-tag, .badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 21px;
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+  .book-tag.soft { background: rgba(96,165,250,.16); color: #bfdbfe; }
+  .book-tag.sharp { background: rgba(74,222,128,.14); color: #bbf7d0; }
+  .badge.pending { background: rgba(251,191,36,.16); color: var(--amber); }
+  .badge.win { background: rgba(74,222,128,.15); color: var(--green); }
+  .badge.loss { background: rgba(248,113,113,.15); color: var(--red); }
+  .badge.push { background: rgba(154,163,178,.14); color: var(--muted); }
+
+  .empty, .loading {
+    min-height: 180px;
+    display: grid;
+    place-items: center;
+    padding: 28px;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.5;
+  }
+  .loading::before {
+    content: "";
+    display: block;
+    width: 28px;
+    height: 28px;
+    margin: 0 auto 12px;
+    border: 3px solid rgba(255,255,255,.12);
+    border-top-color: var(--green);
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .card { padding: 14px; margin-bottom: 12px; }
+  .card-title {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .card h3 { margin: 0; font-size: 15px; }
+  .help { color: var(--muted); font-size: 12px; line-height: 1.5; }
+  .form-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .form-actions .btn { flex: 1; }
+
+  .bet-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+    padding: 11px 0;
+    border-bottom: 1px solid rgba(255,255,255,.055);
+  }
+  .bet-row:last-child { border-bottom: 0; }
+  .bet-info .desc { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; font-weight: 800; }
+  .bet-info .meta { margin-top: 5px; color: var(--muted); font-size: 12px; line-height: 1.45; }
+  .bet-actions { display: flex; justify-content: flex-end; gap: 6px; flex-wrap: wrap; }
+  .small-btn {
+    min-height: 30px;
+    border-radius: 6px;
+    padding: 5px 9px;
+    font-size: 12px;
+    font-weight: 850;
+    background: var(--panel-3);
+    color: var(--text);
+    border: 1px solid var(--line);
+  }
+  .small-btn.win { background: rgba(74,222,128,.14); color: var(--green); border-color: rgba(74,222,128,.28); }
+  .small-btn.loss { background: rgba(248,113,113,.14); color: var(--red); border-color: rgba(248,113,113,.28); }
+  .small-btn.push { background: rgba(154,163,178,.12); color: var(--muted); }
+  .small-btn.delete { background: rgba(248,113,113,.08); color: var(--red); }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+  .toast {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 40;
+    max-width: min(420px, calc(100vw - 32px));
+    padding: 11px 13px;
+    color: var(--text);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(10px);
+    transition: opacity .16s ease, transform .16s ease;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.ok { border-color: rgba(74,222,128,.4); }
+  .toast.err { border-color: rgba(248,113,113,.4); }
+
+  .opportunity-list { display: grid; gap: 12px; }
+  .opportunity-card {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: rgba(17,19,27,.94);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .opportunity-card.is-selected,
+  .bet-row.is-selected {
+    border-color: rgba(94,224,138,.85);
+    background: linear-gradient(180deg, rgba(31,70,45,.7), rgba(13,24,18,.96));
+    box-shadow: 0 0 0 2px rgba(94,224,138,.25), var(--shadow);
+  }
+  .opportunity-card.is-selected .opp-head {
+    background:
+      linear-gradient(90deg, rgba(94,224,138,.24), rgba(105,183,255,.08)),
+      rgba(255,255,255,.03);
+  }
+  .opp-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--line-soft);
+    background: linear-gradient(90deg, rgba(74,222,128,.08), rgba(96,165,250,.04));
+  }
+  .opp-title { font-weight: 900; font-size: 15px; }
+  .opp-sub { color: var(--muted); font-size: 12px; margin-top: 3px; }
+  .opp-profit {
+    min-width: 92px;
+    border: 1px solid rgba(74,222,128,.35);
+    border-radius: 8px;
+    padding: 8px 10px;
+    text-align: center;
+    background: rgba(74,222,128,.1);
+  }
+  .opp-profit .big { color: var(--green); font-size: 20px; font-weight: 950; }
+  .opp-profit .small { color: var(--muted); font-size: 10px; font-weight: 800; text-transform: uppercase; }
+  .opp-body { padding: 13px 14px; }
+  .oj-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 9px;
+    margin-bottom: 12px;
+  }
+  .oj-metric {
+    border: 1px solid var(--line-soft);
+    border-radius: 8px;
+    padding: 9px;
+    background: rgba(255,255,255,.025);
+  }
+  .oj-metric .label {
+    color: var(--faint);
+    font-size: 10px;
+    font-weight: 850;
+    text-transform: uppercase;
+  }
+  .oj-metric .value {
+    margin-top: 4px;
+    font-weight: 900;
+    word-break: break-word;
+  }
+  .place-bet {
+    border: 1px solid rgba(96,165,250,.55);
+    border-radius: 8px;
+    padding: 10px;
+    background: rgba(96,165,250,.08);
+  }
+  .place-bet .bet-name {
+    color: var(--text);
+    font-weight: 950;
+    font-size: 15px;
+  }
+  .sportsbook-callout {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 9px;
+    padding: 10px;
+    border: 1px solid rgba(94,224,138,.38);
+    border-radius: 8px;
+    background: rgba(94,224,138,.12);
+  }
+  .sportsbook-callout .label {
+    color: #c9f7d7;
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+  .sportsbook-callout .book {
+    margin-top: 2px;
+    color: var(--text);
+    font-size: 18px;
+    font-weight: 950;
+  }
+  .sportsbook-callout .odds {
+    color: var(--green);
+    font-size: 18px;
+    font-weight: 950;
+    white-space: nowrap;
+  }
+  .odds-row {
+    display: grid;
+    grid-template-columns: 1.2fr .8fr .7fr .8fr;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,.055);
+  }
+  .odds-row:last-child { border-bottom: 0; }
+  .book-link-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .book-picker {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 8px;
+  }
+  .book-check {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-height: 40px;
+    margin: 0;
+    padding: 8px 10px;
+    border: 1px solid var(--line-soft);
+    border-radius: 8px;
+    background: rgba(255,255,255,.025);
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 850;
+    cursor: pointer;
+  }
+  .book-check input {
+    width: 16px;
+    min-height: 16px;
+    accent-color: var(--green);
+  }
+  .book-check:has(input:checked) {
+    border-color: rgba(94,224,138,.55);
+    background: rgba(94,224,138,.12);
+    color: #d7ffe2;
+  }
+  .control-strip {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px;
+    align-items: end;
+  }
+  .source-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 28px;
+    padding: 4px 9px;
+    border: 1px solid rgba(94,224,138,.28);
+    border-radius: 999px;
+    color: #c9f7d7;
+    background: rgba(94,224,138,.1);
+    font-size: 12px;
+    font-weight: 850;
+  }
+  .source-pill::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+  }
+  .roadmap {
+    display: grid;
+    gap: 9px;
+  }
+  .roadmap-step {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+    padding: 10px;
+    border: 1px solid var(--line-soft);
+    border-radius: 8px;
+    background: rgba(255,255,255,.025);
+  }
+  .roadmap-step .rank {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    background: rgba(94,224,138,.14);
+    color: var(--green);
+    font-weight: 950;
+  }
+  .roadmap-step strong { display: block; }
+  .roadmap-step span { color: var(--muted); font-size: 12px; }
+  .move-up { color: var(--green); }
+  .move-down { color: var(--red); }
+
+  .hidden { display: none !important; }
+
+  @media (max-width: 980px) {
+    .toolbar { grid-template-columns: 1fr 1fr; }
+    .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .stat-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    th { top: 135px; }
+  }
+
+  @media (max-width: 680px) {
+    .topbar { align-items: flex-start; flex-direction: column; }
+    .api-status { max-width: 100%; }
+    .tabs {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      overflow: visible;
+    }
+    .page-head { align-items: flex-start; flex-direction: column; }
+    .toolbar { grid-template-columns: 1fr; }
+    .toolbar-actions, .form-actions { flex-direction: column; align-items: stretch; }
+    .summary-grid, .stat-grid { grid-template-columns: 1fr 1fr; }
+    .book-link-grid { grid-template-columns: 1fr 1fr; }
+    .control-strip { grid-template-columns: 1fr; }
+    .opp-head, .odds-row { grid-template-columns: 1fr; }
+    .sportsbook-callout { align-items: flex-start; flex-direction: column; }
+    .oj-grid { grid-template-columns: 1fr 1fr; }
+    .table-wrap { border: 0; background: transparent; box-shadow: none; }
+    table, thead, tbody, th, td, tr { display: block; }
+    thead { display: none; }
+    tbody tr {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      margin-bottom: 10px;
+      padding: 9px;
+      box-shadow: var(--shadow);
+    }
+    td {
+      display: grid;
+      grid-template-columns: 96px minmax(0, 1fr);
+      gap: 8px;
+      border: 0;
+      padding: 5px 0;
+    }
+    td::before {
+      content: attr(data-label);
+      color: var(--faint);
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    td.action-cell { display: block; }
+    td.action-cell::before { content: ""; display: none; }
+    .bet-row { grid-template-columns: 1fr; }
+    .bet-actions { justify-content: flex-start; }
+  }
+
+  /* Premium dashboard refresh */
+  :root {
+    --bg: #090b0e;
+    --panel: #11151a;
+    --panel-2: #151b21;
+    --panel-3: #1b232b;
+    --line: #26323b;
+    --line-soft: #1d2730;
+    --text: #f4f7f8;
+    --muted: #a1abb4;
+    --faint: #697680;
+    --green: #5ee08a;
+    --green-2: #2fc96a;
+    --amber: #f4c95d;
+    --red: #ff6b6b;
+    --blue: #69b7ff;
+    --purple: #b99cff;
+    --shadow: 0 18px 42px rgba(0, 0, 0, .26);
+  }
+
+  body {
+    background:
+      linear-gradient(180deg, rgba(19, 27, 31, .96), rgba(9, 11, 14, 1) 340px),
+      repeating-linear-gradient(90deg, rgba(255,255,255,.025) 0 1px, transparent 1px 72px);
+    line-height: 1.45;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(90deg, rgba(94,224,138,.08), transparent 24%, transparent 76%, rgba(105,183,255,.06)),
+      linear-gradient(180deg, rgba(255,255,255,.04), transparent 28%);
+    opacity: .72;
+  }
+
+  input, select {
+    min-height: 42px;
+    border-radius: 7px;
+    background: #090d11;
+    border-color: #26343f;
+    color: var(--text);
+  }
+
+  label {
+    color: #b0bac2;
+    letter-spacing: .01em;
+  }
+
+  h1 {
+    color: var(--text);
+    font-size: 22px;
+    font-weight: 900;
+  }
+
+  h1::before {
+    content: "+";
+    display: inline-grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    margin-right: 9px;
+    border-radius: 7px;
+    background: linear-gradient(135deg, var(--green), #9bf6bb);
+    color: #07100b;
+    font-weight: 950;
+  }
+
+  .subtitle {
+    max-width: 220px;
+    color: #8d9aa5;
+    line-height: 1.45;
+  }
+
+  header {
+    border-color: rgba(255,255,255,.08);
+    background: rgba(10, 13, 16, .86);
+  }
+
+  .api-status {
+    border-radius: 7px;
+    border-color: #2a3742;
+    background: rgba(8, 12, 15, .9);
+    font-weight: 800;
+  }
+
+  .tab {
+    border-radius: 7px;
+    color: #9da8b1;
+    min-height: 42px;
+  }
+
+  .tab.active {
+    background: linear-gradient(135deg, rgba(94,224,138,.18), rgba(105,183,255,.08));
+    border-color: rgba(94,224,138,.46);
+    color: var(--text);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.035);
+  }
+
+  .app-shell {
+    position: relative;
+    z-index: 1;
+  }
+
+  .page-head {
+    margin: 8px 0 18px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+  }
+
+  .page-head h2 {
+    font-size: 30px;
+    line-height: 1.1;
+    letter-spacing: 0;
+  }
+
+  .page-head p {
+    max-width: 780px;
+    color: #aab5be;
+    font-size: 14px;
+  }
+
+  .toolbar,
+  .card,
+  .table-wrap,
+  .empty,
+  .loading,
+  .toast,
+  .opportunity-card {
+    border-color: rgba(255,255,255,.1);
+    background: linear-gradient(180deg, rgba(18, 24, 29, .96), rgba(13, 18, 22, .96));
+    box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,.035);
+  }
+
+  .toolbar {
+    gap: 12px;
+    padding: 16px;
+    margin-bottom: 14px;
+    align-items: end;
+  }
+
+  .btn {
+    min-height: 42px;
+    border-radius: 7px;
+    padding: 9px 13px;
+    letter-spacing: 0;
+  }
+
+  .btn.primary {
+    background: linear-gradient(135deg, var(--green), #95f2b4);
+    color: #061108;
+    box-shadow: 0 10px 24px rgba(94,224,138,.14);
+  }
+
+  .btn.primary:hover {
+    background: linear-gradient(135deg, #51d97d, #7beaa2);
+  }
+
+  .btn.secondary {
+    border-color: #2d3a45;
+    background: linear-gradient(180deg, #202933, #161e26);
+  }
+
+  .btn.ghost {
+    border-color: #25313b;
+    background: rgba(255,255,255,.025);
+  }
+
+  .summary-grid {
+    gap: 12px;
+  }
+
+  .summary-tile,
+  .stat,
+  .oj-metric {
+    border-color: rgba(255,255,255,.09);
+    background: linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.018));
+  }
+
+  .summary-tile {
+    min-height: 96px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .summary-tile .val,
+  .stat .val {
+    font-size: 24px;
+    letter-spacing: 0;
+  }
+
+  .summary-tile .lbl,
+  .stat .lbl,
+  .oj-metric .label {
+    color: #8f9da7;
+  }
+
+  .card {
+    padding: 18px;
+    margin-bottom: 14px;
+  }
+
+  .card-title {
+    min-height: 30px;
+  }
+
+  .card h3 {
+    font-size: 16px;
+    font-weight: 900;
+  }
+
+  .help {
+    color: #9ca8b1;
+  }
+
+  .tag,
+  .book-tag,
+  .badge {
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 999px;
+  }
+
+  .tag {
+    background: rgba(105,183,255,.09);
+    color: #c9e5ff;
+  }
+
+  .book-tag.soft {
+    background: rgba(105,183,255,.14);
+    color: #d2eaff;
+  }
+
+  .book-tag.sharp {
+    background: rgba(94,224,138,.13);
+    color: #c9f7d7;
+  }
+
+  .book-link-grid {
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  }
+
+  .book-link-grid .btn {
+    justify-content: flex-start;
+    padding-left: 14px;
+  }
+
+  .book-link-grid .btn::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    margin-right: 9px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 0 3px rgba(94,224,138,.12);
+  }
+
+  .opportunity-list {
+    gap: 14px;
+  }
+
+  .opportunity-card {
+    border-radius: 10px;
+  }
+
+  .opp-head {
+    padding: 16px 18px;
+    background:
+      linear-gradient(90deg, rgba(94,224,138,.12), rgba(105,183,255,.08)),
+      rgba(255,255,255,.02);
+  }
+
+  .opp-title {
+    font-size: 17px;
+  }
+
+  .opp-profit {
+    border-radius: 9px;
+    background: rgba(94,224,138,.12);
+  }
+
+  .opp-body {
+    padding: 16px 18px 18px;
+  }
+
+  .oj-grid {
+    grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+  }
+
+  .place-bet {
+    border-radius: 9px;
+    background: linear-gradient(180deg, rgba(105,183,255,.11), rgba(105,183,255,.045));
+  }
+
+  .bet-row {
+    padding: 12px 0;
+  }
+
+  .small-btn {
+    border-radius: 7px;
+  }
+
+  .empty {
+    border-style: dashed;
+    color: #94a0aa;
+    background: rgba(12, 17, 21, .6);
+  }
+
+  @media (min-width: 1050px) {
+    body {
+      padding-left: 286px;
+    }
+
+    header {
+      position: fixed;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 286px;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid rgba(255,255,255,.1);
+      border-bottom: 0;
+      background:
+        linear-gradient(180deg, rgba(15, 21, 25, .98), rgba(9, 12, 15, .98));
+      backdrop-filter: blur(18px);
+    }
+
+    .topbar {
+      width: 100%;
+      display: grid;
+      gap: 18px;
+      padding: 24px 20px 18px;
+    }
+
+    .api-status {
+      width: 100%;
+      max-width: none;
+      justify-content: flex-start;
+    }
+
+    .tabs {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      padding: 8px 14px 18px;
+    }
+
+    .tab {
+      justify-content: flex-start;
+      text-align: left;
+      padding: 0 14px;
+    }
+
+    .tab::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      margin-right: 10px;
+      border-radius: 50%;
+      background: #3b4650;
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    .tab.active::before {
+      background: var(--green);
+      box-shadow: 0 0 0 4px rgba(94,224,138,.13);
+    }
+
+    .app-shell {
+      max-width: none;
+      padding: 26px 28px 38px;
+    }
+
+    .panel {
+      max-width: 1560px;
+      margin: 0 auto;
+    }
+  }
+
+  @media (max-width: 1049px) {
+    header {
+      position: sticky;
+    }
+
+    .app-shell {
+      padding: 16px;
+    }
+
+    .tabs {
+      overflow-x: auto;
+      grid-template-columns: repeat(7, minmax(96px, 1fr));
+      scrollbar-width: none;
+    }
+
+    .tabs::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  @media (max-width: 760px) {
+    body {
+      background: linear-gradient(180deg, #12191d, var(--bg) 280px);
+    }
+
+    .topbar {
+      padding: 14px;
+    }
+
+    .tabs {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      overflow: visible;
+    }
+
+    h1 {
+      font-size: 20px;
+    }
+
+    .page-head h2 {
+      font-size: 24px;
+    }
+
+    .toolbar,
+    .card,
+    .opportunity-card {
+      border-radius: 9px;
+    }
+
+    .toolbar {
+      grid-template-columns: 1fr;
+      padding: 14px;
+    }
+
+    .summary-grid,
+    .stat-grid,
+    .oj-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .grid-2,
+    .grid-3 {
+      grid-template-columns: 1fr;
+    }
+
+    .form-actions,
+    .toolbar-actions {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .opp-head,
+    .odds-row,
+    .bet-row {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Clean room refresh */
+  :root {
+    --bg: #090d11;
+    --panel: #10161c;
+    --panel-2: #121a21;
+    --panel-3: #17212a;
+    --line: #22303a;
+    --line-soft: #1a252e;
+    --text: #f4f7f8;
+    --muted: #9aa7b2;
+    --faint: #6f7d88;
+    --green: #58d982;
+    --green-2: #36c968;
+    --amber: #f3c15e;
+    --red: #ff6b72;
+    --blue: #7bbcff;
+    --shadow: none;
+  }
+
+  html,
+  body {
+    background: var(--bg);
+  }
+
+  body {
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  body::before {
+    display: none;
+  }
+
+  header,
+  .toolbar,
+  .card,
+  .table-wrap,
+  .empty,
+  .loading,
+  .toast,
+  .opportunity-card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    box-shadow: none;
+  }
+
+  input,
+  select,
+  textarea {
+    min-height: 40px;
+    border-radius: 7px;
+    border-color: #263642;
+    background: #0b1116;
+  }
+
+  input:focus,
+  select:focus,
+  textarea:focus {
+    border-color: var(--green);
+    box-shadow: 0 0 0 3px rgba(88,217,130,.12);
+  }
+
+  label {
+    margin-top: 9px;
+    color: #a8b4bd;
+    font-size: 11px;
+    letter-spacing: .02em;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    color: var(--text);
+    font-size: 21px;
+    line-height: 1.2;
+  }
+
+  h1::before {
+    width: 26px;
+    height: 26px;
+    border-radius: 7px;
+    margin-right: 9px;
+    background: var(--green);
+    color: #06110b;
+  }
+
+  .subtitle {
+    max-width: 230px;
+    color: #8996a2;
+    font-size: 12px;
+  }
+
+  .api-status {
+    border-radius: 7px;
+    background: #0b1116;
+  }
+
+  .tabs {
+    gap: 5px;
+  }
+
+  .tab {
+    min-height: 40px;
+    border-radius: 7px;
+    color: #9ba8b2;
+    font-weight: 800;
+  }
+
+  .tab:hover {
+    background: #121a21;
+  }
+
+  .tab.active {
+    background: rgba(88,217,130,.1);
+    border-color: rgba(88,217,130,.38);
+    color: #eaffef;
+    box-shadow: none;
+  }
+
+  .app-shell {
+    padding-top: 22px;
+  }
+
+  .page-head {
+    margin: 0 0 14px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .page-head h2 {
+    font-size: 28px;
+    line-height: 1.12;
+  }
+
+  .page-head p {
+    color: #a0adb6;
+  }
+
+  .toolbar {
+    padding: 14px;
+    gap: 10px;
+  }
+
+  .card {
+    padding: 15px;
+    margin-bottom: 12px;
+  }
+
+  .card-title {
+    min-height: 26px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .card h3 {
+    font-size: 15px;
+  }
+
+  .help {
+    color: #96a3ad;
+  }
+
+  .btn {
+    min-height: 40px;
+    border-radius: 7px;
+    box-shadow: none;
+  }
+
+  .btn.primary {
+    background: var(--green);
+    color: #06110b;
+  }
+
+  .btn.primary:hover {
+    background: var(--green-2);
+  }
+
+  .btn.secondary,
+  .small-btn {
+    border-color: #2a3a45;
+    background: #151f28;
+  }
+
+  .btn.ghost {
+    border-color: #21303a;
+    background: #0f161c;
+  }
+
+  .summary-grid,
+  .stat-grid,
+  .oj-grid,
+  .grid-2,
+  .grid-3,
+  .control-strip {
+    gap: 10px;
+  }
+
+  .summary-tile,
+  .stat,
+  .oj-metric,
+  .roadmap-step {
+    border-radius: 8px;
+    border-color: var(--line-soft);
+    background: #0d1318;
+  }
+
+  .summary-tile {
+    min-height: 84px;
+  }
+
+  .summary-tile .val,
+  .stat .val {
+    font-size: 22px;
+  }
+
+  .tag,
+  .book-tag,
+  .badge,
+  .source-pill {
+    border-radius: 999px;
+    border-color: rgba(255,255,255,.08);
+    background: #111b23;
+  }
+
+  .tag {
+    color: #b9d8f0;
+  }
+
+  .source-pill {
+    color: #c9f7d7;
+  }
+
+  .book-link-grid,
+  .book-picker {
+    gap: 7px;
+  }
+
+  .book-link-grid .btn {
+    justify-content: center;
+    padding-left: 12px;
+  }
+
+  .book-link-grid .btn::before {
+    display: none;
+  }
+
+  .book-check {
+    min-height: 38px;
+    border-radius: 7px;
+    background: #0d141a;
+  }
+
+  .book-check:has(input:checked) {
+    border-color: rgba(88,217,130,.55);
+    background: rgba(88,217,130,.1);
+  }
+
+  .opportunity-list {
+    gap: 10px;
+  }
+
+  .opportunity-card {
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .opp-head {
+    padding: 14px 15px;
+    background: #111922;
+  }
+
+  .opp-title {
+    font-size: 16px;
+  }
+
+  .opp-sub {
+    color: #8d9aa5;
+  }
+
+  .opp-profit {
+    border-radius: 8px;
+    background: rgba(88,217,130,.09);
+  }
+
+  .opp-body {
+    padding: 14px 15px 15px;
+  }
+
+  .place-bet {
+    border-color: #28485c;
+    border-radius: 8px;
+    background: #0d151b;
+  }
+
+  .sportsbook-callout {
+    border-radius: 8px;
+    background: rgba(88,217,130,.1);
+  }
+
+  .opportunity-card.is-selected,
+  .bet-row.is-selected {
+    border-color: rgba(88,217,130,.9);
+    background: #102017;
+    box-shadow: 0 0 0 2px rgba(88,217,130,.18);
+  }
+
+  .opportunity-card.is-selected .opp-head {
+    background: #14301f;
+  }
+
+  .odds-row {
+    gap: 8px;
+  }
+
+  .bet-row {
+    border-radius: 8px;
+  }
+
+  .empty {
+    border-style: dashed;
+    background: #0d1318;
+  }
+
+  .toast {
+    background: #101820;
+  }
+
+  @media (min-width: 1050px) {
+    body {
+      padding-left: 264px;
+    }
+
+    header {
+      width: 264px;
+      background: #0b1015;
+      border-radius: 0;
+      border-left: 0;
+      border-top: 0;
+      border-bottom: 0;
+    }
+
+    .topbar {
+      padding: 22px 18px 16px;
+    }
+
+    .tabs {
+      padding: 6px 12px 18px;
+    }
+
+    .app-shell {
+      padding: 24px 26px 36px;
+    }
+  }
+
+  @media (max-width: 1049px) {
+    header {
+      border-radius: 0;
+      border-left: 0;
+      border-right: 0;
+      border-top: 0;
+    }
+  }
+
+  /* Ultra clean dashboard layer */
+  body {
+    background: #080c10;
+  }
+
+  .panel {
+    max-width: 1320px;
+  }
+
+  .page-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 16px;
+  }
+
+  .page-head h2 {
+    font-size: 26px;
+    font-weight: 850;
+  }
+
+  .page-head p {
+    max-width: 620px;
+    font-size: 13px;
+  }
+
+  .toolbar {
+    grid-template-columns: 1.1fr 1fr .95fr .65fr .65fr auto auto;
+    align-items: end;
+    padding: 12px;
+  }
+
+  .toolbar > div:not(.toolbar-actions) {
+    min-width: 0;
+  }
+
+  .card-title {
+    margin-bottom: 10px;
+  }
+
+  .card-title h3 {
+    font-size: 14px;
+    letter-spacing: .01em;
+  }
+
+  .summary-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .summary-tile,
+  .stat {
+    min-height: 72px;
+    padding: 11px 12px;
+  }
+
+  .summary-tile .val,
+  .stat .val {
+    font-size: 20px;
+  }
+
+  .summary-tile .lbl,
+  .stat .lbl {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+  }
+
+  .control-strip {
+    grid-template-columns: repeat(3, minmax(120px, 1fr)) auto auto;
+    gap: 9px;
+  }
+
+  .form-actions,
+  .toolbar-actions {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .form-actions .btn,
+  .toolbar-actions .btn {
+    flex: 0 0 auto;
+  }
+
+  #scanner .card:has(#scan_max_btn) .form-actions,
+  #arbitrage .card:has(#arb_max_btn) .form-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  #scanner .card:has(#scan_max_btn) .form-actions .btn,
+  #arbitrage .card:has(#arb_max_btn) .form-actions .btn {
+    width: 100%;
+  }
+
+  #scanner_book_picker_card,
+  #arb_book_picker_card {
+    background: #0c1217;
+  }
+
+  .book-picker {
+    grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+  }
+
+  .book-check {
+    min-height: 34px;
+    padding: 7px 9px;
+    font-size: 12px;
+  }
+
+  .book-check input {
+    width: 14px;
+    min-height: 14px;
+  }
+
+  .book-link-grid {
+    grid-template-columns: repeat(auto-fit, minmax(108px, 1fr));
+  }
+
+  .book-link-grid .btn {
+    min-height: 34px;
+    padding: 7px 10px;
+    font-size: 12px;
+  }
+
+  .opportunity-card {
+    border-color: #1e2b34;
+  }
+
+  .opp-head {
+    grid-template-columns: minmax(0, 1fr) minmax(86px, auto);
+    padding: 12px 14px;
+  }
+
+  .opp-title {
+    font-size: 15px;
+  }
+
+  .opp-sub {
+    font-size: 11px;
+  }
+
+  .opp-profit {
+    min-width: 86px;
+    padding: 7px 9px;
+  }
+
+  .opp-profit .big {
+    font-size: 18px;
+  }
+
+  .opp-body {
+    padding: 12px 14px 14px;
+  }
+
+  .oj-grid {
+    grid-template-columns: repeat(auto-fit, minmax(122px, 1fr));
+    gap: 7px;
+  }
+
+  .oj-metric {
+    padding: 8px;
+  }
+
+  .oj-metric .label {
+    font-size: 9px;
+  }
+
+  .oj-metric .value {
+    font-size: 13px;
+  }
+
+  .sportsbook-callout {
+    padding: 9px;
+  }
+
+  .sportsbook-callout .book,
+  .sportsbook-callout .odds {
+    font-size: 16px;
+  }
+
+  .empty,
+  .loading {
+    min-height: 130px;
+  }
+
+  @media (min-width: 900px) {
+    body {
+      padding-left: 252px;
+    }
+
+    header {
+      position: fixed;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 252px;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid #1e2b34;
+      border-bottom: 0;
+      background: #0b1014;
+    }
+
+    .topbar {
+      display: grid;
+      gap: 14px;
+      padding: 20px 16px 14px;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 5px;
+      padding: 6px 10px 16px;
+    }
+
+    .tab {
+      justify-content: flex-start;
+      min-height: 38px;
+      padding: 0 12px;
+      text-align: left;
+    }
+
+    .tab::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      margin-right: 9px;
+      border-radius: 50%;
+      background: #3a4650;
+      display: inline-block;
+    }
+
+    .tab.active::before {
+      background: var(--green);
+      box-shadow: none;
+    }
+
+    .app-shell {
+      padding: 22px 24px 34px;
+    }
+  }
+
+  @media (max-width: 899px) {
+    body {
+      padding-left: 0;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      display: block;
+      border-radius: 0;
+      border: 0;
+      border-bottom: 1px solid #1e2b34;
+      background: rgba(8,12,16,.96);
+      backdrop-filter: blur(14px);
+    }
+
+    .topbar {
+      max-width: none;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px 8px;
+    }
+
+    h1 {
+      font-size: 18px;
+    }
+
+    h1::before {
+      width: 24px;
+      height: 24px;
+      margin-right: 8px;
+    }
+
+    .subtitle {
+      display: none;
+    }
+
+    .api-status {
+      max-width: 42vw;
+      min-height: 30px;
+      padding: 5px 8px;
+    }
+
+    .tabs {
+      max-width: none;
+      display: flex;
+      grid-template-columns: none;
+      gap: 6px;
+      overflow-x: auto;
+      padding: 0 12px 10px;
+      scrollbar-width: none;
+    }
+
+    .tabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    .tab {
+      flex: 0 0 auto;
+      min-height: 34px;
+      padding: 0 12px;
+      white-space: nowrap;
+    }
+
+    .tab::before {
+      display: none;
+    }
+
+    .app-shell {
+      padding: 14px 16px 28px;
+    }
+
+    .toolbar {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .toolbar > .btn,
+    .toolbar > .toolbar-actions {
+      grid-column: auto;
+    }
+
+    .control-strip {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .control-strip > .btn,
+    .control-strip > .toolbar-actions {
+      grid-column: auto;
+    }
+
+    .summary-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 680px) {
+    .page-head {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .toolbar {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .toolbar > .btn,
+    .toolbar > .toolbar-actions {
+      grid-column: span 1;
+    }
+
+    .control-strip {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .summary-grid,
+    .stat-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    #scanner .card:has(#scan_max_btn) .form-actions,
+    #arbitrage .card:has(#arb_max_btn) .form-actions {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 470px) {
+    .toolbar,
+    .control-strip,
+    .summary-grid,
+    .stat-grid,
+    .grid-2,
+    .grid-3 {
+      grid-template-columns: 1fr;
+    }
+
+    .toolbar > .btn,
+    .toolbar > .toolbar-actions,
+    .control-strip > .btn,
+    .control-strip > .toolbar-actions {
+      grid-column: auto;
+    }
+
+    .form-actions,
+    .toolbar-actions {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .form-actions .btn,
+    .toolbar-actions .btn {
+      width: 100%;
+    }
+  }
+
+  .quick-links-drawer {
+    margin: 0 0 12px;
+    border: 1px solid #1e2b34;
+    border-radius: 8px;
+    background: #0c1217;
+  }
+
+  .quick-links-drawer summary {
+    display: flex;
+    align-items: center;
+    min-height: 42px;
+    padding: 0 14px;
+    color: #dce6eb;
+    font-weight: 850;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .quick-links-drawer summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .quick-links-drawer summary::after {
+    content: "+";
+    margin-left: auto;
+    color: var(--green);
+    font-size: 18px;
+    font-weight: 900;
+  }
+
+  .quick-links-drawer[open] summary::after {
+    content: "-";
+  }
+
+  .quick-links-drawer .book-link-grid {
+    padding: 0 12px 12px;
+  }
+
+  .quick-links-drawer .help {
+    margin: 0;
+    padding: 0 12px 12px;
+  }
+
+  #scanner_book_picker_card,
+  #arb_book_picker_card,
+  #scanner .card:has(#watch_status),
+  #scanner .card:has(#scan_max_btn),
+  #arbitrage .card:has(#arb_quota_estimate) {
+    padding: 14px 15px;
+  }
+
+  #scanner .card:has(#watch_status) .help,
+  #scanner .card:has(#scan_max_btn) .help,
+  #arbitrage .card:has(#arb_quota_estimate) .help {
+    margin-bottom: 0;
+  }
+
+  .facts-dock {
+    display: grid;
+    gap: 10px;
+    padding: 0 16px 24px;
+  }
+
+  .facts-card {
+    border: 1px solid #1e2b34;
+    border-radius: 8px;
+    background: #0c1217;
+    padding: 13px;
+  }
+
+  .facts-title {
+    margin-bottom: 7px;
+    color: #e7f0f3;
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: .01em;
+  }
+
+  .facts-card p {
+    margin: 0 0 8px;
+    color: #9ca9b2;
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .facts-card p:last-child {
+    margin-bottom: 0;
+  }
+
+  @media (min-width: 1220px) {
+    body {
+      padding-right: 296px;
+    }
+
+    .facts-dock {
+      position: fixed;
+      top: 18px;
+      right: 16px;
+      bottom: 18px;
+      z-index: 12;
+      width: 264px;
+      align-content: start;
+      overflow: auto;
+      padding: 0;
+    }
+  }
+
+  @media (min-width: 1220px) and (min-width: 900px) {
+    .facts-dock {
+      top: 24px;
+    }
+  }
+
+  @media (max-width: 1219px) {
+    .facts-dock {
+      max-width: 1320px;
+      margin: 0 auto;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 680px) {
+    .facts-dock {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .mode-jump {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: -4px 0 14px;
+  }
+
+  .mode-jump a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 34px;
+    padding: 0 12px;
+    border: 1px solid #1e2b34;
+    border-radius: 999px;
+    background: #0c1217;
+    color: #dce6eb;
+    font-size: 12px;
+    font-weight: 850;
+    text-decoration: none;
+  }
+
+  .mode-jump a:hover {
+    border-color: rgba(88,217,130,.5);
+    color: #eaffef;
+  }
+
+  .mode-section {
+    margin-bottom: 18px;
+    scroll-margin-top: 110px;
+  }
+
+  .mode-section:last-child {
+    margin-bottom: 0;
+  }
+
+  .mode-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 4px 0 10px;
+  }
+
+  .mode-title h3 {
+    margin: 0;
+    font-size: 18px;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .ev-line-card {
+    border: 1px solid #20313c;
+    border-radius: 8px;
+    background: #0c141a;
+    padding: 12px;
+  }
+
+  .ev-line-card.live-line {
+    border-color: #284255;
+  }
+
+  .ev-line-main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 14px;
+    align-items: start;
+  }
+
+  .ev-book {
+    display: inline-flex;
+    width: fit-content;
+    margin-bottom: 8px;
+    padding: 4px 8px;
+    border: 1px solid rgba(88,217,130,.35);
+    border-radius: 999px;
+    background: rgba(88,217,130,.1);
+    color: #d8ffe3;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .ev-bet {
+    color: var(--text);
+    font-size: 18px;
+    font-weight: 950;
+    line-height: 1.2;
+  }
+
+  .ev-game {
+    margin-top: 5px;
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .ev-price {
+    min-width: 112px;
+    text-align: right;
+  }
+
+  .ev-price .odds {
+    color: var(--text);
+    font-size: 24px;
+    font-weight: 950;
+    line-height: 1;
+  }
+
+  .ev-price div:last-child {
+    margin-top: 6px;
+    font-size: 13px;
+    font-weight: 950;
+  }
+
+  .ev-line-details {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+  }
+
+  .ev-line-details span {
+    min-height: 28px;
+    padding: 6px 8px;
+    border: 1px solid #1e2b34;
+    border-radius: 7px;
+    background: #0a1015;
+    color: #aebbc4;
+    font-size: 12px;
+  }
+
+  .ev-line-details strong {
+    color: #f2f7f8;
+  }
+
+  .clear-info .facts-card {
+    padding: 16px;
+  }
+
+  .clear-info .facts-title {
+    margin-bottom: 10px;
+    font-size: 16px;
+  }
+
+  .clear-info p,
+  .clear-info li {
+    color: #aebbc4;
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .clear-info ul {
+    display: grid;
+    gap: 7px;
+    margin: 0;
+    padding-left: 18px;
+  }
+
+  .info-wide {
+    grid-column: 1 / -1;
+  }
+
+  .info-formula {
+    margin: 12px 0;
+    padding: 12px;
+    border: 1px solid rgba(88,217,130,.32);
+    border-radius: 8px;
+    background: rgba(88,217,130,.09);
+    color: #d8ffe3;
+    font-size: 15px;
+    font-weight: 900;
+  }
+
+  @media (min-width: 1220px) {
+    body {
+      padding-right: 0;
+    }
+  }
+
+  @media (max-width: 680px) {
+    .info-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .ev-line-main {
+      grid-template-columns: 1fr;
+    }
+
+    .ev-price {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      min-width: 0;
+      text-align: left;
+    }
+
+    .info-wide {
+      grid-column: auto;
+    }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="topbar">
+    <div class="brand">
+      <h1>EV Scanner</h1>
+      <div class="subtitle">Live odds scanner, arbitrage finder, free calculators, and bet tracker</div>
+    </div>
+    <span class="api-status" id="api_status">Idle</span>
+  </div>
+  <nav class="tabs" aria-label="App sections">
+    <button class="tab active" data-tab="scanner">EV</button>
+    <button class="tab" data-tab="arbitrage">Arbitrage</button>
+    <button class="tab" data-tab="tracker">Tracker</button>
+    <button class="tab" data-tab="tools">Tools</button>
+    <button class="tab" data-tab="stats">Stats</button>
+    <button class="tab" data-tab="info">Info</button>
+    <button class="tab" data-tab="settings">Settings</button>
+  </nav>
+</header>
+
+<main class="app-shell">
+  <section id="scanner" class="panel active">
+    <div class="page-head">
+      <div>
+        <h2>EV</h2>
+        <p>Scan pre-match and live markets in one place. EV is about finding prices where your estimated probability is better than the book’s implied probability.</p>
+      </div>
+    </div>
+
+    <div class="mode-jump">
+      <a href="#pre_match_ev">Pre-match EV</a>
+      <a href="#live_ev">Live EV</a>
+    </div>
+
+    <div id="pre_match_ev" class="mode-section">
+      <div class="mode-title"><h3>Pre-match EV</h3><span class="tag">Before start</span></div>
+
+    <div class="toolbar">
+      <div>
+        <label for="f_sport">Sport</label>
+        <select id="f_sport">
+          <option value="all">All supported sports</option>
+          <option value="baseball_mlb">MLB</option>
+          <option value="basketball_nba">NBA</option>
+          <option value="icehockey_nhl">NHL</option>
+          <option value="soccer_usa_mls">MLS</option>
+          <option value="americanfootball_nfl">NFL</option>
+          <option value="basketball_wnba">WNBA</option>
+        </select>
+      </div>
+      <div>
+        <label for="f_market">Market</label>
+        <select id="f_market">
+          <option value="h2h">Moneyline</option>
+          <option value="spreads">Spreads</option>
+          <option value="totals">Totals</option>
+          <option value="all">All markets</option>
+          <option value="props">Common player props</option>
+        </select>
+      </div>
+      <div>
+        <label for="f_scope">Books</label>
+        <select id="f_scope">
+          <option value="all">All available books</option>
+          <option value="custom">Specific selected books</option>
+          <option value="configured">Configured books only</option>
+          <option value="soft">Soft books only</option>
+        </select>
+      </div>
+      <div>
+        <label for="f_minev">Min EV%</label>
+        <input id="f_minev" type="number" value="1" step="0.5">
+      </div>
+      <div>
+        <label for="f_maxev">Max EV%</label>
+        <input id="f_maxev" type="number" value="15" step="0.5">
+      </div>
+      <button id="scan_btn" class="btn primary" type="button">Scan</button>
+      <div class="toolbar-actions">
+        <button id="refresh_btn" class="btn secondary" type="button">Refresh</button>
+        <button id="clear_scan_btn" class="btn ghost" type="button">Clear</button>
+      </div>
+    </div>
+
+    <div class="card" id="scanner_book_picker_card">
+      <div class="card-title"><h3>Specific books</h3><span class="tag" id="scan_book_count">0 selected</span></div>
+      <p class="help">Click a book to show only that sportsbook. Use the preset buttons when you want a group.</p>
+      <div class="form-actions">
+        <button id="scan_books_us_btn" class="btn secondary" type="button">US Soft Books</button>
+        <button id="scan_books_all_btn" class="btn secondary" type="button">All Common Books</button>
+        <button id="scan_books_clear_btn" class="btn ghost" type="button">Clear</button>
+      </div>
+      <div id="scan_book_picker" class="book-picker"></div>
+    </div>
+
+    <div id="scanner_book_links"></div>
+
+    <div class="card">
+      <div class="card-title"><h3>Watch mode & alerts</h3><span class="tag" id="watch_status">Stopped</span></div>
+      <div class="control-strip">
+        <div>
+          <label for="watch_interval">Refresh every seconds</label>
+          <input id="watch_interval" type="number" min="30" step="30" value="180">
+        </div>
+        <div>
+          <label for="alert_min_ev">EV alert at %</label>
+          <input id="alert_min_ev" type="number" step="0.5" value="3">
+        </div>
+        <div>
+          <label for="alert_min_arb">Arb alert at %</label>
+          <input id="alert_min_arb" type="number" step="0.1" value="0.5">
+        </div>
+        <button id="enable_alerts_btn" class="btn secondary" type="button">Enable Alerts</button>
+        <div class="toolbar-actions">
+          <button id="start_watch_btn" class="btn primary" type="button">Start Watch</button>
+          <button id="stop_watch_btn" class="btn ghost" type="button">Stop</button>
+        </div>
+      </div>
+      <p class="help">This keeps refreshing your selected scanner and arb filters, then alerts when a new edge clears your thresholds. It never places or stages bets for you.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><h3>Free maximizer</h3><span class="tag" id="scan_quota_estimate">0 calls</span></div>
+      <div class="form-actions">
+        <button id="scan_max_btn" class="btn primary" type="button">Max Coverage</button>
+        <button id="scan_props_btn" class="btn secondary" type="button">Props Sweep</button>
+        <button id="scan_quota_btn" class="btn secondary" type="button">Quota Saver</button>
+      </div>
+      <p class="help">Max Coverage scans all available books. Props Sweep uses event-level player prop odds by sport, so it can use much more quota than ML/spread/total scans. Quota Saver narrows the scan so your free allowance lasts longer.</p>
+    </div>
+
+    <div class="summary-grid">
+      <div class="summary-tile"><div class="val" id="sum_edges">0</div><div class="lbl">Edges in view</div></div>
+      <div class="summary-tile"><div class="val" id="sum_best_ev">--</div><div class="lbl">Best EV</div></div>
+      <div class="summary-tile"><div class="val" id="sum_avg_ev">--</div><div class="lbl">Average EV</div></div>
+      <div class="summary-tile"><div class="val" id="sum_scan_meta">No scan yet</div><div class="lbl">Scan status</div></div>
+    </div>
+
+    <div id="scan_results">
+      <div class="empty">
+        <div>
+          <strong>Ready when you are.</strong><br>
+          Add an API key in Settings, then scan once before you bet. All results stay local in this browser.
+        </div>
+      </div>
+    </div>
+    </div>
+
+    <div id="live_ev" class="mode-section">
+      <div class="mode-title"><h3>Live EV</h3><span class="tag">In-play / near start</span></div>
+      <p class="help">Scan in-play or near-start markets from the same odds feed. Live results depend on whether your API plan returns live events.</p>
+
+    <div class="toolbar">
+      <div>
+        <label for="l_sport">Sport</label>
+        <select id="l_sport">
+          <option value="all">All supported sports</option>
+          <option value="baseball_mlb">MLB</option>
+          <option value="basketball_nba">NBA</option>
+          <option value="icehockey_nhl">NHL</option>
+          <option value="soccer_usa_mls">MLS</option>
+          <option value="americanfootball_nfl">NFL</option>
+          <option value="basketball_wnba">WNBA</option>
+        </select>
+      </div>
+      <div>
+        <label for="l_market">Market</label>
+        <select id="l_market">
+          <option value="h2h">Moneyline</option>
+          <option value="spreads">Spreads</option>
+          <option value="totals">Totals</option>
+          <option value="all">All markets</option>
+          <option value="props">Common player props</option>
+        </select>
+      </div>
+      <div>
+        <label for="l_scope">Books</label>
+        <select id="l_scope">
+          <option value="all">All available books</option>
+          <option value="custom">Specific selected books</option>
+          <option value="configured">Configured books only</option>
+          <option value="soft">Soft books only</option>
+        </select>
+      </div>
+      <div>
+        <label for="l_minev">Min EV%</label>
+        <input id="l_minev" type="number" value="1" step="0.5">
+      </div>
+      <div>
+        <label for="l_maxev">Max EV%</label>
+        <input id="l_maxev" type="number" value="25" step="0.5">
+      </div>
+      <button id="live_scan_btn" class="btn primary" type="button">Scan Live</button>
+      <div class="toolbar-actions">
+        <button id="live_refresh_btn" class="btn secondary" type="button">Refresh</button>
+        <button id="live_clear_btn" class="btn ghost" type="button">Clear</button>
+      </div>
+    </div>
+
+    <div class="card" id="live_book_picker_card">
+      <div class="card-title"><h3>Specific books</h3><span class="tag" id="live_book_count">0 selected</span></div>
+      <p class="help">Click a book to show only that sportsbook. Live results depend on what your feed returns.</p>
+      <div class="form-actions">
+        <button id="live_books_us_btn" class="btn secondary" type="button">US Soft Books</button>
+        <button id="live_books_all_btn" class="btn secondary" type="button">All Common Books</button>
+        <button id="live_books_clear_btn" class="btn ghost" type="button">Clear</button>
+      </div>
+      <div id="live_book_picker" class="book-picker"></div>
+    </div>
+
+    <div id="live_book_links"></div>
+
+    <div class="card">
+      <div class="card-title"><h3>Live maximizer</h3><span class="tag" id="live_quota_estimate">0 calls</span></div>
+      <div class="form-actions">
+        <button id="live_max_btn" class="btn primary" type="button">Max Live Coverage</button>
+        <button id="live_main_btn" class="btn secondary" type="button">Main Markets</button>
+        <button id="live_quota_btn" class="btn secondary" type="button">Quota Saver</button>
+      </div>
+      <p class="help">Live markets move fast. Re-check the exact price at the book before you log or place anything.</p>
+    </div>
+
+    <div class="summary-grid">
+      <div class="summary-tile"><div class="val" id="live_edges">0</div><div class="lbl">Live edges</div></div>
+      <div class="summary-tile"><div class="val" id="live_best_ev">--</div><div class="lbl">Best live EV</div></div>
+      <div class="summary-tile"><div class="val" id="live_avg_ev">--</div><div class="lbl">Average live EV</div></div>
+      <div class="summary-tile"><div class="val" id="live_meta">No scan yet</div><div class="lbl">Scan status</div></div>
+    </div>
+
+    <div id="live_results">
+      <div class="empty">
+        <div>
+          <strong>No live scan yet.</strong><br>
+          Live EV uses games already started or very close to start when your feed returns them.
+        </div>
+      </div>
+    </div>
+    </div>
+  </section>
+
+  <section id="arbitrage" class="panel">
+    <div class="page-head">
+      <div>
+        <h2>Arbitrage</h2>
+        <p>Find guaranteed-return splits before games and during live markets by taking the best available price for every outcome.</p>
+      </div>
+    </div>
+
+    <div class="mode-jump">
+      <a href="#pre_match_arbs">Pre-match Arbitrage</a>
+      <a href="#live_arbs">Live Arbitrage</a>
+    </div>
+
+    <div id="pre_match_arbs" class="mode-section">
+      <div class="mode-title"><h3>Pre-match Arbitrage</h3><span class="tag">Before start</span></div>
+
+    <div class="toolbar">
+      <div>
+        <label for="a_sport">Sport</label>
+        <select id="a_sport">
+          <option value="all">All supported sports</option>
+          <option value="baseball_mlb">MLB</option>
+          <option value="basketball_nba">NBA</option>
+          <option value="icehockey_nhl">NHL</option>
+          <option value="soccer_usa_mls">MLS</option>
+          <option value="americanfootball_nfl">NFL</option>
+          <option value="basketball_wnba">WNBA</option>
+        </select>
+      </div>
+      <div>
+        <label for="a_market">Market</label>
+        <select id="a_market">
+          <option value="h2h">Moneyline</option>
+          <option value="spreads">Spreads</option>
+          <option value="totals">Totals</option>
+          <option value="all">All markets</option>
+          <option value="props">Common player props</option>
+        </select>
+      </div>
+      <div>
+        <label for="a_scope">Books</label>
+        <select id="a_scope">
+          <option value="all">All available books</option>
+          <option value="custom">Specific selected books</option>
+          <option value="configured">Configured books only</option>
+        </select>
+      </div>
+      <div>
+        <label for="a_min_profit">Min profit %</label>
+        <input id="a_min_profit" type="number" value="0.2" step="0.1">
+      </div>
+      <div>
+        <label for="a_total_stake">Total stake ($)</label>
+        <input id="a_total_stake" type="number" value="100" step="1">
+      </div>
+      <button id="arb_scan_btn" class="btn primary" type="button">Scan Arbs</button>
+      <div class="toolbar-actions">
+        <button id="arb_refresh_btn" class="btn secondary" type="button">Refresh</button>
+        <button id="arb_clear_btn" class="btn ghost" type="button">Clear</button>
+      </div>
+    </div>
+
+    <div class="card" id="arb_book_picker_card">
+      <div class="card-title"><h3>Specific books</h3><span class="tag" id="arb_book_count">0 selected</span></div>
+      <p class="help">Click a book to show arbs involving that sportsbook. Use presets to include enough books for scanning.</p>
+      <div class="form-actions">
+        <button id="arb_books_us_btn" class="btn secondary" type="button">US Soft Books</button>
+        <button id="arb_books_all_btn" class="btn secondary" type="button">All Common Books</button>
+        <button id="arb_books_clear_btn" class="btn ghost" type="button">Clear</button>
+      </div>
+      <div id="arb_book_picker" class="book-picker"></div>
+    </div>
+
+    <div id="arb_book_links"></div>
+
+    <div class="card">
+      <div class="card-title"><h3>Free maximizer</h3><span class="tag" id="arb_quota_estimate">0 calls</span></div>
+      <div class="form-actions">
+        <button id="arb_max_btn" class="btn primary" type="button">Max Arb Coverage</button>
+        <button id="arb_props_btn" class="btn secondary" type="button">Props Sweep</button>
+        <button id="arb_quota_btn" class="btn secondary" type="button">Quota Saver</button>
+      </div>
+      <p class="help">For the most arbs, use all books and a 0% minimum. Player prop arbs need event-level calls, so scan one sport at a time when quota gets tight.</p>
+    </div>
+
+    <div class="summary-grid">
+      <div class="summary-tile"><div class="val" id="arb_count">0</div><div class="lbl">Arbs in view</div></div>
+      <div class="summary-tile"><div class="val" id="arb_best">--</div><div class="lbl">Best profit</div></div>
+      <div class="summary-tile"><div class="val" id="arb_avg">--</div><div class="lbl">Average profit</div></div>
+      <div class="summary-tile"><div class="val" id="arb_meta">No scan yet</div><div class="lbl">Scan status</div></div>
+    </div>
+
+    <div id="arb_results">
+      <div class="empty">
+        <div>
+          <strong>No arbitrage scan yet.</strong><br>
+          Add your API key, choose markets, and scan for cross-book price splits.
+        </div>
+      </div>
+    </div>
+    </div>
+
+    <div id="live_arbs" class="mode-section">
+      <div class="mode-title"><h3>Live Arbitrage</h3><span class="tag">In-play / near start</span></div>
+      <p class="help">Live arbs can vanish quickly. Confirm every leg is the exact same line before taking action.</p>
+
+      <div class="toolbar">
+        <div>
+          <label for="la_sport">Sport</label>
+          <select id="la_sport">
+            <option value="all">All supported sports</option>
+            <option value="baseball_mlb">MLB</option>
+            <option value="basketball_nba">NBA</option>
+            <option value="icehockey_nhl">NHL</option>
+            <option value="soccer_usa_mls">MLS</option>
+            <option value="americanfootball_nfl">NFL</option>
+            <option value="basketball_wnba">WNBA</option>
+          </select>
+        </div>
+        <div>
+          <label for="la_market">Market</label>
+          <select id="la_market">
+            <option value="h2h">Moneyline</option>
+            <option value="spreads">Spreads</option>
+            <option value="totals">Totals</option>
+            <option value="all">All markets</option>
+            <option value="props">Common player props</option>
+          </select>
+        </div>
+        <div>
+          <label for="la_scope">Books</label>
+          <select id="la_scope">
+            <option value="all">All available books</option>
+            <option value="custom">Specific selected books</option>
+            <option value="configured">Configured books only</option>
+          </select>
+        </div>
+        <div>
+          <label for="la_min_profit">Min profit %</label>
+          <input id="la_min_profit" type="number" value="0" step="0.1">
+        </div>
+        <div>
+          <label for="la_total_stake">Total stake ($)</label>
+          <input id="la_total_stake" type="number" value="100" step="1">
+        </div>
+        <button id="live_arb_scan_btn" class="btn primary" type="button">Scan Live Arbs</button>
+        <div class="toolbar-actions">
+          <button id="live_arb_refresh_btn" class="btn secondary" type="button">Refresh</button>
+          <button id="live_arb_clear_btn" class="btn ghost" type="button">Clear</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><h3>Live arb maximizer</h3><span class="tag" id="live_arb_quota_estimate">0 calls</span></div>
+        <div class="form-actions">
+          <button id="live_arb_max_btn" class="btn primary" type="button">Max Live Arb Coverage</button>
+          <button id="live_arb_main_btn" class="btn secondary" type="button">Main Markets</button>
+          <button id="live_arb_quota_btn" class="btn secondary" type="button">Quota Saver</button>
+        </div>
+      </div>
+
+      <div class="summary-grid">
+        <div class="summary-tile"><div class="val" id="live_arb_count">0</div><div class="lbl">Live arbs</div></div>
+        <div class="summary-tile"><div class="val" id="live_arb_best">--</div><div class="lbl">Best live profit</div></div>
+        <div class="summary-tile"><div class="val" id="live_arb_avg">--</div><div class="lbl">Average live profit</div></div>
+        <div class="summary-tile"><div class="val" id="live_arb_meta">No scan yet</div><div class="lbl">Scan status</div></div>
+      </div>
+
+      <div id="live_arb_results">
+        <div class="empty">
+          <div>
+            <strong>No live arbitrage scan yet.</strong><br>
+            Live arbs use games already started or very close to start when your feed returns them.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tracker" class="panel">
+    <div class="page-head">
+      <div>
+        <h2>Tracker</h2>
+        <p>Log the bet, closing line, and result. The tracker keeps your process honest while the sample grows.</p>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title"><h3>Log a bet</h3><span class="tag">Manual</span></div>
+        <label for="t_desc">Description</label>
+        <input id="t_desc" placeholder="Yankees ML vs Red Sox">
+        <div class="grid-2">
+          <div>
+            <label for="t_book">Book</label>
+            <select id="t_book">
+              <option>BetMGM</option><option>DraftKings</option><option>FanDuel</option>
+              <option>Caesars</option><option>ESPN BET</option><option>Bet365</option>
+              <option>Fanatics</option><option>Hard Rock</option><option>Other</option>
+            </select>
+          </div>
+          <div>
+            <label for="t_market">Market</label>
+            <input id="t_market" placeholder="MLB ML">
+          </div>
+        </div>
+        <div class="grid-3">
+          <div><label for="t_odds">Odds</label><input id="t_odds" type="number" placeholder="-105"></div>
+          <div><label for="t_stake">Stake ($)</label><input id="t_stake" type="number" step="0.01"></div>
+          <div><label for="t_ev">EV % (optional)</label><input id="t_ev" type="number" step="0.01"></div>
+        </div>
+        <div class="form-actions">
+          <button id="log_bet_btn" class="btn primary" type="button">Log Bet</button>
+          <button id="prefill_stake_btn" class="btn secondary" type="button">Use Unit Stake</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><h3>Open bets</h3><span class="tag" id="open_count">0 open</span></div>
+        <div id="open_bets"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><h3>Settled bets</h3><span class="tag" id="settled_count">0 settled</span></div>
+      <div id="settled_bets"></div>
+    </div>
+  </section>
+  <section id="tools" class="panel">
+    <div class="page-head">
+      <div>
+        <h2>Free Tools</h2>
+        <p>Local calculators that cost zero API calls: no-vig, hedge, boost EV, parlay EV, and quick odds conversion.</p>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title"><h3>No-vig / fair odds</h3><span class="tag">2-way</span></div>
+        <div class="grid-2">
+          <div><label for="tool_nv_a">Side A odds</label><input id="tool_nv_a" type="number" placeholder="-115"></div>
+          <div><label for="tool_nv_b">Side B odds</label><input id="tool_nv_b" type="number" placeholder="+105"></div>
+        </div>
+        <div class="form-actions">
+          <button id="tool_nv_btn" class="btn primary" type="button">Calculate Fair Odds</button>
+        </div>
+        <div id="tool_nv_result" class="help"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><h3>Probability converter</h3><span class="tag">Odds ⇄ %</span></div>
+        <div class="grid-2">
+          <div><label for="tool_prob_odds">American odds</label><input id="tool_prob_odds" type="number" placeholder="-110"></div>
+          <div><label for="tool_prob_pct">Probability %</label><input id="tool_prob_pct" type="number" placeholder="52.38"></div>
+        </div>
+        <div class="form-actions">
+          <button id="tool_prob_from_odds_btn" class="btn primary" type="button">Odds to Probability</button>
+          <button id="tool_prob_from_pct_btn" class="btn secondary" type="button">Probability to Odds</button>
+        </div>
+        <div id="tool_prob_result" class="help"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><h3>Hedge calculator</h3><span class="tag">Equal profit</span></div>
+        <div class="grid-3">
+          <div><label for="tool_hedge_orig_odds">Original odds</label><input id="tool_hedge_orig_odds" type="number" placeholder="+180"></div>
+          <div><label for="tool_hedge_stake">Original stake</label><input id="tool_hedge_stake" type="number" placeholder="50"></div>
+          <div><label for="tool_hedge_odds">Hedge odds</label><input id="tool_hedge_odds" type="number" placeholder="-130"></div>
+        </div>
+        <div class="form-actions">
+          <button id="tool_hedge_btn" class="btn primary" type="button">Calculate Hedge</button>
+        </div>
+        <div id="tool_hedge_result" class="help"></div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title"><h3>Boost EV</h3><span class="tag">Promo math</span></div>
+        <div class="grid-3">
+          <div><label for="tool_boost_odds">Original odds</label><input id="tool_boost_odds" type="number" placeholder="+100"></div>
+          <div><label for="tool_boost_pct">Boost %</label><input id="tool_boost_pct" type="number" placeholder="25"></div>
+          <div><label for="tool_boost_prob">True probability %</label><input id="tool_boost_prob" type="number" placeholder="52.4"></div>
+        </div>
+        <div class="form-actions">
+          <button id="tool_boost_btn" class="btn primary" type="button">Calculate Boost EV</button>
+        </div>
+        <div id="tool_boost_result" class="help"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><h3>Parlay EV</h3><span class="tag">Independent legs</span></div>
+        <label for="tool_parlay_odds">American odds, comma-separated</label>
+        <input id="tool_parlay_odds" placeholder="-110,+120,-105">
+        <label for="tool_parlay_probs">True probabilities %, comma-separated</label>
+        <input id="tool_parlay_probs" placeholder="52.4,47.5,51">
+        <div class="form-actions">
+          <button id="tool_parlay_btn" class="btn primary" type="button">Calculate Parlay EV</button>
+        </div>
+        <div id="tool_parlay_result" class="help"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><h3>Free workflow checklist</h3><span class="tag">No paid tools</span></div>
+      <div class="grid-3">
+        <div class="oj-metric"><div class="label">Morning</div><div class="value">Scan all main markets by sport, then props for active leagues.</div></div>
+        <div class="oj-metric"><div class="label">Pre-game</div><div class="value">Re-scan one sport at a time and compare CLV after you bet.</div></div>
+        <div class="oj-metric"><div class="label">Always</div><div class="value">Line shop, log every bet, export backups, and keep min filters at zero when hunting volume.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="stats" class="panel">
+    <div class="page-head">
+      <div>
+        <h2>Stats</h2>
+        <p>Bankroll settings, result metrics, CLV, and local data backup.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><h3>Bankroll</h3><span class="tag" id="unit_display">--</span></div>
+      <div class="grid-2">
+        <div><label for="bankroll">Current bankroll ($)</label><input id="bankroll" type="number" step="0.01"></div>
+        <div><label for="unit_pct">Unit size (%)</label><input id="unit_pct" type="number" step="0.1"></div>
+      </div>
+      <div class="form-actions">
+        <button id="save_bankroll_btn" class="btn primary" type="button">Save Bankroll</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><h3>Performance</h3><span class="tag" id="performance_note">Local only</span></div>
+      <div class="stat-grid">
+        <div class="stat"><div class="val" id="stat_bets">0</div><div class="lbl">Total bets</div></div>
+        <div class="stat"><div class="val" id="stat_record">0-0-0</div><div class="lbl">W-L-P</div></div>
+        <div class="stat"><div class="val" id="stat_roi">0%</div><div class="lbl">ROI</div></div>
+        <div class="stat"><div class="val" id="stat_profit">$0</div><div class="lbl">P/L</div></div>
+        <div class="stat"><div class="val" id="stat_clv">--</div><div class="lbl">Avg CLV</div></div>
+        <div class="stat"><div class="val" id="stat_ev_avg">--</div><div class="lbl">Avg EV taken</div></div>
+      </div>
+      <p class="help">CLV is the best early signal. Profit and loss can wander around for hundreds of bets even when your process is good.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><h3>Data</h3><span class="tag">Backup</span></div>
+      <div class="form-actions">
+        <button id="export_btn" class="btn secondary" type="button">Export JSON</button>
+        <label class="btn secondary" for="import_file" style="cursor:pointer;margin:0;">Import JSON</label>
+        <input id="import_file" class="hidden" type="file" accept="application/json,.json">
+        <button id="wipe_btn" class="btn danger" type="button">Wipe All Data</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="settings" class="panel">
+    <div class="page-head">
+      <div>
+        <h2>Settings</h2>
+        <p>Configure your API key, bookmaker groups, and scanner trust thresholds.</p>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title"><h3>Data Source</h3><span class="tag">Provider-ready</span></div>
+        <p class="help">Start with The Odds API. If you buy a better feed later, use Custom JSON Endpoint and point it at a backend that returns The Odds API-shaped odds arrays.</p>
+        <label for="provider_mode">Provider mode</label>
+        <select id="provider_mode">
+          <option value="oddsapi">The Odds API live feed</option>
+          <option value="cache">Local backend cache</option>
+          <option value="custom">Custom JSON endpoint</option>
+        </select>
+        <label for="api_key">Key</label>
+        <input id="api_key" type="password" placeholder="paste key" autocomplete="off">
+        <label for="api_keys">Extra keys you own, one per line</label>
+        <textarea id="api_keys" placeholder="key_1&#10;key_2&#10;key_3"></textarea>
+        <label for="custom_endpoint">Custom endpoint template</label>
+        <input id="custom_endpoint" placeholder="https://your-server.example/odds?sport={sport}&market={market}&books={bookmakers}">
+        <label for="cache_endpoint">Local cache endpoint</label>
+        <input id="cache_endpoint" placeholder="http://localhost:8777">
+        <div class="form-actions">
+          <button id="save_api_btn" class="btn primary" type="button">Save Source</button>
+          <button id="rotate_key_btn" class="btn secondary" type="button">Rotate Key</button>
+        </div>
+        <p class="help" id="api_usage"></p>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><h3>Backend Cache</h3><span class="tag" id="cache_status">Not connected</span></div>
+        <p class="help">The local cache runs at localhost, refreshes odds in the background, saves raw odds to disk, and lets the scanner reuse fresh data without making every browser scan hit the odds API directly.</p>
+        <div class="summary-grid">
+          <div class="summary-tile"><div class="val" id="cache_entries">0</div><div class="lbl">Saved feeds</div></div>
+          <div class="summary-tile"><div class="val" id="cache_fresh">0</div><div class="lbl">Fresh feeds</div></div>
+          <div class="summary-tile"><div class="val" id="cache_quota">--</div><div class="lbl">Quota left</div></div>
+          <div class="summary-tile"><div class="val" id="cache_refreshing">0</div><div class="lbl">Refreshing</div></div>
+        </div>
+        <div class="form-actions">
+          <button id="use_cache_btn" class="btn primary" type="button">Use Cache Mode</button>
+          <button id="sync_cache_btn" class="btn secondary" type="button">Sync Keys + Books</button>
+          <button id="warm_cache_btn" class="btn secondary" type="button">Warm Current Filters</button>
+          <button id="refresh_cache_btn" class="btn ghost" type="button">Refresh Status</button>
+        </div>
+        <p class="help" id="cache_help">Start the local cache server, then sync your saved key. Keep this computer awake if you want it refreshing constantly.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><h3>Scanner Thresholds</h3><span class="tag">Quality</span></div>
+        <label for="max_vig">Max sharp vig to trust (%)</label>
+        <input id="max_vig" type="number" step="0.1" placeholder="6">
+        <p class="help">Lower is cleaner but returns fewer bets. A value around 4-6% is a reasonable starting point.</p>
+        <div class="form-actions">
+          <button id="save_thresholds_btn" class="btn primary" type="button">Save Thresholds</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><h3>Books</h3><span class="tag">Comma-separated keys</span></div>
+      <p class="help">Soft books are places you bet. Sharp books are preferred reference lines for EV. When book scope is set to all available books, these lists are still used for priority but no longer restrict the scan.</p>
+      <label for="soft_books_input">Soft books</label>
+      <input id="soft_books_input" placeholder="betmgm,draftkings,fanduel,williamhill_us,espnbet,fanatics">
+      <label for="sharp_books_input">Sharp books, priority order</label>
+      <input id="sharp_books_input" placeholder="pinnacle,betonlineag,lowvig">
+      <div class="form-actions">
+        <button id="save_books_btn" class="btn primary" type="button">Save Books</button>
+        <button id="reset_books_btn" class="btn secondary" type="button">Reset Defaults</button>
+      </div>
+      <p class="help">Common keys: betmgm, draftkings, fanduel, williamhill_us, espnbet, fanatics, hardrockbet, bet365, pinnacle, betonlineag, lowvig, bovada, mybookieag.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><h3>Upgrade path</h3><span class="tag">Closest to OddsJam</span></div>
+      <div class="roadmap">
+        <div class="roadmap-step"><div class="rank">1</div><div><strong>Better odds feed</strong><span>Paid low-latency odds, more books, props, alternates, and fewer stale lines.</span></div><span class="source-pill">Biggest gain</span></div>
+        <div class="roadmap-step"><div class="rank">2</div><div><strong>Backend cache</strong><span>One server call can cache scans, save quota, track line movement, and power watch mode.</span></div><span class="source-pill">Built locally</span></div>
+        <div class="roadmap-step"><div class="rank">3</div><div><strong>Results and settlement feed</strong><span>Automatic grading, CLV audits, and model feedback instead of manual tracker work.</span></div><span class="source-pill">Tracker boost</span></div>
+        <div class="roadmap-step"><div class="rank">4</div><div><strong>Historical odds</strong><span>Line history tells you which books are late, where arbs appear, and whether your edge closes.</span></div><span class="source-pill">Pro signal</span></div>
+      </div>
+      <p class="help">The app is now wired so those upgrades can plug in without throwing the dashboard away.</p>
+    </div>
+  </section>
+  <section id="info" class="panel">
+    <div class="page-head">
+      <div>
+        <h2>Info</h2>
+        <p>Plain-English notes on EV, probability, arbitrage betting, and the tradeoffs that matter.</p>
+      </div>
+    </div>
+
+    <div class="info-grid clear-info">
+      <div class="facts-card info-wide">
+        <div class="facts-title">EV Betting, Clearly</div>
+        <p><strong>EV means expected value.</strong> It answers one question: “If I could make this same bet many times, would I expect to make money?”</p>
+        <div class="info-formula">EV = true probability × decimal odds - 1</div>
+        <p>If your true probability is higher than the sportsbook’s implied probability, the bet is +EV.</p>
+      </div>
+      <div class="facts-card">
+        <div class="facts-title">How To Read An EV Line</div>
+        <ul>
+          <li><strong>Sportsbook:</strong> where the app says to find the bet.</li>
+          <li><strong>Odds:</strong> the price you need. If it moves, EV changes.</li>
+          <li><strong>True prob:</strong> the app’s fair win probability after removing vig.</li>
+          <li><strong>Book implied:</strong> what the sportsbook price is saying.</li>
+          <li><strong>Fair odds:</strong> the no-vig price. Better than fair is the edge.</li>
+        </ul>
+      </div>
+      <div class="facts-card">
+        <div class="facts-title">EV Example</div>
+        <p>A book offers +100. That means the book implies about 50%.</p>
+        <p>If the fair no-vig probability is 55%, then EV is 55% × 2.00 - 1 = <strong>+10%</strong>.</p>
+        <p>That does not mean it will win today. It means the price is good long term.</p>
+      </div>
+      <div class="facts-card">
+        <div class="facts-title">EV Pros</div>
+        <ul>
+          <li>Works on normal single bets.</li>
+          <li>Can scale across many sports and books.</li>
+          <li>Teaches you to care about price, not just picks.</li>
+          <li>CLV can show whether your process is improving.</li>
+        </ul>
+      </div>
+      <div class="facts-card">
+        <div class="facts-title">EV Cons</div>
+        <ul>
+          <li>You can lose lots of +EV bets in a row.</li>
+          <li>Bad reference lines create fake edges.</li>
+          <li>Small edges need volume and patience.</li>
+          <li>Overbetting can ruin a good strategy.</li>
+        </ul>
+      </div>
+      <div class="facts-card info-wide">
+        <div class="facts-title">Arbitrage Betting, Clearly</div>
+        <p><strong>Arbitrage means covering every outcome at prices that guarantee profit.</strong> You are not trying to predict the winner. You are using price differences between books.</p>
+        <div class="info-formula">Arb exists when all best-outcome implied probabilities add up to less than 100%</div>
+      </div>
+      <div class="facts-card">
+        <div class="facts-title">How To Read An Arb</div>
+        <ul>
+          <li>Each leg must be the same event and same market.</li>
+          <li>Each leg must be placed at the sportsbook shown.</li>
+          <li>Stake amounts are sized so payout is equalized.</li>
+          <li>If one price changes, recalculate before betting.</li>
+        </ul>
+      </div>
+      <div class="facts-card">
+        <div class="facts-title">Arb Pros</div>
+        <ul>
+          <li>Profit is locked if every leg is placed correctly.</li>
+          <li>Does not require predicting who wins.</li>
+          <li>Great for finding books with stale prices.</li>
+        </ul>
+      </div>
+      <div class="facts-card">
+        <div class="facts-title">Arb Cons</div>
+        <ul>
+          <li>Lines can move before every leg is placed.</li>
+          <li>Books may limit, void, or grade markets differently.</li>
+          <li>Live arbs are fragile because prices move fast.</li>
+          <li>You need money available at multiple books.</li>
+        </ul>
+      </div>
+      <div class="facts-card">
+        <div class="facts-title">Live Betting Rules</div>
+        <ul>
+          <li>Verify odds at the book before acting.</li>
+          <li>Do not trust stale live prices.</li>
+          <li>Use smaller stakes when lines are moving fast.</li>
+          <li>If the exact line is gone, skip or rescan.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script>
+const STORAGE_KEYS = {
+  bets: 'bets',
+  bankroll: 'bankroll',
+  unitPct: 'unit_pct',
+  apiKey: 'api_key',
+  apiKeys: 'api_keys',
+  activeApiKey: 'active_api_key',
+  providerMode: 'provider_mode',
+  customEndpoint: 'custom_endpoint',
+  cacheEndpoint: 'cache_endpoint',
+  alertSettings: 'alert_settings',
+  lineMemory: 'line_memory',
+  selectedScanBooks: 'selected_scan_books',
+  selectedLiveBooks: 'selected_live_books',
+  selectedArbBooks: 'selected_arb_books',
+  selectedCard: 'selected_card',
+  softBooks: 'soft_books',
+  sharpBooks: 'sharp_books',
+  maxVig: 'max_vig',
+  apiUsed: 'api_used',
+  apiRemaining: 'api_remaining'
+};
+const DEFAULT_SOFT_BOOKS = ['betmgm','draftkings','fanduel','williamhill_us','espnbet','fanatics','hardrockbet','bet365'];
+const DEFAULT_SHARP_BOOKS = ['pinnacle','betonlineag','lowvig','bovada','mybookieag'];
+const COMMON_BOOKS = [
+  ['betmgm', 'BetMGM'],
+  ['draftkings', 'DraftKings'],
+  ['fanduel', 'FanDuel'],
+  ['williamhill_us', 'Caesars'],
+  ['espnbet', 'ESPN BET'],
+  ['fanatics', 'Fanatics'],
+  ['hardrockbet', 'Hard Rock'],
+  ['bet365', 'Bet365'],
+  ['pinnacle', 'Pinnacle'],
+  ['betonlineag', 'BetOnline'],
+  ['bovada', 'Bovada'],
+  ['mybookieag', 'MyBookie'],
+  ['lowvig', 'LowVig']
+];
+const SPORT_KEYS = ['baseball_mlb','basketball_nba','icehockey_nhl','soccer_usa_mls','americanfootball_nfl','basketball_wnba'];
+const MARKET_KEYS = ['h2h','spreads','totals'];
+const PROP_MARKETS_BY_SPORT = {
+  baseball_mlb: ['batter_hits','batter_total_bases','batter_rbis','batter_runs_scored','batter_home_runs','pitcher_strikeouts','pitcher_outs'],
+  basketball_nba: ['player_points','player_rebounds','player_assists','player_threes','player_points_rebounds_assists','player_points_rebounds','player_points_assists'],
+  basketball_wnba: ['player_points','player_rebounds','player_assists','player_threes','player_points_rebounds_assists','player_points_rebounds','player_points_assists'],
+  americanfootball_nfl: ['player_pass_yds','player_pass_tds','player_rush_yds','player_receptions','player_reception_yds','player_anytime_td','player_rush_reception_yds'],
+  icehockey_nhl: ['player_points','player_assists','player_shots_on_goal','player_goals','player_blocked_shots','player_total_saves'],
+  soccer_usa_mls: ['player_goal_scorer_anytime','player_shots_on_target','player_shots','player_assists','player_to_receive_card']
+};
+const PROP_MARKET_KEYS = Array.from(new Set(Object.values(PROP_MARKETS_BY_SPORT).flat()));
+const PROP_EVENT_LIMIT = 12;
+const CACHE_DEFAULT_ENDPOINT = 'http://localhost:8777';
+const BOOK_URLS = {
+  betmgm: 'https://sports.betmgm.com/',
+  draftkings: 'https://sportsbook.draftkings.com/',
+  fanduel: 'https://sportsbook.fanduel.com/',
+  williamhill_us: 'https://www.caesars.com/sportsbook-and-casino',
+  caesars: 'https://www.caesars.com/sportsbook-and-casino',
+  espnbet: 'https://espnbet.com/',
+  fanatics: 'https://sportsbook.fanatics.com/',
+  hardrockbet: 'https://app.hardrock.bet/',
+  'hard rock': 'https://app.hardrock.bet/',
+  bet365: 'https://www.bet365.com/',
+  pinnacle: 'https://www.pinnacle.com/',
+  betonlineag: 'https://www.betonline.ag/',
+  bovada: 'https://www.bovada.lv/',
+  mybookieag: 'https://mybookie.ag/',
+  lowvig: 'https://www.lowvig.ag/'
+};
+
+let bets = safeParse(localStorage.getItem(STORAGE_KEYS.bets), []);
+let bankroll = numberOr(localStorage.getItem(STORAGE_KEYS.bankroll), 350);
+let unitPct = numberOr(localStorage.getItem(STORAGE_KEYS.unitPct), 3);
+let apiKey = localStorage.getItem(STORAGE_KEYS.apiKey) || '';
+let apiKeys = safeParse(localStorage.getItem(STORAGE_KEYS.apiKeys), []);
+apiKeys = Array.isArray(apiKeys) ? apiKeys.map(String).map(s => s.trim()).filter(Boolean) : [];
+if (apiKey && !apiKeys.includes(apiKey)) apiKeys.unshift(apiKey);
+let activeApiKeyIndex = numberOr(localStorage.getItem(STORAGE_KEYS.activeApiKey), 0);
+let providerMode = localStorage.getItem(STORAGE_KEYS.providerMode) || 'oddsapi';
+let customEndpoint = localStorage.getItem(STORAGE_KEYS.customEndpoint) || '';
+let cacheEndpoint = localStorage.getItem(STORAGE_KEYS.cacheEndpoint) || CACHE_DEFAULT_ENDPOINT;
+let alertSettings = safeParse(localStorage.getItem(STORAGE_KEYS.alertSettings), { enabled: false, interval: 180, minEV: 3, minArb: 0.5 });
+let lineMemory = safeParse(localStorage.getItem(STORAGE_KEYS.lineMemory), {});
+let selectedScanBooks = safeParse(localStorage.getItem(STORAGE_KEYS.selectedScanBooks), DEFAULT_SOFT_BOOKS);
+let selectedLiveBooks = safeParse(localStorage.getItem(STORAGE_KEYS.selectedLiveBooks), DEFAULT_SOFT_BOOKS);
+let selectedArbBooks = safeParse(localStorage.getItem(STORAGE_KEYS.selectedArbBooks), DEFAULT_SOFT_BOOKS);
+selectedScanBooks = Array.isArray(selectedScanBooks) ? selectedScanBooks : DEFAULT_SOFT_BOOKS.slice();
+selectedLiveBooks = Array.isArray(selectedLiveBooks) ? selectedLiveBooks : DEFAULT_SOFT_BOOKS.slice();
+selectedArbBooks = Array.isArray(selectedArbBooks) ? selectedArbBooks : DEFAULT_SOFT_BOOKS.slice();
+let selectedCard = localStorage.getItem(STORAGE_KEYS.selectedCard) || '';
+let softBooks = listFromStorage(STORAGE_KEYS.softBooks, DEFAULT_SOFT_BOOKS);
+let sharpBooks = listFromStorage(STORAGE_KEYS.sharpBooks, DEFAULT_SHARP_BOOKS);
+let maxVig = numberOr(localStorage.getItem(STORAGE_KEYS.maxVig), 6);
+let lastScanResults = [];
+let lastScanMeta = { reqCount: 0, rawCount: 0, errorCount: 0 };
+let lastLiveResults = [];
+let lastLiveMeta = { reqCount: 0, rawCount: 0, errorCount: 0 };
+let lastArbResults = [];
+let lastArbMeta = { reqCount: 0, rawCount: 0, errorCount: 0 };
+let lastLiveArbResults = [];
+let lastLiveArbMeta = { reqCount: 0, rawCount: 0, errorCount: 0 };
+let apiRequestsUsed = parseInt(localStorage.getItem(STORAGE_KEYS.apiUsed) || '0', 10);
+let apiRequestsRemaining = localStorage.getItem(STORAGE_KEYS.apiRemaining) || '?';
+let currentSort = { key: 'ev', dir: 'desc' };
+let currentArbSort = { key: 'profit', dir: 'desc' };
+let scanInFlight = false;
+let arbScanInFlight = false;
+let watchTimer = null;
+let lastAlertSignature = '';
+
+function $(id) { return document.getElementById(id); }
+function safeParse(value, fallback) {
+  try {
+    const parsed = JSON.parse(value);
+    return parsed == null ? fallback : parsed;
+  } catch {
+    return fallback;
+  }
+}
+function numberOr(value, fallback) {
+  const n = parseFloat(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+function listFromStorage(key, fallback) {
+  const raw = localStorage.getItem(key);
+  return (raw ? raw.split(',') : fallback).map(s => String(s).trim()).filter(Boolean);
+}
+function cleanKeyList(values) {
+  return Array.from(new Set(values.map(v => String(v || '').trim()).filter(Boolean)));
+}
+function activeApiKey() {
+  if (!apiKeys.length && apiKey) apiKeys = [apiKey];
+  if (!apiKeys.length) return '';
+  if (activeApiKeyIndex < 0 || activeApiKeyIndex >= apiKeys.length) activeApiKeyIndex = 0;
+  return apiKeys[activeApiKeyIndex] || '';
+}
+function maskKey(key) {
+  if (!key) return 'none';
+  if (key.length <= 8) return 'saved';
+  return `${key.slice(0, 4)}...${key.slice(-4)}`;
+}
+function rotateApiKey(reason = '') {
+  if (apiKeys.length < 2) {
+    if (reason) showToast(reason, 'warn');
+    return activeApiKey();
+  }
+  activeApiKeyIndex = (activeApiKeyIndex + 1) % apiKeys.length;
+  apiKey = activeApiKey();
+  localStorage.setItem(STORAGE_KEYS.activeApiKey, String(activeApiKeyIndex));
+  localStorage.setItem(STORAGE_KEYS.apiKey, apiKey);
+  updateApiUsage();
+  showToast(`Rotated to key ${activeApiKeyIndex + 1} of ${apiKeys.length}.`, 'ok');
+  return apiKey;
+}
+function persistApiSource() {
+  apiKeys = cleanKeyList(apiKeys);
+  apiKey = activeApiKey();
+  localStorage.setItem(STORAGE_KEYS.apiKey, apiKey);
+  localStorage.setItem(STORAGE_KEYS.apiKeys, JSON.stringify(apiKeys));
+  localStorage.setItem(STORAGE_KEYS.activeApiKey, String(activeApiKeyIndex));
+  localStorage.setItem(STORAGE_KEYS.providerMode, providerMode);
+  localStorage.setItem(STORAGE_KEYS.customEndpoint, customEndpoint);
+  localStorage.setItem(STORAGE_KEYS.cacheEndpoint, cacheEndpoint);
+}
+function configuredBookKeys() {
+  return Array.from(new Set([...softBooks, ...sharpBooks]));
+}
+function selectedBooks(kind) {
+  if (kind === 'live') return selectedLiveBooks;
+  return kind === 'arb' ? selectedArbBooks : selectedScanBooks;
+}
+function booksForScope(scope, kind = 'scan') {
+  if (scope === 'custom') {
+    const selected = selectedBooks(kind).slice();
+    if (kind === 'scan' || kind === 'live') return Array.from(new Set([...selected, ...sharpBooks]));
+    return selected;
+  }
+  if (scope === 'configured') return configuredBookKeys();
+  if (scope === 'soft') return softBooks.slice();
+  return [];
+}
+function addBookParams(params, scope, kind = 'scan') {
+  const books = booksForScope(scope, kind);
+  if (books.length) params.set('bookmakers', books.join(','));
+}
+function scopedBookmakerText(scope, kind = 'scan') {
+  return booksForScope(scope, kind).join(',');
+}
+function needsApiKey() {
+  return providerMode === 'oddsapi';
+}
+function apiReadyMessage() {
+  if (providerMode === 'cache') return cacheEndpoint ? '' : 'Add your local cache endpoint in Settings first.';
+  if (providerMode === 'custom') return customEndpoint ? '' : 'Add a custom endpoint in Settings first.';
+  return activeApiKey() ? '' : 'Add your The Odds API key in Settings first.';
+}
+async function fetchOddsFeed(sport, market, scope, kind = 'scan') {
+  if (providerMode === 'cache') return fetchCacheOddsFeed(sport, market, scope, kind);
+  if (providerMode === 'custom') return fetchCustomOddsFeed(sport, market, scope, kind);
+  return fetchOddsApiFeed(sport, market, scope, kind);
+}
+async function fetchOddsApiFeed(sport, market, scope, kind = 'scan') {
+  if (isPropMarket(market)) return fetchOddsApiEventMarketFeed(sport, market, scope, kind);
+  let tries = Math.max(1, apiKeys.length || 1);
+  let lastError = '';
+  while (tries-- > 0) {
+    const key = activeApiKey();
+    const params = new URLSearchParams({
+      apiKey: key,
+      regions: 'us,us2,eu',
+      markets: market,
+      oddsFormat: 'american'
+    });
+    addBookParams(params, scope, kind);
+    const resp = await fetch(`https://api.the-odds-api.com/v4/sports/${sport}/odds/?${params}`);
+    captureQuota(resp);
+    if (resp.ok) return { ok: true, data: await resp.json() };
+    lastError = oddsApiError(resp.status);
+    if ((resp.status === 401 || resp.status === 422 || resp.status === 429) && apiKeys.length > 1) {
+      rotateApiKey(`${lastError}. Trying the next saved key.`);
+      continue;
+    }
+    return { ok: false, error: lastError };
+  }
+  return { ok: false, error: lastError || 'No usable API key returned data' };
+}
+function isPropMarket(market) {
+  return PROP_MARKET_KEYS.includes(market)
+    || market.startsWith('player_')
+    || market.startsWith('batter_')
+    || market.startsWith('pitcher_');
+}
+async function fetchOddsApiEventMarketFeed(sport, market, scope, kind = 'scan') {
+  let tries = Math.max(1, apiKeys.length || 1);
+  let lastError = '';
+  while (tries-- > 0) {
+    const key = activeApiKey();
+    const eventsResp = await fetch(`https://api.the-odds-api.com/v4/sports/${sport}/events?${new URLSearchParams({ apiKey: key })}`);
+    captureQuota(eventsResp);
+    if (!eventsResp.ok) {
+      lastError = oddsApiError(eventsResp.status);
+      if ((eventsResp.status === 401 || eventsResp.status === 422 || eventsResp.status === 429) && apiKeys.length > 1) {
+        rotateApiKey(`${lastError}. Trying the next saved key.`);
+        continue;
+      }
+      return { ok: false, error: lastError };
+    }
+
+    const events = await eventsResp.json();
+    const now = Date.now();
+    const eventList = (Array.isArray(events) ? events : [])
+      .filter(event => {
+        if (!event.commence_time) return true;
+        return new Date(event.commence_time).getTime() >= now - 6 * 60 * 60 * 1000;
+      })
+      .slice(0, PROP_EVENT_LIMIT);
+    const data = [];
+    let requestCount = 0;
+
+    for (const event of eventList) {
+      const params = new URLSearchParams({
+        apiKey: key,
+        regions: 'us,us2,eu',
+        markets: market,
+        oddsFormat: 'american'
+      });
+      addBookParams(params, scope, kind);
+      const resp = await fetch(`https://api.the-odds-api.com/v4/sports/${sport}/events/${event.id}/odds?${params}`);
+      requestCount++;
+      captureQuota(resp);
+      if (resp.ok) {
+        const eventOdds = await resp.json();
+        if (eventOdds && Array.isArray(eventOdds.bookmakers) && eventOdds.bookmakers.length) data.push(eventOdds);
+        continue;
+      }
+      if (resp.status === 404 || resp.status === 422) {
+        lastError = `${prettyMarket(market)} unavailable for current ${prettySport(sport)} events`;
+        continue;
+      }
+      lastError = oddsApiError(resp.status);
+      if (resp.status === 429) break;
+    }
+
+    if (data.length) return { ok: true, data, requestCount: Math.max(1, requestCount) };
+    return { ok: false, error: lastError || `${prettyMarket(market)} unavailable for current ${prettySport(sport)} events`, requestCount: Math.max(1, requestCount) };
+  }
+  return { ok: false, error: lastError || 'No usable API key returned prop odds' };
+}
+async function fetchCustomOddsFeed(sport, market, scope, kind = 'scan') {
+  const books = scopedBookmakerText(scope, kind);
+  const url = customEndpoint
+    .replaceAll('{sport}', encodeURIComponent(sport))
+    .replaceAll('{market}', encodeURIComponent(market))
+    .replaceAll('{bookmakers}', encodeURIComponent(books));
+  const resp = await fetch(url);
+  if (!resp.ok) return { ok: false, error: `Custom endpoint HTTP ${resp.status}` };
+  const data = await resp.json();
+  return { ok: true, data: Array.isArray(data) ? data : (data.events || data.data || []) };
+}
+function cacheBaseUrl() {
+  return (cacheEndpoint || CACHE_DEFAULT_ENDPOINT).replace(/\/+$/, '');
+}
+async function fetchCacheOddsFeed(sport, market, scope, kind = 'scan') {
+  const params = new URLSearchParams({
+    sport,
+    market,
+    kind,
+    bookmakers: scopedBookmakerText(scope, kind)
+  });
+  const resp = await fetch(`${cacheBaseUrl()}/api/odds?${params}`);
+  const payload = await resp.json().catch(() => ({}));
+  if (!resp.ok || !payload.ok) {
+    return { ok: false, error: payload.error || `Cache HTTP ${resp.status}` };
+  }
+  if (payload.updatedAt) {
+    const age = Math.max(0, Math.round((payload.ageMs || 0) / 1000));
+    setStatus(`Cache ${age}s old`, payload.stale ? 'warn' : 'ok');
+  }
+  return { ok: true, data: payload.data || [], requestCount: 0 };
+}
+function oddsApiError(status) {
+  if (status === 401 || status === 422) return 'key invalid, exhausted, or unsupported bookmakers';
+  if (status === 429) return 'quota exhausted';
+  return `HTTP ${status}`;
+}
+function normalizeBookName(value) {
+  return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, '').trim();
+}
+function bookUrl(bookKey, bookTitle) {
+  const direct = BOOK_URLS[String(bookKey || '').toLowerCase()];
+  if (direct) return direct;
+  const normalized = normalizeBookName(bookTitle || bookKey);
+  const aliases = {
+    betmgm: 'betmgm',
+    draftkings: 'draftkings',
+    fanduel: 'fanduel',
+    caesars: 'caesars',
+    williamhill: 'williamhill_us',
+    espnbet: 'espnbet',
+    fanatics: 'fanatics',
+    hardrock: 'hardrockbet',
+    hardrockbet: 'hardrockbet',
+    bet365: 'bet365',
+    pinnacle: 'pinnacle',
+    betonline: 'betonlineag',
+    betonlineag: 'betonlineag',
+    bovada: 'bovada',
+    mybookie: 'mybookieag',
+    mybookieag: 'mybookieag',
+    lowvig: 'lowvig'
+  };
+  const key = aliases[normalized];
+  return key ? BOOK_URLS[key] : '';
+}
+function bookButton(bookKey, bookTitle, label = 'Open Book') {
+  const url = bookUrl(bookKey, bookTitle);
+  if (!url) return '';
+  return `<button class="btn secondary" type="button" data-open-book="${escapeHtml(url)}">${label}</button>`;
+}
+function copyButton(text, label = 'Copy Bet') {
+  return `<button class="btn secondary" type="button" data-copy-bet="${escapeHtml(encodePayload({ text }))}">${label}</button>`;
+}
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast('Copied bet details.', 'ok');
+  } catch {
+    const area = document.createElement('textarea');
+    area.value = text;
+    document.body.appendChild(area);
+    area.select();
+    document.execCommand('copy');
+    area.remove();
+    showToast('Copied bet details.', 'ok');
+  }
+}
+function evBetText(b, stake) {
+  return [
+    `${b.softBook} | ${b.outcome} | ${fmtOdds(b.softOdds)} | stake ${money(stake)}`,
+    `${b.away} @ ${b.home}`,
+    `${prettySport(b.sport)} ${prettyMarket(b.marketKey)} | starts ${formatDateTime(b.commenceTime)}`,
+    `EV ${fmtPct(b.ev * 100)} | true probability ${(b.trueProb * 100).toFixed(2)}% | fair ${b.fairOdds}`
+  ].join('\n');
+}
+function arbBetText(arb) {
+  return [
+    `ARB | ${arb.away} @ ${arb.home} | ${prettySport(arb.sport)} ${prettyMarket(arb.marketKey)} ${prettyLine(arb.lineKey)}`,
+    `Total stake ${money(arb.totalStake)} | payout ${money(arb.payout)} | profit ${money(arb.profit)} (${fmtPct(arb.profitRate * 100)})`,
+    ...arb.legs.map(leg => `${leg.book} | ${leg.outcome} | ${fmtOdds(leg.odds)} | stake ${money(leg.stake)} | implied ${(1 / leg.decimal * 100).toFixed(2)}%`)
+  ].join('\n');
+}
+function quickBookLinks() {
+  const links = [
+    ['betmgm', 'BetMGM'],
+    ['draftkings', 'DraftKings'],
+    ['fanduel', 'FanDuel'],
+    ['caesars', 'Caesars'],
+    ['espnbet', 'ESPN BET'],
+    ['bet365', 'Bet365'],
+    ['fanatics', 'Fanatics'],
+    ['hardrockbet', 'Hard Rock'],
+    ['pinnacle', 'Pinnacle'],
+    ['betonlineag', 'BetOnline'],
+    ['bovada', 'Bovada'],
+    ['mybookieag', 'MyBookie']
+  ];
+  return `<details class="quick-links-drawer">
+    <summary>Quick sportsbook links</summary>
+    <div class="book-link-grid">
+      ${links.map(([key, title]) => bookButton(key, title, title)).join('')}
+    </div>
+    <p class="help">These open the book in a new tab. Use the bet card details to search the event and verify the line before placing anything.</p>
+  </details>`;
+}
+function bookLabel(key) {
+  const found = COMMON_BOOKS.find(([bookKey]) => bookKey === key);
+  if (found) return found[1];
+  return key.replace(/_/g, ' ').replace(/\b\w/g, ch => ch.toUpperCase());
+}
+function renderBookPicker(kind) {
+  const selected = new Set(selectedBooks(kind));
+  const target = kind === 'arb' ? $('arb_book_picker') : kind === 'live' ? $('live_book_picker') : $('scan_book_picker');
+  const count = kind === 'arb' ? $('arb_book_count') : kind === 'live' ? $('live_book_count') : $('scan_book_count');
+  target.innerHTML = COMMON_BOOKS.map(([key, label]) => `
+    <label class="book-check">
+      <input type="checkbox" data-book-kind="${kind}" data-book-key="${escapeHtml(key)}" ${selected.has(key) ? 'checked' : ''}>
+      <span>${escapeHtml(label)}</span>
+    </label>
+  `).join('');
+  count.textContent = `${selected.size} selected`;
+}
+function setSelectedBooks(kind, keys) {
+  const clean = Array.from(new Set(keys.filter(Boolean)));
+  if (kind === 'live') {
+    selectedLiveBooks = clean;
+    localStorage.setItem(STORAGE_KEYS.selectedLiveBooks, JSON.stringify(selectedLiveBooks));
+  } else if (kind === 'arb') {
+    selectedArbBooks = clean;
+    localStorage.setItem(STORAGE_KEYS.selectedArbBooks, JSON.stringify(selectedArbBooks));
+  } else {
+    selectedScanBooks = clean;
+    localStorage.setItem(STORAGE_KEYS.selectedScanBooks, JSON.stringify(selectedScanBooks));
+  }
+  renderBookPicker(kind);
+  setScopeToCustom(kind);
+  updateScanEstimate();
+  updateLiveEstimate();
+  updateArbEstimate();
+  updateLiveArbEstimate();
+  rerenderForBookKind(kind);
+}
+function syncBookFromCheckbox(input, event) {
+  const kind = input.dataset.bookKind;
+  const key = input.dataset.bookKey;
+  if (!event.shiftKey && !event.metaKey && !event.ctrlKey) {
+    setSelectedBooks(kind, [key]);
+    return;
+  }
+  const selected = new Set(selectedBooks(kind));
+  if (input.checked) selected.add(key);
+  else selected.delete(key);
+  setSelectedBooks(kind, Array.from(selected));
+}
+function setScopeToCustom(kind) {
+  if (kind === 'scan' && $('f_scope')) $('f_scope').value = 'custom';
+  if (kind === 'live' && $('l_scope')) $('l_scope').value = 'custom';
+  if (kind === 'arb') {
+    if ($('a_scope')) $('a_scope').value = 'custom';
+    if ($('la_scope')) $('la_scope').value = 'custom';
+  }
+}
+function rerenderForBookKind(kind) {
+  if (kind === 'scan') render();
+  else if (kind === 'live') renderLive();
+  else if (kind === 'arb') {
+    renderArbs();
+    renderLiveArbs();
+  }
+}
+function scopeSelectedSet(scope, kind) {
+  if (scope !== 'custom') return null;
+  return new Set(selectedBooks(kind));
+}
+function evMatchesBookFilter(item, scope, kind) {
+  const selected = scopeSelectedSet(scope, kind);
+  return !selected || selected.has(item.softBookKey);
+}
+function arbMatchesBookFilter(arb, scope) {
+  const selected = scopeSelectedSet(scope, 'arb');
+  return !selected || arb.legs.some(leg => selected.has(leg.bookKey));
+}
+function money(n) {
+  const val = Number.isFinite(n) ? n : 0;
+  return (val < 0 ? '-$' : '$') + Math.abs(val).toFixed(2);
+}
+function signedMoney(n) {
+  const val = Number.isFinite(n) ? n : 0;
+  return (val >= 0 ? '+$' : '-$') + Math.abs(val).toFixed(2);
+}
+function fmtPct(n, digits = 2) {
+  if (!Number.isFinite(n)) return '--';
+  return (n >= 0 ? '+' : '') + n.toFixed(digits) + '%';
+}
+function fmtOdds(n) {
+  const v = parseFloat(n);
+  if (!Number.isFinite(v)) return '--';
+  return v > 0 ? '+' + Math.round(v) : String(Math.round(v));
+}
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[ch]);
+}
+function encodePayload(obj) {
+  return btoa(unescape(encodeURIComponent(JSON.stringify(obj))));
+}
+function decodePayload(payload) {
+  return JSON.parse(decodeURIComponent(escape(atob(payload))));
+}
+function isValidAmericanOdds(am) {
+  const n = parseFloat(am);
+  return Number.isFinite(n) && n !== 0 && Math.abs(n) >= 100;
+}
+function unitStake() {
+  return +(bankroll * unitPct / 100).toFixed(2);
+}
+function recommendedStake(trueProb, americanOdds) {
+  const dec = amToDec(americanOdds);
+  if (!Number.isFinite(dec) || !Number.isFinite(trueProb)) return unitStake();
+  const b = dec - 1;
+  const q = 1 - trueProb;
+  const fullKelly = ((b * trueProb) - q) / b;
+  if (!Number.isFinite(fullKelly) || fullKelly <= 0) return 0;
+  const quarterKelly = bankroll * fullKelly * 0.25;
+  const cap = bankroll * 0.05;
+  return +Math.max(0, Math.min(quarterKelly, cap)).toFixed(2);
+}
+function marketListForFilter(filter, sport = '') {
+  if (filter === 'all') return MARKET_KEYS;
+  if (filter === 'props') return sport ? (PROP_MARKETS_BY_SPORT[sport] || []) : PROP_MARKET_KEYS;
+  return [filter];
+}
+function sportListForFilter(filter) {
+  return filter === 'all' ? SPORT_KEYS : [filter];
+}
+function estimateCalls(sportId, marketId) {
+  return sportListForFilter(sportId).reduce((sum, sport) => sum + marketListForFilter(marketId, sport).length, 0);
+}
+function estimateCallsLabel(sportId, marketId) {
+  const count = estimateCalls(sportId, marketId);
+  if (marketId === 'props') return `~${count} markets · up to ${count * PROP_EVENT_LIMIT} event calls`;
+  return `~${count} API calls`;
+}
+function updateScanEstimate() {
+  const selected = $('f_scope').value === 'custom' ? ` · ${selectedScanBooks.length} books` : '';
+  $('scan_quota_estimate').textContent = `${estimateCallsLabel($('f_sport').value, $('f_market').value)}${selected}`;
+}
+function updateLiveEstimate() {
+  const selected = $('l_scope').value === 'custom' ? ` · ${selectedLiveBooks.length} books` : '';
+  $('live_quota_estimate').textContent = `${estimateCallsLabel($('l_sport').value, $('l_market').value)}${selected}`;
+}
+function updateArbEstimate() {
+  const selected = $('a_scope').value === 'custom' ? ` · ${selectedArbBooks.length} books` : '';
+  $('arb_quota_estimate').textContent = `${estimateCallsLabel($('a_sport').value, $('a_market').value)}${selected}`;
+}
+function updateLiveArbEstimate() {
+  const selected = $('la_scope').value === 'custom' ? ` · ${selectedArbBooks.length} books` : '';
+  $('live_arb_quota_estimate').textContent = `${estimateCallsLabel($('la_sport').value, $('la_market').value)}${selected}`;
+}
+function setScannerPreset(mode) {
+  if (mode === 'max') {
+    $('f_sport').value = 'all';
+    $('f_market').value = 'all';
+    $('f_scope').value = 'all';
+    $('f_minev').value = '0';
+    $('f_maxev').value = '100';
+  } else if (mode === 'props') {
+    $('f_sport').value = 'all';
+    $('f_market').value = 'props';
+    $('f_scope').value = 'all';
+    $('f_minev').value = '0';
+    $('f_maxev').value = '100';
+  } else {
+    $('f_sport').value = 'baseball_mlb';
+    $('f_market').value = 'h2h';
+    $('f_scope').value = 'all';
+    $('f_minev').value = '1';
+    $('f_maxev').value = '25';
+  }
+  updateScanEstimate();
+  render();
+}
+function setLivePreset(mode) {
+  if (mode === 'max') {
+    $('l_sport').value = 'all';
+    $('l_market').value = 'all';
+    $('l_scope').value = 'all';
+    $('l_minev').value = '0';
+    $('l_maxev').value = '100';
+  } else if (mode === 'main') {
+    $('l_sport').value = 'all';
+    $('l_market').value = 'all';
+    $('l_scope').value = 'all';
+    $('l_minev').value = '1';
+    $('l_maxev').value = '35';
+  } else {
+    $('l_sport').value = 'baseball_mlb';
+    $('l_market').value = 'h2h';
+    $('l_scope').value = 'all';
+    $('l_minev').value = '1';
+    $('l_maxev').value = '25';
+  }
+  updateLiveEstimate();
+  renderLive();
+}
+function setArbPreset(mode) {
+  if (mode === 'max') {
+    $('a_sport').value = 'all';
+    $('a_market').value = 'all';
+    $('a_scope').value = 'all';
+    $('a_min_profit').value = '0';
+  } else if (mode === 'props') {
+    $('a_sport').value = 'all';
+    $('a_market').value = 'props';
+    $('a_scope').value = 'all';
+    $('a_min_profit').value = '0';
+  } else {
+    $('a_sport').value = 'baseball_mlb';
+    $('a_market').value = 'h2h';
+    $('a_scope').value = 'all';
+    $('a_min_profit').value = '0.2';
+  }
+  updateArbEstimate();
+  renderArbs();
+}
+function setLiveArbPreset(mode) {
+  if (mode === 'max') {
+    $('la_sport').value = 'all';
+    $('la_market').value = 'all';
+    $('la_scope').value = 'all';
+    $('la_min_profit').value = '0';
+  } else if (mode === 'main') {
+    $('la_sport').value = 'all';
+    $('la_market').value = 'all';
+    $('la_scope').value = 'all';
+    $('la_min_profit').value = '0';
+  } else {
+    $('la_sport').value = 'baseball_mlb';
+    $('la_market').value = 'h2h';
+    $('la_scope').value = 'all';
+    $('la_min_profit').value = '0.2';
+  }
+  updateLiveArbEstimate();
+  renderLiveArbs();
+}
+function formatDateTime(value) {
+  if (!value) return '--';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '--';
+  return date.toLocaleString([], {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  });
+}
+
+function amToDec(am) {
+  const n = parseFloat(am);
+  if (!isValidAmericanOdds(n)) return NaN;
+  return n > 0 ? n / 100 + 1 : 100 / Math.abs(n) + 1;
+}
+function decToAm(d) {
+  if (!Number.isFinite(d) || d <= 1) return '--';
+  if (d >= 2) return '+' + Math.round((d - 1) * 100);
+  return String(Math.round(-100 / (d - 1)));
+}
+function amToProb(am) {
+  const dec = amToDec(am);
+  return Number.isFinite(dec) ? 1 / dec : NaN;
+}
+function powerDevig(probs) {
+  const clean = probs.filter(Number.isFinite);
+  if (clean.length !== probs.length || clean.length < 2) return [];
+  if (clean.length === 2) {
+    let lo = 0.01, hi = 5;
+    for (let i = 0; i < 60; i++) {
+      const mid = (lo + hi) / 2;
+      const sum = Math.pow(clean[0], mid) + Math.pow(clean[1], mid);
+      if (sum > 1) lo = mid; else hi = mid;
+    }
+    const k = (lo + hi) / 2;
+    const raw = clean.map(p => Math.pow(p, k));
+    const total = raw.reduce((s, p) => s + p, 0);
+    return raw.map(p => p / total);
+  }
+  const sum = clean.reduce((s, p) => s + p, 0);
+  return clean.map(p => p / sum);
+}
+
+async function scan() {
+  if (scanInFlight) return;
+  const missingSource = apiReadyMessage();
+  if (missingSource) {
+    setStatus('Add data source in Settings', 'err');
+    showToast(missingSource, 'err');
+    showEmptyScan(missingSource);
+    showTab('settings');
+    return;
+  }
+
+  const minEV = numberOr($('f_minev').value, 0) / 100;
+  const maxEV = numberOr($('f_maxev').value, 100) / 100;
+  if (minEV > maxEV) {
+    showToast('Min EV cannot be higher than Max EV.', 'err');
+    return;
+  }
+  if (!softBooks.length || !sharpBooks.length) {
+    showToast('Set at least one soft book and one sharp book.', 'err');
+    showTab('settings');
+    return;
+  }
+  if ($('f_scope').value === 'custom' && selectedScanBooks.length < 1) {
+    showToast('Pick at least one specific book for EV scanning.', 'err');
+    return;
+  }
+
+  scanInFlight = true;
+  $('scan_btn').disabled = true;
+  setStatus('Scanning...', 'warn');
+  $('scan_results').innerHTML = '<div class="loading"><div>Pulling live odds and calculating edges...</div></div>';
+
+  const sport = $('f_sport').value;
+  const marketFilter = $('f_market').value;
+  const scope = $('f_scope').value;
+  const sports = sport === 'all' ? SPORT_KEYS : [sport];
+  const found = [];
+  const errors = [];
+  let reqCount = 0;
+
+  for (const sp of sports) {
+    const markets = marketListForFilter(marketFilter, sp);
+    if (!markets.length) {
+      errors.push(`${prettySport(sp)}: no supported prop markets configured`);
+      continue;
+    }
+    for (const mk of markets) {
+      try {
+        const feed = await fetchOddsFeed(sp, mk, scope, 'scan');
+        reqCount += feed.requestCount || 1;
+        if (!feed.ok) {
+          errors.push(`${prettySport(sp)} ${prettyMarket(mk)}: ${feed.error}`);
+          continue;
+        }
+        feed.data.forEach(game => processGame(game, mk, sp, found, scope));
+      } catch (e) {
+        errors.push(`${prettySport(sp)} ${prettyMarket(mk)}: ${e.message}`);
+      }
+    }
+  }
+
+  const deduped = applyLineMemory(dedupeBest(found)).filter(b => b.ev >= minEV && b.ev <= maxEV);
+  deduped.sort((a, b) => b.ev - a.ev);
+  lastScanResults = deduped;
+  lastScanMeta = { reqCount, rawCount: found.length, errorCount: errors.length };
+
+  render();
+  updateScanSummary(deduped);
+  const remainingText = apiRequestsRemaining === '?' ? 'quota unknown' : `${apiRequestsRemaining} reqs left`;
+  setStatus(remainingText, Number(apiRequestsRemaining) < 50 ? 'warn' : 'ok');
+  if (errors.length && !deduped.length) {
+    setStatus('Scan returned errors', 'err');
+    $('scan_results').innerHTML = `<div class="empty"><div><strong>No usable edges found.</strong><br><br>${errors.map(escapeHtml).join('<br>')}</div></div>`;
+  } else if (errors.length) {
+    showToast(`Scan finished with ${errors.length} warning${errors.length === 1 ? '' : 's'}.`, 'warn');
+  } else {
+    showToast(`Scan complete: ${deduped.length} edge${deduped.length === 1 ? '' : 's'} in range.`, 'ok');
+  }
+  maybeAlertEV(deduped);
+  scanInFlight = false;
+  $('scan_btn').disabled = false;
+}
+
+async function scanLive() {
+  if (scanInFlight) return;
+  const missingSource = apiReadyMessage();
+  if (missingSource) {
+    setStatus('Add data source in Settings', 'err');
+    showToast(missingSource, 'err');
+    showEmptyLive(missingSource);
+    showTab('settings');
+    return;
+  }
+
+  const minEV = numberOr($('l_minev').value, 0) / 100;
+  const maxEV = numberOr($('l_maxev').value, 100) / 100;
+  if (minEV > maxEV) {
+    showToast('Min EV cannot be higher than Max EV.', 'err');
+    return;
+  }
+  if (!softBooks.length || !sharpBooks.length) {
+    showToast('Set at least one soft book and one sharp book.', 'err');
+    showTab('settings');
+    return;
+  }
+  if ($('l_scope').value === 'custom' && selectedLiveBooks.length < 1) {
+    showToast('Pick at least one specific book for live EV scanning.', 'err');
+    return;
+  }
+
+  scanInFlight = true;
+  $('live_scan_btn').disabled = true;
+  setStatus('Scanning live EV...', 'warn');
+  $('live_results').innerHTML = '<div class="loading"><div>Checking live and near-start odds...</div></div>';
+
+  const sport = $('l_sport').value;
+  const marketFilter = $('l_market').value;
+  const scope = $('l_scope').value;
+  const sports = sport === 'all' ? SPORT_KEYS : [sport];
+  const found = [];
+  const errors = [];
+  let reqCount = 0;
+
+  for (const sp of sports) {
+    const markets = marketListForFilter(marketFilter, sp);
+    if (!markets.length) {
+      errors.push(`${prettySport(sp)}: no supported prop markets configured`);
+      continue;
+    }
+    for (const mk of markets) {
+      try {
+        const feed = await fetchOddsFeed(sp, mk, scope, 'live');
+        reqCount += feed.requestCount || 1;
+        if (!feed.ok) {
+          errors.push(`${prettySport(sp)} ${prettyMarket(mk)}: ${feed.error}`);
+          continue;
+        }
+        feed.data
+          .filter(isLiveOrNearStartGame)
+          .forEach(game => processGame(game, mk, sp, found, scope, 'live'));
+      } catch (e) {
+        errors.push(`${prettySport(sp)} ${prettyMarket(mk)}: ${e.message}`);
+      }
+    }
+  }
+
+  const deduped = applyLineMemory(dedupeBest(found)).filter(b => b.ev >= minEV && b.ev <= maxEV);
+  deduped.sort((a, b) => b.ev - a.ev);
+  lastLiveResults = deduped;
+  lastLiveMeta = { reqCount, rawCount: found.length, errorCount: errors.length };
+  renderLive();
+  const remainingText = apiRequestsRemaining === '?' ? 'quota unknown' : `${apiRequestsRemaining} reqs left`;
+  setStatus(remainingText, Number(apiRequestsRemaining) < 50 ? 'warn' : 'ok');
+  if (errors.length && !deduped.length) {
+    setStatus('Live scan returned errors', 'err');
+    $('live_results').innerHTML = `<div class="empty"><div><strong>No usable live EV found.</strong><br><br>${errors.map(escapeHtml).join('<br>')}</div></div>`;
+  } else if (errors.length) {
+    showToast(`Live scan finished with ${errors.length} warning${errors.length === 1 ? '' : 's'}.`, 'warn');
+  } else {
+    showToast(`Live scan complete: ${deduped.length} edge${deduped.length === 1 ? '' : 's'} in range.`, 'ok');
+  }
+  maybeAlertEV(deduped);
+  scanInFlight = false;
+  $('live_scan_btn').disabled = false;
+}
+
+async function scanArbs() {
+  if (arbScanInFlight) return;
+  const missingSource = apiReadyMessage();
+  if (missingSource) {
+    setStatus('Add data source in Settings', 'err');
+    showToast(missingSource, 'err');
+    showEmptyArbs(missingSource);
+    showTab('settings');
+    return;
+  }
+  const minProfit = numberOr($('a_min_profit').value, 0) / 100;
+  const totalStake = numberOr($('a_total_stake').value, 100);
+  if (!Number.isFinite(totalStake) || totalStake <= 0) {
+    showToast('Enter a positive total stake for arb sizing.', 'err');
+    return;
+  }
+  if ($('a_scope').value === 'custom' && selectedArbBooks.length < 2) {
+    showToast('Pick at least two specific books for arbitrage scanning.', 'err');
+    return;
+  }
+
+  arbScanInFlight = true;
+  $('arb_scan_btn').disabled = true;
+  setStatus('Scanning arbs...', 'warn');
+  $('arb_results').innerHTML = '<div class="loading"><div>Checking best prices across books...</div></div>';
+
+  const sport = $('a_sport').value;
+  const marketFilter = $('a_market').value;
+  const scope = $('a_scope').value;
+  const sports = sport === 'all' ? SPORT_KEYS : [sport];
+  const found = [];
+  const errors = [];
+  let reqCount = 0;
+
+  for (const sp of sports) {
+    const markets = marketListForFilter(marketFilter, sp);
+    if (!markets.length) {
+      errors.push(`${prettySport(sp)}: no supported prop markets configured`);
+      continue;
+    }
+    for (const mk of markets) {
+      try {
+        const feed = await fetchOddsFeed(sp, mk, scope, 'arb');
+        reqCount += feed.requestCount || 1;
+        if (!feed.ok) {
+          errors.push(`${prettySport(sp)} ${prettyMarket(mk)}: ${feed.error}`);
+          continue;
+        }
+        feed.data.forEach(game => processArbGame(game, mk, sp, found, totalStake));
+      } catch (e) {
+        errors.push(`${prettySport(sp)} ${prettyMarket(mk)}: ${e.message}`);
+      }
+    }
+  }
+
+  const filtered = dedupeArbs(found)
+    .filter(arb => arb.profitRate >= minProfit)
+    .sort((a, b) => b.profitRate - a.profitRate);
+  lastArbResults = filtered;
+  lastArbMeta = { reqCount, rawCount: found.length, errorCount: errors.length };
+  renderArbs();
+  const remainingText = apiRequestsRemaining === '?' ? 'quota unknown' : `${apiRequestsRemaining} reqs left`;
+  setStatus(remainingText, Number(apiRequestsRemaining) < 50 ? 'warn' : 'ok');
+  if (errors.length && !filtered.length) {
+    setStatus('Arb scan returned errors', 'err');
+    $('arb_results').innerHTML = `<div class="empty"><div><strong>No arbs found.</strong><br><br>${errors.map(escapeHtml).join('<br>')}</div></div>`;
+  } else if (errors.length) {
+    showToast(`Arb scan finished with ${errors.length} warning${errors.length === 1 ? '' : 's'}.`, 'warn');
+  } else {
+    showToast(`Arb scan complete: ${filtered.length} opportunity${filtered.length === 1 ? '' : 'ies'} in range.`, 'ok');
+  }
+  maybeAlertArb(filtered);
+  arbScanInFlight = false;
+  $('arb_scan_btn').disabled = false;
+}
+
+async function scanLiveArbs() {
+  if (arbScanInFlight) return;
+  const missingSource = apiReadyMessage();
+  if (missingSource) {
+    setStatus('Add data source in Settings', 'err');
+    showToast(missingSource, 'err');
+    showEmptyLiveArbs(missingSource);
+    showTab('settings');
+    return;
+  }
+  const minProfit = numberOr($('la_min_profit').value, 0) / 100;
+  const totalStake = numberOr($('la_total_stake').value, 100);
+  if (!Number.isFinite(totalStake) || totalStake <= 0) {
+    showToast('Enter a positive total stake for live arb sizing.', 'err');
+    return;
+  }
+  if ($('la_scope').value === 'custom' && selectedArbBooks.length < 2) {
+    showToast('Pick at least two specific books for live arbitrage scanning.', 'err');
+    return;
+  }
+
+  arbScanInFlight = true;
+  $('live_arb_scan_btn').disabled = true;
+  setStatus('Scanning live arbs...', 'warn');
+  $('live_arb_results').innerHTML = '<div class="loading"><div>Checking live best prices across books...</div></div>';
+
+  const sport = $('la_sport').value;
+  const marketFilter = $('la_market').value;
+  const scope = $('la_scope').value;
+  const sports = sport === 'all' ? SPORT_KEYS : [sport];
+  const found = [];
+  const errors = [];
+  let reqCount = 0;
+
+  for (const sp of sports) {
+    const markets = marketListForFilter(marketFilter, sp);
+    if (!markets.length) {
+      errors.push(`${prettySport(sp)}: no supported prop markets configured`);
+      continue;
+    }
+    for (const mk of markets) {
+      try {
+        const feed = await fetchOddsFeed(sp, mk, scope, 'arb');
+        reqCount += feed.requestCount || 1;
+        if (!feed.ok) {
+          errors.push(`${prettySport(sp)} ${prettyMarket(mk)}: ${feed.error}`);
+          continue;
+        }
+        feed.data
+          .filter(isLiveOrNearStartGame)
+          .forEach(game => processArbGame(game, mk, sp, found, totalStake));
+      } catch (e) {
+        errors.push(`${prettySport(sp)} ${prettyMarket(mk)}: ${e.message}`);
+      }
+    }
+  }
+
+  const filtered = dedupeArbs(found)
+    .filter(arb => arb.profitRate >= minProfit)
+    .sort((a, b) => b.profitRate - a.profitRate);
+  lastLiveArbResults = filtered;
+  lastLiveArbMeta = { reqCount, rawCount: found.length, errorCount: errors.length };
+  renderLiveArbs();
+  const remainingText = apiRequestsRemaining === '?' ? 'quota unknown' : `${apiRequestsRemaining} reqs left`;
+  setStatus(remainingText, Number(apiRequestsRemaining) < 50 ? 'warn' : 'ok');
+  if (errors.length && !filtered.length) {
+    setStatus('Live arb scan returned errors', 'err');
+    $('live_arb_results').innerHTML = `<div class="empty"><div><strong>No live arbs found.</strong><br><br>${errors.map(escapeHtml).join('<br>')}</div></div>`;
+  } else if (errors.length) {
+    showToast(`Live arb scan finished with ${errors.length} warning${errors.length === 1 ? '' : 's'}.`, 'warn');
+  } else {
+    showToast(`Live arb scan complete: ${filtered.length} opportunity${filtered.length === 1 ? '' : 'ies'} in range.`, 'ok');
+  }
+  maybeAlertArb(filtered);
+  arbScanInFlight = false;
+  $('live_arb_scan_btn').disabled = false;
+}
+
+function processArbGame(game, marketKey, sport, found, totalStake) {
+  const groups = new Map();
+  for (const book of game.bookmakers || []) {
+    for (const market of book.markets || []) {
+      if (market.key !== marketKey) continue;
+      const lineKey = arbLineKey(marketKey, market.outcomes || []);
+      if (!lineKey) continue;
+      const groupKey = `${game.id}_${marketKey}_${lineKey}`;
+      if (!groups.has(groupKey)) {
+        groups.set(groupKey, {
+          groupKey,
+          gameId: game.id,
+          sport,
+          marketKey,
+          lineKey,
+          home: game.home_team || 'Home',
+          away: game.away_team || 'Away',
+          commenceTime: game.commence_time,
+          expectedOutcomeCount: 0,
+          best: new Map()
+        });
+      }
+      const group = groups.get(groupKey);
+      group.expectedOutcomeCount = Math.max(group.expectedOutcomeCount, (market.outcomes || []).length);
+      for (const outcome of market.outcomes || []) {
+        const key = arbOutcomeKey(marketKey, outcome);
+        const dec = amToDec(outcome.price);
+        if (!key || !Number.isFinite(dec)) continue;
+        const current = group.best.get(key);
+        if (!current || dec > current.decimal) {
+          group.best.set(key, {
+            outcome: formatOutcome(outcome, marketKey),
+            name: outcome.name,
+            point: outcome.point,
+            odds: outcome.price,
+            decimal: dec,
+            book: book.title || book.key,
+            bookKey: book.key
+          });
+        }
+      }
+    }
+  }
+  for (const group of groups.values()) {
+    const expected = Math.max(2, group.expectedOutcomeCount || expectedOutcomeCount(group.marketKey, group.lineKey));
+    const legs = Array.from(group.best.values());
+    if (legs.length < expected) continue;
+    const arb = buildArb(group, legs, totalStake);
+    if (arb && arb.profitRate > 0) found.push(arb);
+  }
+}
+
+function arbLineKey(marketKey, outcomes) {
+  if (!outcomes.length) return '';
+  if (marketKey === 'h2h') return 'moneyline';
+  const desc = outcomes[0].description ? String(outcomes[0].description).replace(/\s+/g, '_') + '_' : '';
+  if (marketKey === 'totals') {
+    const points = outcomes.map(o => Number(o.point)).filter(Number.isFinite);
+    return points.length ? `${desc}total_${points[0]}` : '';
+  }
+  if (marketKey === 'spreads') {
+    const points = outcomes.map(o => Math.abs(Number(o.point))).filter(Number.isFinite);
+    return points.length ? `${desc}spread_${points[0]}` : '';
+  }
+  const points = outcomes.map(o => Number(o.point)).filter(Number.isFinite);
+  return points.length ? `${desc}${marketKey}_${points[0]}` : `${desc}${marketKey}`;
+}
+function isOverUnderMarket(marketKey) {
+  return marketKey === 'totals'
+    || marketKey.startsWith('player_')
+    || marketKey.startsWith('batter_')
+    || marketKey.startsWith('pitcher_');
+}
+function arbOutcomeKey(marketKey, outcome) {
+  if (marketKey === 'h2h') return outcome.name;
+  if (isOverUnderMarket(marketKey)) return `${outcome.description || ''}_${outcome.name}_${outcome.point}`;
+  if (marketKey === 'spreads') return `${outcome.name}_${outcome.point}`;
+  return '';
+}
+function expectedOutcomeCount(marketKey, lineKey) {
+  return marketKey === 'h2h' && lineKey === 'moneyline' ? 2 : 2;
+}
+function buildArb(group, legs, totalStake) {
+  const clean = legs.filter(leg => Number.isFinite(leg.decimal) && leg.decimal > 1);
+  if (clean.length < 2) return null;
+  const impliedSum = clean.reduce((s, leg) => s + 1 / leg.decimal, 0);
+  if (impliedSum >= 1) return null;
+  const payout = totalStake / impliedSum;
+  const sizedLegs = clean.map(leg => ({
+    ...leg,
+    stake: payout / leg.decimal,
+    payout,
+    profit: payout - totalStake
+  })).sort((a, b) => a.outcome.localeCompare(b.outcome));
+  return {
+    key: group.groupKey,
+    sport: group.sport,
+    marketKey: group.marketKey,
+    lineKey: group.lineKey,
+    home: group.home,
+    away: group.away,
+    commenceTime: group.commenceTime,
+    impliedSum,
+    profitRate: (1 / impliedSum) - 1,
+    totalStake,
+    payout,
+    profit: payout - totalStake,
+    legs: sizedLegs
+  };
+}
+function dedupeArbs(list) {
+  const best = new Map();
+  for (const arb of list) {
+    if (!best.has(arb.key) || arb.profitRate > best.get(arb.key).profitRate) best.set(arb.key, arb);
+  }
+  return Array.from(best.values());
+}
+
+function captureQuota(resp) {
+  const remaining = resp.headers.get('x-requests-remaining');
+  const used = resp.headers.get('x-requests-used');
+  if (remaining !== null) {
+    apiRequestsRemaining = remaining;
+    localStorage.setItem(STORAGE_KEYS.apiRemaining, remaining);
+  }
+  if (used !== null) {
+    apiRequestsUsed = parseInt(used, 10);
+    localStorage.setItem(STORAGE_KEYS.apiUsed, String(apiRequestsUsed));
+  }
+  updateApiUsage();
+}
+
+function applyLineMemory(items) {
+  const now = Date.now();
+  const nextMemory = { ...lineMemory };
+  const enriched = items.map(item => {
+    const prev = lineMemory[item.key];
+    nextMemory[item.key] = {
+      ev: item.ev,
+      odds: item.softOdds,
+      fairOdds: item.fairOdds,
+      at: now
+    };
+    return {
+      ...item,
+      previousEv: prev && Number.isFinite(prev.ev) ? prev.ev : null,
+      previousOdds: prev && Number.isFinite(prev.odds) ? prev.odds : null,
+      movement: prev && Number.isFinite(prev.ev) ? item.ev - prev.ev : null
+    };
+  });
+  const pruned = Object.entries(nextMemory)
+    .sort((a, b) => (b[1].at || 0) - (a[1].at || 0))
+    .slice(0, 1200);
+  lineMemory = Object.fromEntries(pruned);
+  localStorage.setItem(STORAGE_KEYS.lineMemory, JSON.stringify(lineMemory));
+  return enriched;
+}
+
+function movementLabel(item) {
+  if (!Number.isFinite(item.movement)) return '<span class="muted">New</span>';
+  const cls = item.movement >= 0 ? 'move-up' : 'move-down';
+  return `<span class="${cls}">${fmtPct(item.movement * 100)}</span>`;
+}
+function confidenceGrade(item) {
+  const ev = item.ev * 100;
+  const vigPenalty = Math.max(0, item.vig - 2.5) * 5;
+  const sharpBonus = sharpBooks.includes(item.sharpBookKey) ? 12 : 0;
+  const score = Math.max(0, Math.min(99, 55 + ev * 5 + sharpBonus - vigPenalty));
+  if (score >= 82) return { label: 'A', score };
+  if (score >= 70) return { label: 'B', score };
+  if (score >= 58) return { label: 'C', score };
+  return { label: 'Low', score };
+}
+
+function saveAlertSettings() {
+  alertSettings = {
+    ...alertSettings,
+    interval: Math.max(30, numberOr($('watch_interval').value, 180)),
+    minEV: numberOr($('alert_min_ev').value, 3),
+    minArb: numberOr($('alert_min_arb').value, 0.5)
+  };
+  localStorage.setItem(STORAGE_KEYS.alertSettings, JSON.stringify(alertSettings));
+}
+
+function enableAlerts() {
+  saveAlertSettings();
+  alertSettings.enabled = true;
+  localStorage.setItem(STORAGE_KEYS.alertSettings, JSON.stringify(alertSettings));
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission().then(() => showToast('Alerts enabled for this dashboard.', 'ok'));
+  } else {
+    showToast('Alerts enabled for this dashboard.', 'ok');
+  }
+}
+
+function alertUser(title, message, signature) {
+  if (!alertSettings.enabled || lastAlertSignature === signature) return;
+  lastAlertSignature = signature;
+  try {
+    if ('Notification' in window && Notification.permission === 'granted') new Notification(title, { body: message });
+  } catch {}
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.frequency.value = 880;
+    gain.gain.value = 0.05;
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    setTimeout(() => { osc.stop(); ctx.close(); }, 180);
+  } catch {}
+  showToast(`${title}: ${message}`, 'ok');
+}
+
+function maybeAlertEV(list) {
+  if (!alertSettings.enabled || !list.length) return;
+  const threshold = numberOr(alertSettings.minEV, 3) / 100;
+  const best = list.find(item => item.ev >= threshold);
+  if (!best) return;
+  alertUser('EV alert', `${fmtPct(best.ev * 100)} on ${best.outcome} at ${best.softBook}`, `ev_${best.key}_${best.softOdds}`);
+}
+
+function maybeAlertArb(list) {
+  if (!alertSettings.enabled || !list.length) return;
+  const threshold = numberOr(alertSettings.minArb, 0.5) / 100;
+  const best = list.find(item => item.profitRate >= threshold);
+  if (!best) return;
+  alertUser('Arb alert', `${fmtPct(best.profitRate * 100)} on ${best.away} @ ${best.home}`, `arb_${best.key}_${best.profitRate.toFixed(4)}`);
+}
+
+async function runWatchTick() {
+  if (scanInFlight || arbScanInFlight) return;
+  await scan();
+  await scanLive();
+  await scanArbs();
+  await scanLiveArbs();
+}
+
+function startWatch() {
+  saveAlertSettings();
+  if (apiReadyMessage()) {
+    showToast(apiReadyMessage(), 'err');
+    showTab('settings');
+    return;
+  }
+  if (!alertSettings.enabled) enableAlerts();
+  stopWatch(false);
+  $('watch_status').textContent = `Watching ${alertSettings.interval}s`;
+  setStatus('Watch mode running', 'ok');
+  runWatchTick();
+  watchTimer = setInterval(runWatchTick, alertSettings.interval * 1000);
+}
+
+function stopWatch(show = true) {
+  if (watchTimer) clearInterval(watchTimer);
+  watchTimer = null;
+  if ($('watch_status')) $('watch_status').textContent = 'Stopped';
+  if (show) showToast('Watch mode stopped.', 'ok');
+}
+
+function isLiveOrNearStartGame(game) {
+  if (game.in_play === true || game.live === true || game.status === 'in_play') return true;
+  const start = new Date(game.commence_time).getTime();
+  if (!Number.isFinite(start)) return false;
+  const diffMin = (start - Date.now()) / 60000;
+  return diffMin <= 10;
+}
+
+function processGame(game, marketKey, sport, found, scope, kind = 'scan') {
+  const bookmakers = game.bookmakers || [];
+  if (bookmakers.length < 2) return;
+  const customBooks = scope === 'custom' ? selectedBooks(kind) : [];
+  for (const softBook of bookmakers) {
+    if (scope === 'custom' && !customBooks.includes(softBook.key)) continue;
+    if (scope === 'soft' && !softBooks.includes(softBook.key)) continue;
+    if (scope === 'configured' && !configuredBookKeys().includes(softBook.key)) continue;
+    for (const market of softBook.markets || []) {
+      if (market.key !== marketKey) continue;
+      const sharp = findSharpMarket(bookmakers, marketKey, softBook.key);
+      if (!sharp) continue;
+      const sharpOutcomes = sharp.market.outcomes || [];
+      if (sharpOutcomes.length < 2) continue;
+      const probs = sharpOutcomes.map(o => amToProb(o.price));
+      if (probs.some(p => !Number.isFinite(p))) continue;
+      const totalImp = probs.reduce((s, p) => s + p, 0);
+      const vig = (totalImp - 1) * 100;
+      if (vig < -1 || vig > maxVig) continue;
+      const trueProbs = powerDevig(probs);
+      if (!trueProbs.length) continue;
+
+      for (const softOut of market.outcomes || []) {
+        const sharpIdx = sharpOutcomes.findIndex(so => outcomesMatch(marketKey, so, softOut));
+        if (sharpIdx === -1) continue;
+        const pTrue = trueProbs[sharpIdx];
+        const softDec = amToDec(softOut.price);
+        if (!Number.isFinite(softDec) || !Number.isFinite(pTrue)) continue;
+        const ev = pTrue * softDec - 1;
+        const outcome = formatOutcome(softOut, marketKey);
+        found.push({
+          key: scanKey(game.id, marketKey, outcome, softBook.key),
+          gameId: game.id,
+          sport,
+          marketKey,
+          home: game.home_team || 'Home',
+          away: game.away_team || 'Away',
+          commenceTime: game.commence_time,
+          outcome,
+          softBook: softBook.title || softBook.key,
+          softBookKey: softBook.key,
+          softOdds: softOut.price,
+          sharpBook: sharp.book.title || sharp.book.key,
+          sharpBookKey: sharp.book.key,
+          sharpOdds: sharpOutcomes[sharpIdx].price,
+          fairOdds: decToAm(1 / pTrue),
+          trueProb: pTrue,
+          ev,
+          vig
+        });
+      }
+    }
+  }
+}
+
+function findSharpMarket(bookmakers, marketKey, excludeBookKey) {
+  let best = null;
+  const orderedKeys = [
+    ...sharpBooks,
+    ...bookmakers.map(book => book.key).filter(key => !sharpBooks.includes(key))
+  ];
+  for (const key of orderedKeys) {
+    if (key === excludeBookKey) continue;
+    const book = bookmakers.find(b => b.key === key);
+    const market = book && (book.markets || []).find(m => m.key === marketKey);
+    if (!market || !(market.outcomes || []).length) continue;
+    const probs = market.outcomes.map(o => amToProb(o.price));
+    if (probs.some(p => !Number.isFinite(p))) continue;
+    const vig = (probs.reduce((s, p) => s + p, 0) - 1) * 100;
+    if (!best || vig < best.vig) best = { book, market, vig };
+  }
+  return best;
+}
+function outcomesMatch(marketKey, sharp, soft) {
+  if (marketKey === 'h2h') return sharp.name === soft.name;
+  return sharp.name === soft.name
+    && Number(sharp.point) === Number(soft.point)
+    && String(sharp.description || '') === String(soft.description || '');
+}
+function formatOutcome(outcome, marketKey) {
+  const point = outcome.point;
+  const base = outcome.description ? `${outcome.description} ${outcome.name}` : outcome.name;
+  if (point === undefined || point === null) return base;
+  const prefix = Number(point) > 0 ? '+' : '';
+  return `${base} ${prefix}${point}`;
+}
+function scanKey(gameId, marketKey, outcome, softBookKey) {
+  return `${gameId}_${marketKey}_${outcome}_${softBookKey}`;
+}
+function dedupeBest(list) {
+  const best = new Map();
+  for (const item of list) {
+    const key = `${item.gameId}_${item.marketKey}_${item.outcome}_${item.softBookKey}`;
+    if (!best.has(key) || item.ev > best.get(key).ev) best.set(key, item);
+  }
+  return Array.from(best.values());
+}
+
+function render() {
+  const list = sortedScanList();
+  updateScanSummary(list);
+  if (!list.length) {
+    showEmptyScan(lastScanMeta.reqCount ? 'No bets match your filters. Try widening the EV range or scanning a narrower sport/market.' : 'No scan results yet.');
+    return;
+  }
+  const trackedKeys = new Set(bets.map(b => b._scanKey).filter(Boolean));
+  const cards = list.map(b => {
+    const evClass = b.ev >= 0.05 ? 'ev-high' : b.ev >= 0.03 ? 'ev-med' : b.ev >= 0 ? 'ev-low' : 'ev-neg';
+    const tracked = trackedKeys.has(b.key);
+    const recStake = recommendedStake(b.trueProb, b.softOdds);
+    const payload = encodePayload({
+      desc: `${b.outcome} (${b.away} @ ${b.home})`,
+      book: b.softBook,
+      market: `${prettySport(b.sport)} ${prettyMarket(b.marketKey)}`,
+      odds: b.softOdds,
+      stake: recStake || unitStake(),
+      ev: +(b.ev * 100).toFixed(2),
+      scanKey: b.key,
+      bookKey: b.softBookKey,
+      sharpOddsAtScan: b.sharpOdds
+    });
+    const isSelected = selectedCard === `scan:${b.key}`;
+    return `<article class="opportunity-card ${isSelected ? 'is-selected' : ''}" data-select-card="scan:${escapeHtml(b.key)}">
+      <div class="opp-head">
+        <div>
+          <div class="opp-title">${escapeHtml(b.away)} @ ${escapeHtml(b.home)}</div>
+          <div class="opp-sub">${prettySport(b.sport)} · ${prettyMarket(b.marketKey)} · ${formatDateTime(b.commenceTime)} · starts ${formatStart(b.commenceTime)}</div>
+        </div>
+        <div class="opp-profit">
+          <div class="big ${evClass}">${fmtPct(b.ev * 100)}</div>
+          <div class="small">EV / profit margin</div>
+        </div>
+      </div>
+      <div class="opp-body">
+        <div class="ev-line-card">
+          <div class="ev-line-main">
+            <div>
+              <div class="ev-book">${escapeHtml(b.softBook)}</div>
+              <div class="ev-bet">${escapeHtml(b.outcome)}</div>
+              <div class="ev-game">${prettyMarket(b.marketKey)} · ${formatDateTime(b.commenceTime)} · ${formatStart(b.commenceTime)}</div>
+            </div>
+            <div class="ev-price">
+              <div class="odds">${fmtOdds(b.softOdds)}</div>
+              <div class="${evClass}">${fmtPct(b.ev * 100)} EV</div>
+            </div>
+          </div>
+          <div class="ev-line-details">
+            <span><strong>Stake</strong> ${money(recStake)}</span>
+            <span><strong>True prob</strong> ${(b.trueProb * 100).toFixed(2)}%</span>
+            <span><strong>Book implied</strong> ${(amToProb(b.softOdds) * 100).toFixed(2)}%</span>
+            <span><strong>Fair odds</strong> ${b.fairOdds}</span>
+            <span><strong>Reference</strong> ${escapeHtml(b.sharpBook)} ${fmtOdds(b.sharpOdds)}</span>
+            <span><strong>Confidence</strong> ${confidenceGrade(b).label}</span>
+          </div>
+        </div>
+        <div class="form-actions">
+          ${tracked ? '<button class="btn secondary" type="button" disabled>Tracked</button>' : `<button class="btn primary" type="button" data-track="${payload}">Track Recommended Bet</button>`}
+          ${copyButton(evBetText(b, recStake || unitStake()))}
+          ${bookButton(b.softBookKey, b.softBook)}
+        </div>
+      </div>
+    </article>`;
+  }).join('');
+
+  $('scan_results').innerHTML = `<div class="opportunity-list">${cards}</div>`;
+}
+
+function renderLive() {
+  const list = sortedLiveList();
+  updateLiveSummary(list);
+  if (!list.length) {
+    showEmptyLive(lastLiveMeta.reqCount ? 'No live bets match your filters. Your feed may not include in-play events right now, or there may be no games live.' : 'No live scan results yet.');
+    return;
+  }
+  const trackedKeys = new Set(bets.map(b => b._scanKey).filter(Boolean));
+  const cards = list.map(b => {
+    const evClass = b.ev >= 0.05 ? 'ev-high' : b.ev >= 0.03 ? 'ev-med' : b.ev >= 0 ? 'ev-low' : 'ev-neg';
+    const tracked = trackedKeys.has(b.key);
+    const recStake = recommendedStake(b.trueProb, b.softOdds);
+    const payload = encodePayload({
+      desc: `LIVE ${b.outcome} (${b.away} @ ${b.home})`,
+      book: b.softBook,
+      market: `LIVE ${prettySport(b.sport)} ${prettyMarket(b.marketKey)}`,
+      odds: b.softOdds,
+      stake: recStake || unitStake(),
+      ev: +(b.ev * 100).toFixed(2),
+      scanKey: b.key,
+      bookKey: b.softBookKey,
+      sharpOddsAtScan: b.sharpOdds
+    });
+    const isSelected = selectedCard === `live:${b.key}`;
+    return `<article class="opportunity-card ${isSelected ? 'is-selected' : ''}" data-select-card="live:${escapeHtml(b.key)}">
+      <div class="opp-head">
+        <div>
+          <div class="opp-title">${escapeHtml(b.away)} @ ${escapeHtml(b.home)}</div>
+          <div class="opp-sub">LIVE · ${prettySport(b.sport)} · ${prettyMarket(b.marketKey)} · started ${formatDateTime(b.commenceTime)}</div>
+        </div>
+        <div class="opp-profit">
+          <div class="big ${evClass}">${fmtPct(b.ev * 100)}</div>
+          <div class="small">Live EV</div>
+        </div>
+      </div>
+      <div class="opp-body">
+        <div class="ev-line-card live-line">
+          <div class="ev-line-main">
+            <div>
+              <div class="ev-book">${escapeHtml(b.softBook)}</div>
+              <div class="ev-bet">${escapeHtml(b.outcome)}</div>
+              <div class="ev-game">LIVE · ${prettyMarket(b.marketKey)} · ${formatStart(b.commenceTime)}</div>
+            </div>
+            <div class="ev-price">
+              <div class="odds">${fmtOdds(b.softOdds)}</div>
+              <div class="${evClass}">${fmtPct(b.ev * 100)} EV</div>
+            </div>
+          </div>
+          <div class="ev-line-details">
+            <span><strong>Stake</strong> ${money(recStake)}</span>
+            <span><strong>True prob</strong> ${(b.trueProb * 100).toFixed(2)}%</span>
+            <span><strong>Book implied</strong> ${(amToProb(b.softOdds) * 100).toFixed(2)}%</span>
+            <span><strong>Fair odds</strong> ${b.fairOdds}</span>
+            <span><strong>Reference</strong> ${escapeHtml(b.sharpBook)} ${fmtOdds(b.sharpOdds)}</span>
+            <span><strong>Verify fast</strong> Live line</span>
+          </div>
+        </div>
+        <div class="form-actions">
+          ${tracked ? '<button class="btn secondary" type="button" disabled>Tracked</button>' : `<button class="btn primary" type="button" data-track="${payload}">Track Live Bet</button>`}
+          ${copyButton(evBetText(b, recStake || unitStake()))}
+          ${bookButton(b.softBookKey, b.softBook)}
+        </div>
+      </div>
+    </article>`;
+  }).join('');
+  $('live_results').innerHTML = `<div class="opportunity-list">${cards}</div>`;
+}
+
+function renderArbs() {
+  const list = sortedArbList();
+  updateArbSummary(list);
+  if (!list.length) {
+    showEmptyArbs(lastArbMeta.reqCount ? 'No arbs match your filter. Try lowering the minimum profit or scanning more markets.' : 'No arbitrage scan results yet.');
+    return;
+  }
+  const cards = list.map(arb => {
+    const legs = arb.legs.map(leg => `
+      <div class="odds-row">
+        <div><strong>${escapeHtml(leg.outcome)}</strong></div>
+        <div><strong>Place on</strong> <span class="book-tag soft">${escapeHtml(leg.book)}</span></div>
+        <div>${fmtOdds(leg.odds)} · ${(1 / leg.decimal * 100).toFixed(2)}%</div>
+        <div><strong>${money(leg.stake)}</strong> ${bookButton(leg.bookKey, leg.book, 'Open')}</div>
+      </div>`).join('');
+    const isSelected = selectedCard === `arb:${arb.key}`;
+    return `<article class="opportunity-card ${isSelected ? 'is-selected' : ''}" data-select-card="arb:${escapeHtml(arb.key)}">
+      <div class="opp-head">
+        <div>
+          <div class="opp-title">${escapeHtml(arb.away)} @ ${escapeHtml(arb.home)}</div>
+          <div class="opp-sub">${prettySport(arb.sport)} · ${prettyMarket(arb.marketKey)} · ${escapeHtml(prettyLine(arb.lineKey))} · ${formatDateTime(arb.commenceTime)}</div>
+        </div>
+        <div class="opp-profit">
+          <div class="big">${fmtPct(arb.profitRate * 100)}</div>
+          <div class="small">Guaranteed profit</div>
+        </div>
+      </div>
+      <div class="opp-body">
+        <div class="oj-grid">
+          <div class="oj-metric"><div class="label">Total stake</div><div class="value">${money(arb.totalStake)}</div></div>
+          <div class="oj-metric"><div class="label">Total payout</div><div class="value">${money(arb.payout)}</div></div>
+          <div class="oj-metric"><div class="label">Profit</div><div class="value pos">${money(arb.profit)}</div></div>
+          <div class="oj-metric"><div class="label">Implied total</div><div class="value">${(arb.impliedSum * 100).toFixed(2)}%</div></div>
+          <div class="oj-metric"><div class="label">Market</div><div class="value">${prettyMarket(arb.marketKey)}</div></div>
+          <div class="oj-metric"><div class="label">Starts</div><div class="value">${formatStart(arb.commenceTime)}</div></div>
+        </div>
+        <div class="place-bet">
+          <div class="sportsbook-callout">
+            <div>
+              <div class="label">Arb legs must be placed at these books</div>
+              <div class="book">${arb.legs.map(leg => escapeHtml(leg.book)).join(' + ')}</div>
+            </div>
+            <div class="odds">${fmtPct(arb.profitRate * 100)}</div>
+          </div>
+          <div class="meta-row"><span>Sportsbook</span><span>Odds</span><span>Implied probability</span><span>Stake</span><span>Payout equalized at ${money(arb.payout)}</span></div>
+          ${legs}
+        </div>
+        <div class="form-actions">
+          <button class="btn primary" type="button" data-arb-track="${escapeHtml(arb.key)}">Log All Legs</button>
+          ${copyButton(arbBetText(arb), 'Copy Arb Legs')}
+        </div>
+      </div>
+    </article>`;
+  }).join('');
+  $('arb_results').innerHTML = `<div class="opportunity-list">${cards}</div>`;
+}
+
+function renderLiveArbs() {
+  const list = sortedLiveArbList();
+  updateLiveArbSummary(list);
+  if (!list.length) {
+    showEmptyLiveArbs(lastLiveArbMeta.reqCount ? 'No live arbs match your filter. Your feed may not include in-play events right now.' : 'No live arbitrage scan results yet.');
+    return;
+  }
+  const cards = list.map(arb => {
+    const legs = arb.legs.map(leg => `
+      <div class="odds-row">
+        <div><strong>${escapeHtml(leg.outcome)}</strong></div>
+        <div><strong>Place on</strong> <span class="book-tag soft">${escapeHtml(leg.book)}</span></div>
+        <div>${fmtOdds(leg.odds)} · ${(1 / leg.decimal * 100).toFixed(2)}%</div>
+        <div><strong>${money(leg.stake)}</strong> ${bookButton(leg.bookKey, leg.book, 'Open')}</div>
+      </div>`).join('');
+    const isSelected = selectedCard === `livearb:${arb.key}`;
+    return `<article class="opportunity-card ${isSelected ? 'is-selected' : ''}" data-select-card="livearb:${escapeHtml(arb.key)}">
+      <div class="opp-head">
+        <div>
+          <div class="opp-title">${escapeHtml(arb.away)} @ ${escapeHtml(arb.home)}</div>
+          <div class="opp-sub">LIVE ARB · ${prettySport(arb.sport)} · ${prettyMarket(arb.marketKey)} · ${escapeHtml(prettyLine(arb.lineKey))}</div>
+        </div>
+        <div class="opp-profit">
+          <div class="big">${fmtPct(arb.profitRate * 100)}</div>
+          <div class="small">Live guaranteed profit</div>
+        </div>
+      </div>
+      <div class="opp-body">
+        <div class="oj-grid">
+          <div class="oj-metric"><div class="label">Total stake</div><div class="value">${money(arb.totalStake)}</div></div>
+          <div class="oj-metric"><div class="label">Total payout</div><div class="value">${money(arb.payout)}</div></div>
+          <div class="oj-metric"><div class="label">Profit</div><div class="value pos">${money(arb.profit)}</div></div>
+          <div class="oj-metric"><div class="label">Implied total</div><div class="value">${(arb.impliedSum * 100).toFixed(2)}%</div></div>
+        </div>
+        <div class="place-bet">
+          <div class="sportsbook-callout">
+            <div>
+              <div class="label">Live arb books</div>
+              <div class="book">${arb.legs.map(leg => escapeHtml(leg.book)).join(' + ')}</div>
+            </div>
+            <div class="odds">${fmtPct(arb.profitRate * 100)}</div>
+          </div>
+          <div class="meta-row"><span>Verify every live leg instantly</span><span>Payout equalized at ${money(arb.payout)}</span></div>
+          ${legs}
+        </div>
+        <div class="form-actions">
+          <button class="btn primary" type="button" data-arb-track="${escapeHtml(arb.key)}">Log All Legs</button>
+          ${copyButton(arbBetText(arb), 'Copy Live Arb Legs')}
+        </div>
+      </div>
+    </article>`;
+  }).join('');
+  $('live_arb_results').innerHTML = `<div class="opportunity-list">${cards}</div>`;
+}
+
+function sortedArbList() {
+  const minProfit = numberOr($('a_min_profit').value, 0) / 100;
+  const totalStake = numberOr($('a_total_stake').value, 100);
+  const scope = $('a_scope').value;
+  const list = lastArbResults
+    .map(arb => resizeArb(arb, totalStake))
+    .filter(arb => arb.profitRate >= minProfit && arbMatchesBookFilter(arb, scope));
+  const dir = currentArbSort.dir === 'asc' ? 1 : -1;
+  const getters = {
+    game: arb => `${arb.away} ${arb.home}`,
+    market: arb => `${arb.marketKey} ${arb.lineKey}`,
+    profit: arb => arb.profitRate,
+    stake: arb => arb.totalStake,
+    payout: arb => arb.payout,
+    implied: arb => arb.impliedSum,
+    start: arb => new Date(arb.commenceTime).getTime() || 0
+  };
+  const get = getters[currentArbSort.key] || getters.profit;
+  return list.slice().sort((a, b) => {
+    const av = get(a), bv = get(b);
+    if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * dir;
+    return String(av).localeCompare(String(bv)) * dir;
+  });
+}
+function sortedLiveArbList() {
+  const minProfit = numberOr($('la_min_profit').value, 0) / 100;
+  const totalStake = numberOr($('la_total_stake').value, 100);
+  const scope = $('la_scope').value;
+  const list = lastLiveArbResults
+    .map(arb => resizeArb(arb, totalStake))
+    .filter(arb => arb.profitRate >= minProfit && arbMatchesBookFilter(arb, scope));
+  return list.slice().sort((a, b) => b.profitRate - a.profitRate);
+}
+function resizeArb(arb, totalStake) {
+  if (!Number.isFinite(totalStake) || totalStake <= 0 || totalStake === arb.totalStake) return arb;
+  const payout = totalStake / arb.impliedSum;
+  return {
+    ...arb,
+    totalStake,
+    payout,
+    profit: payout - totalStake,
+    legs: arb.legs.map(leg => ({
+      ...leg,
+      stake: payout / leg.decimal,
+      payout,
+      profit: payout - totalStake
+    }))
+  };
+}
+function trackArb(key) {
+  const isLive = lastLiveArbResults.some(item => item.key === key);
+  const totalStake = isLive ? numberOr($('la_total_stake').value, 100) : numberOr($('a_total_stake').value, 100);
+  const found = lastArbResults.find(item => item.key === key) || lastLiveArbResults.find(item => item.key === key);
+  if (!found) {
+    showToast('Could not find that arb anymore. Refresh the arb scan.', 'err');
+    return;
+  }
+  const arb = resizeArb(found, totalStake);
+  const now = Date.now();
+  const newBets = arb.legs.map((leg, index) => ({
+    id: now + index,
+    desc: `ARB ${prettyMarket(arb.marketKey)}: ${leg.outcome} (${arb.away} @ ${arb.home})`,
+    book: leg.book,
+    bookKey: leg.bookKey,
+    market: `${prettySport(arb.sport)} ${prettyMarket(arb.marketKey)} ${prettyLine(arb.lineKey)}`,
+    odds: parseFloat(leg.odds),
+    stake: +leg.stake.toFixed(2),
+    ev: +(arb.profitRate * 100).toFixed(2),
+    closingOdds: null,
+    status: 'pending',
+    placedAt: new Date().toISOString(),
+    _arbKey: arb.key
+  }));
+  bets = [...newBets, ...bets];
+  saveBets();
+  showToast(`Logged ${newBets.length} arb legs to the tracker.`, 'ok');
+}
+function sortableArbTh(key, label) {
+  const mark = currentArbSort.key === key ? (currentArbSort.dir === 'asc' ? ' ^' : ' v') : '';
+  return `<th class="sortable" data-arb-sort="${key}">${label}${mark}</th>`;
+}
+function updateArbSummary(list) {
+  $('arb_count').textContent = list.length;
+  $('arb_best').textContent = list.length ? fmtPct(Math.max(...list.map(a => a.profitRate * 100))) : '--';
+  $('arb_avg').textContent = list.length ? fmtPct(list.reduce((s, a) => s + a.profitRate * 100, 0) / list.length) : '--';
+  $('arb_meta').textContent = lastArbMeta.reqCount
+    ? `${lastArbMeta.reqCount} reqs, ${lastArbMeta.rawCount} raw`
+    : 'No scan yet';
+}
+function updateLiveArbSummary(list) {
+  $('live_arb_count').textContent = list.length;
+  $('live_arb_best').textContent = list.length ? fmtPct(Math.max(...list.map(a => a.profitRate * 100))) : '--';
+  $('live_arb_avg').textContent = list.length ? fmtPct(list.reduce((s, a) => s + a.profitRate * 100, 0) / list.length) : '--';
+  $('live_arb_meta').textContent = lastLiveArbMeta.reqCount
+    ? `${lastLiveArbMeta.reqCount} reqs, ${lastLiveArbMeta.rawCount} raw`
+    : 'No scan yet';
+}
+function showEmptyArbs(message) {
+  $('arb_results').innerHTML = `<div class="empty"><div>${escapeHtml(message)}</div></div>`;
+  updateArbSummary([]);
+}
+function showEmptyLiveArbs(message) {
+  $('live_arb_results').innerHTML = `<div class="empty"><div>${escapeHtml(message)}</div></div>`;
+  updateLiveArbSummary([]);
+}
+function prettyLine(lineKey) {
+  if (!lineKey || lineKey === 'moneyline') return 'Moneyline';
+  return lineKey.replace('spread_', 'Spread ').replace('total_', 'Total ');
+}
+
+function sortedScanList() {
+  const minEV = numberOr($('f_minev').value, 0) / 100;
+  const maxEV = numberOr($('f_maxev').value, 100) / 100;
+  const scope = $('f_scope').value;
+  const list = lastScanResults.filter(b => b.ev >= minEV && b.ev <= maxEV && evMatchesBookFilter(b, scope, 'scan'));
+  const dir = currentSort.dir === 'asc' ? 1 : -1;
+  const getters = {
+    game: b => `${b.away} ${b.home}`,
+    market: b => b.marketKey,
+    book: b => b.softBook,
+    odds: b => b.softOdds,
+    fair: b => amToDec(b.fairOdds),
+    ev: b => b.ev,
+    start: b => new Date(b.commenceTime).getTime() || 0
+  };
+  const get = getters[currentSort.key] || getters.ev;
+  return list.slice().sort((a, b) => {
+    const av = get(a), bv = get(b);
+    if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * dir;
+    return String(av).localeCompare(String(bv)) * dir;
+  });
+}
+function sortedLiveList() {
+  const minEV = numberOr($('l_minev').value, 0) / 100;
+  const maxEV = numberOr($('l_maxev').value, 100) / 100;
+  const scope = $('l_scope').value;
+  const list = lastLiveResults.filter(b => b.ev >= minEV && b.ev <= maxEV && evMatchesBookFilter(b, scope, 'live'));
+  const dir = currentSort.dir === 'asc' ? 1 : -1;
+  const getters = {
+    game: b => `${b.away} ${b.home}`,
+    market: b => b.marketKey,
+    book: b => b.softBook,
+    odds: b => b.softOdds,
+    fair: b => amToDec(b.fairOdds),
+    ev: b => b.ev,
+    start: b => new Date(b.commenceTime).getTime() || 0
+  };
+  const get = getters[currentSort.key] || getters.ev;
+  return list.slice().sort((a, b) => {
+    const av = get(a), bv = get(b);
+    if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * dir;
+    return String(av).localeCompare(String(bv)) * dir;
+  });
+}
+function sortableTh(key, label) {
+  const mark = currentSort.key === key ? (currentSort.dir === 'asc' ? ' ^' : ' v') : '';
+  return `<th class="sortable" data-sort="${key}">${label}${mark}</th>`;
+}
+function updateScanSummary(list) {
+  $('sum_edges').textContent = list.length;
+  $('sum_best_ev').textContent = list.length ? fmtPct(Math.max(...list.map(b => b.ev * 100))) : '--';
+  $('sum_avg_ev').textContent = list.length ? fmtPct(list.reduce((s, b) => s + b.ev * 100, 0) / list.length) : '--';
+  $('sum_scan_meta').textContent = lastScanMeta.reqCount
+    ? `${lastScanMeta.reqCount} reqs, ${lastScanMeta.rawCount} raw`
+    : 'No scan yet';
+}
+function updateLiveSummary(list) {
+  $('live_edges').textContent = list.length;
+  $('live_best_ev').textContent = list.length ? fmtPct(Math.max(...list.map(b => b.ev * 100))) : '--';
+  $('live_avg_ev').textContent = list.length ? fmtPct(list.reduce((s, b) => s + b.ev * 100, 0) / list.length) : '--';
+  $('live_meta').textContent = lastLiveMeta.reqCount
+    ? `${lastLiveMeta.reqCount} reqs, ${lastLiveMeta.rawCount} raw`
+    : 'No scan yet';
+}
+function showEmptyScan(message) {
+  $('scan_results').innerHTML = `<div class="empty"><div>${escapeHtml(message)}</div></div>`;
+  updateScanSummary([]);
+}
+function showEmptyLive(message) {
+  $('live_results').innerHTML = `<div class="empty"><div>${escapeHtml(message)}</div></div>`;
+  updateLiveSummary([]);
+}
+function formatStart(value) {
+  if (!value) return '--';
+  const start = new Date(value);
+  const diffMin = Math.round((start - new Date()) / 60000);
+  if (!Number.isFinite(diffMin)) return '--';
+  if (diffMin < -120) return start.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  if (diffMin < 0) return 'Live';
+  if (diffMin < 60) return `${diffMin}m`;
+  if (diffMin < 1440) return `${Math.round(diffMin / 60)}h`;
+  return `${Math.round(diffMin / 1440)}d`;
+}
+function prettySport(s) {
+  return ({
+    baseball_mlb: 'MLB',
+    basketball_nba: 'NBA',
+    icehockey_nhl: 'NHL',
+    soccer_usa_mls: 'MLS',
+    americanfootball_nfl: 'NFL',
+    basketball_wnba: 'WNBA'
+  })[s] || s;
+}
+function prettyMarket(m) {
+  return ({
+    h2h: 'ML',
+    spreads: 'Spread',
+    totals: 'Total',
+    player_points: 'Player points',
+    player_rebounds: 'Player rebounds',
+    player_assists: 'Player assists',
+    player_threes: 'Player threes',
+    player_points_rebounds_assists: 'PRA',
+    player_points_rebounds: 'Points + rebounds',
+    player_points_assists: 'Points + assists',
+    player_pass_tds: 'Pass TDs',
+    player_pass_yds: 'Pass yards',
+    player_rush_yds: 'Rush yards',
+    player_receptions: 'Receptions',
+    player_reception_yds: 'Receiving yards',
+    player_anytime_td: 'Anytime TD',
+    player_rush_reception_yds: 'Rush + receiving yards',
+    batter_home_runs: 'Home runs',
+    batter_hits: 'Hits',
+    batter_total_bases: 'Total bases',
+    batter_rbis: 'RBIs',
+    batter_runs_scored: 'Runs scored',
+    pitcher_strikeouts: 'Strikeouts',
+    pitcher_outs: 'Pitcher outs',
+    player_shots_on_goal: 'Shots on goal',
+    player_goals: 'Goals',
+    player_blocked_shots: 'Blocked shots',
+    player_total_saves: 'Saves',
+    player_goal_scorer_anytime: 'Anytime goal',
+    player_shots_on_target: 'Shots on target',
+    player_shots: 'Shots',
+    player_to_receive_card: 'Card'
+  })[m] || m.replaceAll('_', ' ');
+}
+
+function trackFromScanPayload(payload) {
+  const d = decodePayload(payload);
+  const bet = {
+    id: Date.now() + Math.floor(Math.random() * 1000),
+    desc: d.desc || 'Tracked bet',
+    book: d.book || '',
+    bookKey: d.bookKey || d.book || '',
+    market: d.market || '',
+    odds: parseFloat(d.odds),
+    stake: parseFloat(d.stake),
+    ev: Number.isFinite(parseFloat(d.ev)) ? parseFloat(d.ev) : null,
+    closingOdds: null,
+    status: 'pending',
+    placedAt: new Date().toISOString(),
+    _scanKey: d.scanKey,
+    _sharpOddsAtScan: d.sharpOddsAtScan
+  };
+  if (!isValidAmericanOdds(bet.odds) || !Number.isFinite(bet.stake) || bet.stake <= 0) {
+    showToast('Could not track: invalid odds or stake.', 'err');
+    return;
+  }
+  bets.unshift(bet);
+  saveBets();
+  render();
+  showToast('Bet added to tracker.', 'ok');
+}
+
+function renderToolResult(id, html) {
+  $(id).innerHTML = `<div class="place-bet" style="margin-top:12px;">${html}</div>`;
+}
+function calcToolNoVig() {
+  const a = parseFloat($('tool_nv_a').value);
+  const b = parseFloat($('tool_nv_b').value);
+  if (!isValidAmericanOdds(a) || !isValidAmericanOdds(b)) {
+    renderToolResult('tool_nv_result', '<span class="neg">Enter two valid American odds.</span>');
+    return;
+  }
+  const probs = [amToProb(a), amToProb(b)];
+  const fair = powerDevig(probs);
+  const hold = (probs[0] + probs[1] - 1) * 100;
+  renderToolResult('tool_nv_result', `
+    <div class="odds-row"><strong>Side A</strong><span>${(fair[0] * 100).toFixed(2)}%</span><span>${decToAm(1 / fair[0])}</span><span>fair</span></div>
+    <div class="odds-row"><strong>Side B</strong><span>${(fair[1] * 100).toFixed(2)}%</span><span>${decToAm(1 / fair[1])}</span><span>fair</span></div>
+    <div class="meta-row"><span>Sportsbook hold: ${hold.toFixed(2)}%</span></div>`);
+}
+function calcToolProbFromOdds() {
+  const odds = parseFloat($('tool_prob_odds').value);
+  if (!isValidAmericanOdds(odds)) {
+    renderToolResult('tool_prob_result', '<span class="neg">Enter valid American odds, like -110 or +150.</span>');
+    return;
+  }
+  const implied = amToProb(odds);
+  renderToolResult('tool_prob_result', `
+    <div class="odds-row"><strong>${fmtOdds(odds)}</strong><span>Implied probability</span><span>${(implied * 100).toFixed(2)}%</span><span>Decimal ${amToDec(odds).toFixed(3)}</span></div>`);
+}
+function calcToolProbFromPct() {
+  const pct = parseFloat($('tool_prob_pct').value);
+  if (!Number.isFinite(pct) || pct <= 0 || pct >= 100) {
+    renderToolResult('tool_prob_result', '<span class="neg">Enter a probability between 0 and 100.</span>');
+    return;
+  }
+  const prob = pct / 100;
+  renderToolResult('tool_prob_result', `
+    <div class="odds-row"><strong>${pct.toFixed(2)}%</strong><span>Fair odds</span><span>${decToAm(1 / prob)}</span><span>Decimal ${(1 / prob).toFixed(3)}</span></div>`);
+}
+function calcToolHedge() {
+  const originalOdds = parseFloat($('tool_hedge_orig_odds').value);
+  const originalStake = parseFloat($('tool_hedge_stake').value);
+  const hedgeOdds = parseFloat($('tool_hedge_odds').value);
+  if (!isValidAmericanOdds(originalOdds) || !isValidAmericanOdds(hedgeOdds) || !Number.isFinite(originalStake) || originalStake <= 0) {
+    renderToolResult('tool_hedge_result', '<span class="neg">Enter valid odds and a positive original stake.</span>');
+    return;
+  }
+  const originalPayout = originalStake * amToDec(originalOdds);
+  const hedgeStake = originalPayout / amToDec(hedgeOdds);
+  const profit = originalPayout - originalStake - hedgeStake;
+  renderToolResult('tool_hedge_result', `
+    <div class="odds-row"><strong>Hedge stake</strong><span>${money(hedgeStake)}</span><span>Profit either way</span><span class="${profit >= 0 ? 'pos' : 'neg'}">${signedMoney(profit)}</span></div>
+    <div class="meta-row"><span>Original payout ${money(originalPayout)}</span><span>Total risk ${money(originalStake + hedgeStake)}</span></div>`);
+}
+function calcToolBoost() {
+  const odds = parseFloat($('tool_boost_odds').value);
+  const boostPct = parseFloat($('tool_boost_pct').value);
+  const trueProb = parseFloat($('tool_boost_prob').value) / 100;
+  if (!isValidAmericanOdds(odds) || !Number.isFinite(boostPct) || boostPct < 0 || !Number.isFinite(trueProb) || trueProb <= 0 || trueProb >= 1) {
+    renderToolResult('tool_boost_result', '<span class="neg">Enter valid odds, boost %, and true probability.</span>');
+    return;
+  }
+  const dec = amToDec(odds);
+  const boostedDec = 1 + (dec - 1) * (1 + boostPct / 100);
+  const ev = trueProb * boostedDec - 1;
+  renderToolResult('tool_boost_result', `
+    <div class="odds-row"><strong>Boosted odds</strong><span>${decToAm(boostedDec)}</span><span>EV</span><span class="${ev >= 0 ? 'pos' : 'neg'}">${fmtPct(ev * 100)}</span></div>
+    <div class="meta-row"><span>Decimal ${boostedDec.toFixed(3)}</span><span>Fair odds ${decToAm(1 / trueProb)}</span></div>`);
+}
+function calcToolParlay() {
+  const odds = $('tool_parlay_odds').value.split(',').map(v => parseFloat(v.trim())).filter(Number.isFinite);
+  const probs = $('tool_parlay_probs').value.split(',').map(v => parseFloat(v.trim()) / 100).filter(Number.isFinite);
+  if (odds.length < 2 || odds.length !== probs.length || odds.some(o => !isValidAmericanOdds(o)) || probs.some(p => p <= 0 || p >= 1)) {
+    renderToolResult('tool_parlay_result', '<span class="neg">Enter matching odds and probability lists. Example: -110,+120 and 52.4,47.5</span>');
+    return;
+  }
+  const dec = odds.reduce((product, odd) => product * amToDec(odd), 1);
+  const trueProb = probs.reduce((product, p) => product * p, 1);
+  const ev = trueProb * dec - 1;
+  renderToolResult('tool_parlay_result', `
+    <div class="odds-row"><strong>Parlay odds</strong><span>${decToAm(dec)}</span><span>EV</span><span class="${ev >= 0 ? 'pos' : 'neg'}">${fmtPct(ev * 100)}</span></div>
+    <div class="meta-row"><span>True hit rate ${(trueProb * 100).toFixed(2)}%</span><span>Decimal ${dec.toFixed(3)}</span></div>`);
+}
+function resultCard(message, cls) {
+  return `<div class="${cls === 'err' ? 'neg' : ''}" style="padding:10px 0;">${escapeHtml(message)}</div>`;
+}
+
+function logBet() {
+  const odds = parseFloat($('t_odds').value);
+  const stake = parseFloat($('t_stake').value);
+  const evRaw = $('t_ev').value.trim();
+  if (!isValidAmericanOdds(odds)) {
+    showToast('Enter valid American odds, for example -110 or +125.', 'err');
+    return;
+  }
+  if (!Number.isFinite(stake) || stake <= 0) {
+    showToast('Enter a positive stake.', 'err');
+    return;
+  }
+  const bet = {
+    id: Date.now() + Math.floor(Math.random() * 1000),
+    desc: $('t_desc').value.trim() || '(no description)',
+    book: $('t_book').value,
+    bookKey: $('t_book').value,
+    market: $('t_market').value.trim(),
+    odds,
+    stake,
+    ev: evRaw === '' ? null : parseFloat(evRaw),
+    closingOdds: null,
+    status: 'pending',
+    placedAt: new Date().toISOString()
+  };
+  if (bet.ev !== null && !Number.isFinite(bet.ev)) bet.ev = null;
+  bets.unshift(bet);
+  saveBets();
+  ['t_desc','t_market','t_odds','t_stake','t_ev'].forEach(id => $(id).value = '');
+  showToast('Bet logged.', 'ok');
+}
+function setClose(id) {
+  const v = prompt('Closing line for the same side (American odds):');
+  if (v === null) return;
+  const n = parseFloat(v);
+  if (!isValidAmericanOdds(n)) {
+    showToast('Invalid closing odds.', 'err');
+    return;
+  }
+  const bet = bets.find(x => x.id === id);
+  if (!bet) return;
+  bet.closingOdds = n;
+  saveBets();
+  showToast('Closing line saved.', 'ok');
+}
+function settle(id, result) {
+  const bet = bets.find(x => x.id === id);
+  if (!bet) return;
+  bet.status = result;
+  bet.settledAt = new Date().toISOString();
+  if (result === 'win') bet.profit = +(bet.stake * (amToDec(bet.odds) - 1)).toFixed(2);
+  else if (result === 'loss') bet.profit = -bet.stake;
+  else bet.profit = 0;
+  saveBets();
+}
+function delBet(id) {
+  if (!confirm('Delete this bet?')) return;
+  bets = bets.filter(x => x.id !== id);
+  saveBets();
+  render();
+}
+function betRow(b) {
+  const clv = b.closingOdds !== null && Number.isFinite(b.closingOdds) ? calcClv(b) : null;
+  const cls = b.status === 'pending' ? 'pending' : b.status;
+  const profit = Number.isFinite(b.profit) ? b.profit : 0;
+  const betText = [
+    `${b.book || 'Book'} | ${b.desc} | ${fmtOdds(b.odds)} | stake ${money(b.stake)}`,
+    `${b.market || 'Market'}${b.ev !== null && Number.isFinite(b.ev) ? ` | EV ${fmtPct(b.ev)}` : ''}`
+  ].join('\n');
+  const actionHtml = b.status === 'pending'
+    ? `${b.closingOdds == null ? `<button class="small-btn" type="button" data-close="${b.id}">CLV</button>` : `<span class="muted">close ${fmtOdds(b.closingOdds)}</span>`}
+       <button class="small-btn win" type="button" data-settle="${b.id}:win">W</button>
+       <button class="small-btn loss" type="button" data-settle="${b.id}:loss">L</button>
+       <button class="small-btn push" type="button" data-settle="${b.id}:push">P</button>
+       ${copyButton(betText, 'Copy')}
+       ${bookButton(b.bookKey, b.book, 'Book')}
+       <button class="small-btn delete" type="button" data-delete="${b.id}">Delete</button>`
+    : `<span class="${profit > 0 ? 'pos' : profit < 0 ? 'neg' : 'muted'}"><strong>${signedMoney(profit)}</strong></span>
+       ${b.closingOdds == null ? `<button class="small-btn" type="button" data-close="${b.id}">CLV</button>` : `<span class="muted">close ${fmtOdds(b.closingOdds)}</span>`}
+       ${copyButton(betText, 'Copy')}
+       ${bookButton(b.bookKey, b.book, 'Book')}
+       <button class="small-btn delete" type="button" data-delete="${b.id}">Delete</button>`;
+  return `<div class="bet-row">
+    <div class="bet-info">
+      <div class="desc"><span class="book-tag soft">Place on ${escapeHtml(b.book || 'Book')}</span> ${escapeHtml(b.desc)} <span class="badge ${cls}">${String(b.status).toUpperCase()}</span></div>
+      <div class="meta">
+        ${escapeHtml(b.market || 'Market')} · ${fmtOdds(b.odds)} · ${money(b.stake)}
+        ${b.ev !== null && Number.isFinite(b.ev) ? ` · ${fmtPct(b.ev)} EV` : ''}
+        ${clv !== null ? ` · <span class="${clv >= 0 ? 'pos' : 'neg'}">CLV ${fmtPct(clv)}</span>` : ''}
+      </div>
+    </div>
+    <div class="bet-actions">${actionHtml}</div>
+  </div>`;
+}
+function calcClv(b) {
+  return ((amToDec(b.odds) - amToDec(b.closingOdds)) / amToDec(b.closingOdds)) * 100;
+}
+function renderTracker() {
+  const open = bets.filter(b => b.status === 'pending');
+  const settled = bets.filter(b => b.status !== 'pending');
+  $('open_count').textContent = `${open.length} open`;
+  $('settled_count').textContent = `${settled.length} settled`;
+  $('open_bets').innerHTML = open.length ? open.map(betRow).join('') : '<div class="empty" style="min-height:120px;box-shadow:none;">No open bets</div>';
+  $('settled_bets').innerHTML = settled.length ? settled.map(betRow).join('') : '<div class="empty" style="min-height:120px;box-shadow:none;">No settled bets</div>';
+  renderStats();
+}
+function renderStats() {
+  const settled = bets.filter(b => b.status !== 'pending');
+  const wins = settled.filter(b => b.status === 'win').length;
+  const losses = settled.filter(b => b.status === 'loss').length;
+  const pushes = settled.filter(b => b.status === 'push').length;
+  const profit = settled.reduce((s, b) => s + (Number.isFinite(b.profit) ? b.profit : 0), 0);
+  const staked = settled.filter(b => b.status !== 'push').reduce((s, b) => s + (Number.isFinite(b.stake) ? b.stake : 0), 0);
+  $('stat_bets').textContent = bets.length;
+  $('stat_record').textContent = `${wins}-${losses}-${pushes}`;
+  $('stat_profit').textContent = signedMoney(profit);
+  $('stat_profit').className = 'val ' + (profit >= 0 ? 'pos' : 'neg');
+  $('stat_roi').textContent = staked > 0 ? fmtPct((profit / staked) * 100, 1) : '0%';
+  $('stat_roi').className = 'val ' + (profit >= 0 ? 'pos' : 'neg');
+
+  const withCLV = bets.filter(b => b.closingOdds !== null && Number.isFinite(b.closingOdds));
+  const cEl = $('stat_clv');
+  if (withCLV.length) {
+    const avg = withCLV.reduce((s, b) => s + calcClv(b), 0) / withCLV.length;
+    cEl.textContent = fmtPct(avg);
+    cEl.className = 'val ' + (avg >= 0 ? 'pos' : 'neg');
+  } else {
+    cEl.textContent = '--';
+    cEl.className = 'val';
+  }
+  const withEV = bets.filter(b => b.ev !== null && Number.isFinite(b.ev));
+  const evEl = $('stat_ev_avg');
+  if (withEV.length) {
+    const avg = withEV.reduce((s, b) => s + b.ev, 0) / withEV.length;
+    evEl.textContent = fmtPct(avg);
+    evEl.className = 'val ' + (avg >= 0 ? 'pos' : 'neg');
+  } else {
+    evEl.textContent = '--';
+    evEl.className = 'val';
+  }
+  $('unit_display').textContent = `${money(unitStake())} unit`;
+}
+
+function saveBets() {
+  localStorage.setItem(STORAGE_KEYS.bets, JSON.stringify(bets));
+  renderTracker();
+}
+function saveBankroll() {
+  const br = parseFloat($('bankroll').value);
+  const pct = parseFloat($('unit_pct').value);
+  if (!Number.isFinite(br) || br < 0 || !Number.isFinite(pct) || pct <= 0) {
+    showToast('Enter a valid bankroll and positive unit percentage.', 'err');
+    return;
+  }
+  bankroll = br;
+  unitPct = pct;
+  localStorage.setItem(STORAGE_KEYS.bankroll, String(bankroll));
+  localStorage.setItem(STORAGE_KEYS.unitPct, String(unitPct));
+  renderStats();
+  showToast('Bankroll settings saved.', 'ok');
+}
+function saveApiKey() {
+  providerMode = $('provider_mode').value;
+  customEndpoint = $('custom_endpoint').value.trim();
+  cacheEndpoint = $('cache_endpoint').value.trim() || CACHE_DEFAULT_ENDPOINT;
+  const primary = $('api_key').value.trim();
+  const extras = $('api_keys').value.split(/\n|,/).map(s => s.trim()).filter(Boolean);
+  apiKeys = cleanKeyList([primary, ...extras]);
+  activeApiKeyIndex = Math.min(activeApiKeyIndex, Math.max(0, apiKeys.length - 1));
+  persistApiSource();
+  updateApiUsage();
+  setStatus(apiReadyMessage() ? 'Data source needs setup' : 'Data source ready', apiReadyMessage() ? 'warn' : 'ok');
+  showToast('Data source saved.', 'ok');
+  if (providerMode === 'cache') syncCacheConfig();
+}
+function saveBooks() {
+  softBooks = $('soft_books_input').value.split(',').map(s => s.trim()).filter(Boolean);
+  sharpBooks = $('sharp_books_input').value.split(',').map(s => s.trim()).filter(Boolean);
+  if (!softBooks.length || !sharpBooks.length) {
+    showToast('Book lists cannot be empty.', 'err');
+    return;
+  }
+  localStorage.setItem(STORAGE_KEYS.softBooks, softBooks.join(','));
+  localStorage.setItem(STORAGE_KEYS.sharpBooks, sharpBooks.join(','));
+  showToast('Book settings saved.', 'ok');
+  if (providerMode === 'cache') syncCacheConfig();
+}
+function resetBooks() {
+  softBooks = DEFAULT_SOFT_BOOKS.slice();
+  sharpBooks = DEFAULT_SHARP_BOOKS.slice();
+  $('soft_books_input').value = softBooks.join(',');
+  $('sharp_books_input').value = sharpBooks.join(',');
+  saveBooks();
+}
+function saveThresholds() {
+  const v = parseFloat($('max_vig').value);
+  if (!Number.isFinite(v) || v < 0 || v > 25) {
+    showToast('Max sharp vig should be between 0 and 25%.', 'err');
+    return;
+  }
+  maxVig = v;
+  localStorage.setItem(STORAGE_KEYS.maxVig, String(maxVig));
+  showToast('Scanner threshold saved.', 'ok');
+}
+function exportData() {
+  const data = {
+    version: 3,
+    bets,
+    bankroll,
+    unitPct,
+    providerMode,
+    customEndpoint,
+    cacheEndpoint,
+    apiKeys,
+    activeApiKeyIndex,
+    softBooks,
+    sharpBooks,
+    maxVig,
+    alertSettings,
+    lineMemory,
+    selectedScanBooks,
+    selectedLiveBooks,
+    selectedArbBooks,
+    selectedCard,
+    exportedAt: new Date().toISOString()
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `ev-scanner-backup-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+function importData(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      if (!Array.isArray(data.bets)) throw new Error('Missing bets array');
+      bets = data.bets;
+      bankroll = numberOr(data.bankroll, bankroll);
+      unitPct = numberOr(data.unitPct, data.unit_pct ? data.unit_pct : unitPct);
+      providerMode = data.providerMode || providerMode;
+      customEndpoint = data.customEndpoint || customEndpoint;
+      cacheEndpoint = data.cacheEndpoint || cacheEndpoint;
+      apiKeys = Array.isArray(data.apiKeys) ? cleanKeyList(data.apiKeys) : apiKeys;
+      activeApiKeyIndex = numberOr(data.activeApiKeyIndex, activeApiKeyIndex);
+      softBooks = Array.isArray(data.softBooks) ? data.softBooks : softBooks;
+      sharpBooks = Array.isArray(data.sharpBooks) ? data.sharpBooks : sharpBooks;
+      maxVig = numberOr(data.maxVig, maxVig);
+      alertSettings = data.alertSettings || alertSettings;
+      lineMemory = data.lineMemory || lineMemory;
+      selectedScanBooks = Array.isArray(data.selectedScanBooks) ? data.selectedScanBooks : selectedScanBooks;
+      selectedLiveBooks = Array.isArray(data.selectedLiveBooks) ? data.selectedLiveBooks : selectedLiveBooks;
+      selectedArbBooks = Array.isArray(data.selectedArbBooks) ? data.selectedArbBooks : selectedArbBooks;
+      selectedCard = data.selectedCard || selectedCard;
+      persistSettings();
+      persistApiSource();
+      hydrateInputs();
+      renderTracker();
+      render();
+      showToast('Backup imported.', 'ok');
+    } catch (e) {
+      showToast(`Import failed: ${e.message}`, 'err');
+    }
+  };
+  reader.readAsText(file);
+}
+function persistSettings() {
+  localStorage.setItem(STORAGE_KEYS.bets, JSON.stringify(bets));
+  localStorage.setItem(STORAGE_KEYS.bankroll, String(bankroll));
+  localStorage.setItem(STORAGE_KEYS.unitPct, String(unitPct));
+  localStorage.setItem(STORAGE_KEYS.alertSettings, JSON.stringify(alertSettings));
+  localStorage.setItem(STORAGE_KEYS.lineMemory, JSON.stringify(lineMemory));
+  localStorage.setItem(STORAGE_KEYS.selectedScanBooks, JSON.stringify(selectedScanBooks));
+  localStorage.setItem(STORAGE_KEYS.selectedLiveBooks, JSON.stringify(selectedLiveBooks));
+  localStorage.setItem(STORAGE_KEYS.selectedArbBooks, JSON.stringify(selectedArbBooks));
+  if (selectedCard) localStorage.setItem(STORAGE_KEYS.selectedCard, selectedCard);
+  localStorage.setItem(STORAGE_KEYS.softBooks, softBooks.join(','));
+  localStorage.setItem(STORAGE_KEYS.sharpBooks, sharpBooks.join(','));
+  localStorage.setItem(STORAGE_KEYS.maxVig, String(maxVig));
+  localStorage.setItem(STORAGE_KEYS.cacheEndpoint, cacheEndpoint);
+}
+function wipeData() {
+  if (!confirm('Wipe all EV Scanner data from this browser?')) return;
+  if (!confirm('This cannot be undone unless you exported a backup. Continue?')) return;
+  localStorage.clear();
+  location.reload();
+}
+
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === name));
+}
+function setStatus(msg, cls = '') {
+  const el = $('api_status');
+  el.textContent = msg;
+  el.className = 'api-status ' + cls;
+}
+function selectCard(key) {
+  selectedCard = selectedCard === key ? '' : key;
+  if (selectedCard) localStorage.setItem(STORAGE_KEYS.selectedCard, selectedCard);
+  else localStorage.removeItem(STORAGE_KEYS.selectedCard);
+  document.querySelectorAll('[data-select-card]').forEach(card => {
+    card.classList.toggle('is-selected', card.dataset.selectCard === selectedCard);
+  });
+}
+let toastTimer = null;
+function showToast(message, cls = 'ok') {
+  const el = $('toast');
+  el.textContent = message;
+  el.className = `toast show ${cls}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+}
+function updateApiUsage() {
+  const source = providerMode === 'cache'
+    ? `Local cache${cacheEndpoint ? ` at ${cacheEndpoint}` : ' missing'}`
+    : providerMode === 'custom'
+      ? `Custom endpoint${customEndpoint ? ' ready' : ' missing'}`
+      : `${apiKeys.length || 0} saved key${apiKeys.length === 1 ? '' : 's'}, active ${activeApiKeyIndex + 1}: ${maskKey(activeApiKey())}`;
+  const quota = apiRequestsRemaining === '?'
+    ? (providerMode === 'cache' ? 'Cache quota appears after the backend makes a successful refresh.' : 'Quota appears after your first successful The Odds API scan.')
+    : `${apiRequestsUsed || 0} requests used, ${apiRequestsRemaining} remaining.`;
+  $('api_usage').innerHTML = `<span class="source-pill">${escapeHtml(source)}</span><br>${escapeHtml(quota)}`;
+}
+function hydrateInputs() {
+  $('bankroll').value = bankroll;
+  $('unit_pct').value = unitPct;
+  $('provider_mode').value = providerMode;
+  $('api_key').value = activeApiKey();
+  $('api_keys').value = apiKeys.filter(key => key !== activeApiKey()).join('\n');
+  $('custom_endpoint').value = customEndpoint;
+  $('cache_endpoint').value = cacheEndpoint;
+  $('soft_books_input').value = softBooks.join(',');
+  $('sharp_books_input').value = sharpBooks.join(',');
+  $('max_vig').value = maxVig;
+  $('watch_interval').value = numberOr(alertSettings.interval, 180);
+  $('alert_min_ev').value = numberOr(alertSettings.minEV, 3);
+  $('alert_min_arb').value = numberOr(alertSettings.minArb, 0.5);
+  $('t_stake').value = unitStake();
+  $('a_total_stake').value = Math.max(100, unitStake()).toFixed(2);
+  $('la_total_stake').value = Math.max(100, unitStake()).toFixed(2);
+  renderBookPicker('scan');
+  renderBookPicker('live');
+  renderBookPicker('arb');
+  $('scanner_book_links').innerHTML = quickBookLinks();
+  $('live_book_links').innerHTML = quickBookLinks();
+  $('arb_book_links').innerHTML = quickBookLinks();
+}
+async function cacheRequest(path, options = {}) {
+  const resp = await fetch(`${cacheBaseUrl()}${path}`, {
+    ...options,
+    headers: {
+      'content-type': 'application/json',
+      ...(options.headers || {})
+    }
+  });
+  const payload = await resp.json().catch(() => ({}));
+  if (!resp.ok || payload.ok === false) throw new Error(payload.error || `Cache HTTP ${resp.status}`);
+  return payload;
+}
+function renderCacheStatus(status) {
+  if (!status) return;
+  const connected = Boolean(status.ok);
+  $('cache_status').textContent = connected
+    ? (status.configured ? 'Connected' : 'Needs key sync')
+    : 'Not connected';
+  $('cache_status').className = 'tag';
+  $('cache_entries').textContent = status.entries ?? 0;
+  $('cache_fresh').textContent = status.freshEntries ?? 0;
+  $('cache_refreshing').textContent = status.refreshing ?? 0;
+  $('cache_quota').textContent = status.quota && status.quota.remaining != null ? status.quota.remaining : '--';
+  $('cache_help').textContent = status.lastError
+    ? `Last cache warning: ${status.lastError}`
+    : `Last refresh: ${status.lastRefreshFinished ? formatDateTime(status.lastRefreshFinished) : 'not yet'}. Cache file saves locally on this Mac.`;
+  if (status.quota && status.quota.remaining != null) {
+    apiRequestsRemaining = status.quota.remaining;
+    apiRequestsUsed = parseInt(status.quota.used || '0', 10);
+    localStorage.setItem(STORAGE_KEYS.apiRemaining, String(apiRequestsRemaining));
+    localStorage.setItem(STORAGE_KEYS.apiUsed, String(apiRequestsUsed));
+    updateApiUsage();
+  }
+}
+async function refreshCacheStatus(silent = false) {
+  try {
+    const status = await cacheRequest('/api/health');
+    renderCacheStatus(status);
+    if (!silent) showToast('Cache status updated.', 'ok');
+    return status;
+  } catch (e) {
+    $('cache_status').textContent = 'Offline';
+    $('cache_help').textContent = `Could not reach ${cacheBaseUrl()}. Start the local cache server first.`;
+    if (!silent) showToast(`Cache offline: ${e.message}`, 'err');
+    return null;
+  }
+}
+async function syncCacheConfig() {
+  try {
+    const status = await cacheRequest('/api/config', {
+      method: 'POST',
+      body: JSON.stringify({
+        apiKeys,
+        activeApiKeyIndex,
+        softBooks,
+        sharpBooks
+      })
+    });
+    renderCacheStatus(status);
+    showToast('Cache synced and background refresh is running.', 'ok');
+  } catch (e) {
+    showToast(`Could not sync cache: ${e.message}`, 'err');
+    refreshCacheStatus(true);
+  }
+}
+async function warmCacheFromCurrentFilters() {
+  try {
+    const payloads = [
+      { sport: $('f_sport').value, market: $('f_market').value, bookmakers: scopedBookmakerText($('f_scope').value, 'scan') },
+      { sport: $('l_sport').value, market: $('l_market').value, bookmakers: scopedBookmakerText($('l_scope').value, 'live') },
+      { sport: $('a_sport').value, market: $('a_market').value, bookmakers: scopedBookmakerText($('a_scope').value, 'arb') },
+      { sport: $('la_sport').value, market: $('la_market').value, bookmakers: scopedBookmakerText($('la_scope').value, 'arb') }
+    ];
+    let queued = 0;
+    for (const payload of payloads) {
+      const result = await cacheRequest('/api/warm', { method: 'POST', body: JSON.stringify(payload) });
+      queued += result.queued || 0;
+    }
+    showToast(`Cache warming started for ${queued} feed${queued === 1 ? '' : 's'}.`, 'ok');
+    refreshCacheStatus(true);
+  } catch (e) {
+    showToast(`Could not warm cache: ${e.message}`, 'err');
+  }
+}
+async function useCacheMode() {
+  providerMode = 'cache';
+  cacheEndpoint = $('cache_endpoint').value.trim() || CACHE_DEFAULT_ENDPOINT;
+  $('provider_mode').value = 'cache';
+  persistApiSource();
+  updateApiUsage();
+  await syncCacheConfig();
+}
+function bindEvents() {
+  document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', () => showTab(btn.dataset.tab)));
+  $('scan_btn').addEventListener('click', scan);
+  $('refresh_btn').addEventListener('click', render);
+  $('clear_scan_btn').addEventListener('click', () => { lastScanResults = []; lastScanMeta = { reqCount: 0, rawCount: 0, errorCount: 0 }; showEmptyScan('Scan results cleared.'); });
+  $('scan_max_btn').addEventListener('click', () => setScannerPreset('max'));
+  $('scan_props_btn').addEventListener('click', () => setScannerPreset('props'));
+  $('scan_quota_btn').addEventListener('click', () => setScannerPreset('quota'));
+  $('live_scan_btn').addEventListener('click', scanLive);
+  $('live_refresh_btn').addEventListener('click', renderLive);
+  $('live_clear_btn').addEventListener('click', () => { lastLiveResults = []; lastLiveMeta = { reqCount: 0, rawCount: 0, errorCount: 0 }; showEmptyLive('Live results cleared.'); });
+  $('live_max_btn').addEventListener('click', () => setLivePreset('max'));
+  $('live_main_btn').addEventListener('click', () => setLivePreset('main'));
+  $('live_quota_btn').addEventListener('click', () => setLivePreset('quota'));
+  $('enable_alerts_btn').addEventListener('click', enableAlerts);
+  $('start_watch_btn').addEventListener('click', startWatch);
+  $('stop_watch_btn').addEventListener('click', () => stopWatch(true));
+  ['watch_interval','alert_min_ev','alert_min_arb'].forEach(id => $(id).addEventListener('change', saveAlertSettings));
+  $('arb_scan_btn').addEventListener('click', scanArbs);
+  $('arb_refresh_btn').addEventListener('click', renderArbs);
+  $('arb_clear_btn').addEventListener('click', () => { lastArbResults = []; lastArbMeta = { reqCount: 0, rawCount: 0, errorCount: 0 }; showEmptyArbs('Arbitrage results cleared.'); });
+  $('arb_max_btn').addEventListener('click', () => setArbPreset('max'));
+  $('arb_props_btn').addEventListener('click', () => setArbPreset('props'));
+  $('arb_quota_btn').addEventListener('click', () => setArbPreset('quota'));
+  $('live_arb_scan_btn').addEventListener('click', scanLiveArbs);
+  $('live_arb_refresh_btn').addEventListener('click', renderLiveArbs);
+  $('live_arb_clear_btn').addEventListener('click', () => { lastLiveArbResults = []; lastLiveArbMeta = { reqCount: 0, rawCount: 0, errorCount: 0 }; showEmptyLiveArbs('Live arbitrage results cleared.'); });
+  $('live_arb_max_btn').addEventListener('click', () => setLiveArbPreset('max'));
+  $('live_arb_main_btn').addEventListener('click', () => setLiveArbPreset('main'));
+  $('live_arb_quota_btn').addEventListener('click', () => setLiveArbPreset('quota'));
+  $('log_bet_btn').addEventListener('click', logBet);
+  $('prefill_stake_btn').addEventListener('click', () => { $('t_stake').value = unitStake(); });
+  $('save_bankroll_btn').addEventListener('click', saveBankroll);
+  $('tool_nv_btn').addEventListener('click', calcToolNoVig);
+  $('tool_prob_from_odds_btn').addEventListener('click', calcToolProbFromOdds);
+  $('tool_prob_from_pct_btn').addEventListener('click', calcToolProbFromPct);
+  $('tool_hedge_btn').addEventListener('click', calcToolHedge);
+  $('tool_boost_btn').addEventListener('click', calcToolBoost);
+  $('tool_parlay_btn').addEventListener('click', calcToolParlay);
+  $('save_api_btn').addEventListener('click', saveApiKey);
+  $('rotate_key_btn').addEventListener('click', () => {
+    rotateApiKey('Add more keys you own before rotating.');
+    hydrateInputs();
+  });
+  $('use_cache_btn').addEventListener('click', useCacheMode);
+  $('sync_cache_btn').addEventListener('click', syncCacheConfig);
+  $('warm_cache_btn').addEventListener('click', warmCacheFromCurrentFilters);
+  $('refresh_cache_btn').addEventListener('click', () => refreshCacheStatus());
+  $('save_books_btn').addEventListener('click', saveBooks);
+  $('reset_books_btn').addEventListener('click', resetBooks);
+  $('save_thresholds_btn').addEventListener('click', saveThresholds);
+  $('export_btn').addEventListener('click', exportData);
+  $('import_file').addEventListener('change', e => importData(e.target.files[0]));
+  $('wipe_btn').addEventListener('click', wipeData);
+  ['f_minev','f_maxev'].forEach(id => $(id).addEventListener('input', render));
+  ['l_minev','l_maxev'].forEach(id => $(id).addEventListener('input', renderLive));
+  ['f_sport','f_market'].forEach(id => $(id).addEventListener('change', updateScanEstimate));
+  $('f_scope').addEventListener('change', () => { updateScanEstimate(); render(); });
+  ['l_sport','l_market'].forEach(id => $(id).addEventListener('change', updateLiveEstimate));
+  $('l_scope').addEventListener('change', () => { updateLiveEstimate(); renderLive(); });
+  ['a_min_profit','a_total_stake'].forEach(id => $(id).addEventListener('input', renderArbs));
+  ['a_sport','a_market'].forEach(id => $(id).addEventListener('change', updateArbEstimate));
+  $('a_scope').addEventListener('change', () => { updateArbEstimate(); renderArbs(); });
+  ['la_min_profit','la_total_stake'].forEach(id => $(id).addEventListener('input', renderLiveArbs));
+  ['la_sport','la_market'].forEach(id => $(id).addEventListener('change', updateLiveArbEstimate));
+  $('la_scope').addEventListener('change', () => { updateLiveArbEstimate(); renderLiveArbs(); });
+  $('scan_books_us_btn').addEventListener('click', () => setSelectedBooks('scan', DEFAULT_SOFT_BOOKS));
+  $('scan_books_all_btn').addEventListener('click', () => setSelectedBooks('scan', COMMON_BOOKS.map(([key]) => key)));
+  $('scan_books_clear_btn').addEventListener('click', () => setSelectedBooks('scan', []));
+  $('live_books_us_btn').addEventListener('click', () => setSelectedBooks('live', DEFAULT_SOFT_BOOKS));
+  $('live_books_all_btn').addEventListener('click', () => setSelectedBooks('live', COMMON_BOOKS.map(([key]) => key)));
+  $('live_books_clear_btn').addEventListener('click', () => setSelectedBooks('live', []));
+  $('arb_books_us_btn').addEventListener('click', () => setSelectedBooks('arb', DEFAULT_SOFT_BOOKS));
+  $('arb_books_all_btn').addEventListener('click', () => setSelectedBooks('arb', COMMON_BOOKS.map(([key]) => key)));
+  $('arb_books_clear_btn').addEventListener('click', () => setSelectedBooks('arb', []));
+
+  document.addEventListener('click', event => {
+    const checkbox = event.target.closest('input[data-book-key]');
+    if (checkbox) {
+      syncBookFromCheckbox(checkbox, event);
+      return;
+    }
+    const selected = event.target.closest('[data-select-card]');
+    if (selected && !event.target.closest('button, a, input, select, textarea, label')) {
+      selectCard(selected.dataset.selectCard);
+      return;
+    }
+    const sort = event.target.closest('[data-sort]');
+    if (sort) {
+      const key = sort.dataset.sort;
+      currentSort = currentSort.key === key
+        ? { key, dir: currentSort.dir === 'asc' ? 'desc' : 'asc' }
+        : { key, dir: key === 'start' ? 'asc' : 'desc' };
+      render();
+      return;
+    }
+    const arbSort = event.target.closest('[data-arb-sort]');
+    if (arbSort) {
+      const key = arbSort.dataset.arbSort;
+      currentArbSort = currentArbSort.key === key
+        ? { key, dir: currentArbSort.dir === 'asc' ? 'desc' : 'asc' }
+        : { key, dir: key === 'implied' ? 'asc' : 'desc' };
+      renderArbs();
+      return;
+    }
+    const arbTrack = event.target.closest('[data-arb-track]');
+    if (arbTrack) {
+      trackArb(arbTrack.dataset.arbTrack);
+      return;
+    }
+    const copyBet = event.target.closest('[data-copy-bet]');
+    if (copyBet) {
+      copyText(decodePayload(copyBet.dataset.copyBet).text);
+      return;
+    }
+    const openBook = event.target.closest('[data-open-book]');
+    if (openBook) {
+      window.open(openBook.dataset.openBook, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    const track = event.target.closest('[data-track]');
+    if (track) {
+      trackFromScanPayload(track.dataset.track);
+      return;
+    }
+    const close = event.target.closest('[data-close]');
+    if (close) {
+      setClose(Number(close.dataset.close));
+      return;
+    }
+    const settleBtn = event.target.closest('[data-settle]');
+    if (settleBtn) {
+      const [id, result] = settleBtn.dataset.settle.split(':');
+      settle(Number(id), result);
+      return;
+    }
+    const del = event.target.closest('[data-delete]');
+    if (del) delBet(Number(del.dataset.delete));
+  });
+}
+
+function init() {
+  hydrateInputs();
+  bindEvents();
+  renderTracker();
+  updateScanEstimate();
+  updateLiveEstimate();
+  updateArbEstimate();
+  updateLiveArbEstimate();
+  updateApiUsage();
+  if (apiRequestsRemaining !== '?') {
+    setStatus(`${apiRequestsRemaining} reqs left`, Number(apiRequestsRemaining) < 50 ? 'warn' : 'ok');
+  } else if (!apiReadyMessage()) {
+    setStatus('Data source ready', 'ok');
+  }
+  refreshCacheStatus(true);
+}
+init();
+</script>
+</body>
+</html>
