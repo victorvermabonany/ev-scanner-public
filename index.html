@@ -2781,6 +2781,201 @@
       text-align: left;
     }
   }
+
+  /* Odds-board style result density */
+  .scanner-board {
+    overflow: hidden;
+    border: 1px solid #1b2a34;
+    border-radius: 12px;
+    background: #080f14;
+  }
+
+  .scanner-board-head {
+    display: grid;
+    grid-template-columns: 1.05fr 1.7fr 1.2fr;
+    gap: 12px;
+    min-height: 38px;
+    align-items: center;
+    padding: 0 14px;
+    border-bottom: 1px solid #1b2a34;
+    background: #0c151c;
+    color: #7f909c;
+    font-size: 10px;
+    font-weight: 950;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+
+  .scanner-board .opportunity-list {
+    gap: 0;
+  }
+
+  .scanner-board .opportunity-card {
+    display: grid;
+    grid-template-columns: minmax(260px, 1.05fr) minmax(0, 1.7fr);
+    border: 0;
+    border-bottom: 1px solid #14222b;
+    border-radius: 0;
+    background: #091116;
+  }
+
+  .scanner-board .opportunity-card:last-child {
+    border-bottom: 0;
+  }
+
+  .scanner-board .opportunity-card:hover {
+    background: #0b151b;
+  }
+
+  .scanner-board .opp-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 88px;
+    gap: 10px;
+    align-items: center;
+    padding: 12px 14px;
+    border: 0;
+    background: transparent;
+  }
+
+  .scanner-board .opp-profit {
+    min-width: 0;
+    padding: 7px 8px;
+    border-color: rgba(89,224,138,.28);
+  }
+
+  .scanner-board .opp-profit .big {
+    font-size: 17px;
+  }
+
+  .scanner-board .opp-profit .small {
+    font-size: 9px;
+  }
+
+  .scanner-board .opp-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 190px;
+    gap: 12px;
+    align-items: center;
+    padding: 10px 14px 10px 0;
+  }
+
+  .scanner-board .ev-line-card {
+    border: 0;
+    background: transparent;
+  }
+
+  .scanner-board .ev-line-main {
+    padding: 0;
+    border-left: 0;
+  }
+
+  .scanner-board .ev-book {
+    margin-bottom: 5px;
+  }
+
+  .scanner-board .ev-bet {
+    font-size: 16px;
+  }
+
+  .scanner-board .ev-price .odds {
+    font-size: 22px;
+  }
+
+  .scanner-board .ev-line-details {
+    display: flex;
+    gap: 6px;
+    margin-top: 9px;
+    border: 0;
+  }
+
+  .scanner-board .ev-line-details span {
+    min-height: 25px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 7px;
+    border: 1px solid #182832;
+    border-radius: 999px;
+    background: #0b151b;
+    font-size: 11px;
+  }
+
+  .scanner-board .ev-line-details strong {
+    display: inline;
+    font-size: 9px;
+  }
+
+  .scanner-board .form-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 7px;
+    margin: 0;
+  }
+
+  .scanner-board .form-actions .btn {
+    width: 100%;
+    min-height: 34px;
+    padding: 7px 9px;
+  }
+
+  .scanner-board.arb-board .scanner-board-head {
+    grid-template-columns: 1.05fr 1.35fr 1.35fr;
+  }
+
+  .scanner-board.arb-board .opportunity-card {
+    grid-template-columns: minmax(260px, 1.05fr) minmax(0, 2.7fr);
+  }
+
+  .scanner-board.arb-board .opp-body {
+    grid-template-columns: minmax(0, 1fr) 150px;
+  }
+
+  .scanner-board.arb-board .oj-grid {
+    grid-template-columns: repeat(6, minmax(96px, 1fr));
+    margin-bottom: 10px;
+  }
+
+  .scanner-board.arb-board .place-bet {
+    padding: 9px;
+  }
+
+  .scanner-board.arb-board .sportsbook-callout {
+    margin-bottom: 7px;
+  }
+
+  .scanner-board.arb-board .odds-row {
+    grid-template-columns: 1fr 1.1fr .8fr .9fr;
+    min-height: 34px;
+    padding: 5px 0;
+    font-size: 12px;
+  }
+
+  @media (max-width: 980px) {
+    .scanner-board-head {
+      display: none;
+    }
+
+    .scanner-board .opportunity-card,
+    .scanner-board.arb-board .opportunity-card,
+    .scanner-board .opp-body,
+    .scanner-board.arb-board .opp-body {
+      grid-template-columns: 1fr;
+    }
+
+    .scanner-board .opp-body {
+      padding: 0 14px 14px;
+    }
+
+    .scanner-board .form-actions {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 560px) {
+    .scanner-board .form-actions {
+      grid-template-columns: 1fr;
+    }
+  }
 </style>
 </head>
 <body>
@@ -5015,7 +5210,10 @@ function render() {
     </article>`;
   }).join('');
 
-  $('scan_results').innerHTML = `<div class="opportunity-list">${cards}</div>`;
+  $('scan_results').innerHTML = `<div class="scanner-board">
+    <div class="scanner-board-head"><span>Event / Edge</span><span>Best Bet</span><span>Actions</span></div>
+    <div class="opportunity-list">${cards}</div>
+  </div>`;
 }
 
 function renderLive() {
@@ -5083,7 +5281,10 @@ function renderLive() {
       </div>
     </article>`;
   }).join('');
-  $('live_results').innerHTML = `<div class="opportunity-list">${cards}</div>`;
+  $('live_results').innerHTML = `<div class="scanner-board">
+    <div class="scanner-board-head"><span>Live Event / Edge</span><span>Best Bet</span><span>Actions</span></div>
+    <div class="opportunity-list">${cards}</div>
+  </div>`;
 }
 
 function renderArbs() {
@@ -5140,7 +5341,10 @@ function renderArbs() {
       </div>
     </article>`;
   }).join('');
-  $('arb_results').innerHTML = `<div class="opportunity-list">${cards}</div>`;
+  $('arb_results').innerHTML = `<div class="scanner-board arb-board">
+    <div class="scanner-board-head"><span>Event / Profit</span><span>Arb Details</span><span>Legs / Actions</span></div>
+    <div class="opportunity-list">${cards}</div>
+  </div>`;
 }
 
 function renderLiveArbs() {
@@ -5195,7 +5399,10 @@ function renderLiveArbs() {
       </div>
     </article>`;
   }).join('');
-  $('live_arb_results').innerHTML = `<div class="opportunity-list">${cards}</div>`;
+  $('live_arb_results').innerHTML = `<div class="scanner-board arb-board">
+    <div class="scanner-board-head"><span>Live Event / Profit</span><span>Arb Details</span><span>Legs / Actions</span></div>
+    <div class="opportunity-list">${cards}</div>
+  </div>`;
 }
 
 function sortedArbList() {
