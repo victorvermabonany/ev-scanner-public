@@ -4104,16 +4104,33 @@ async function fetchCacheOddsFeed(sport, market, scope, kind = 'scan') {
     kind,
     bookmakers: scopedBookmakerText(scope, kind)
   });
-  const resp = await fetch(`${cacheBaseUrl()}/api/odds?${params}`);
-  const payload = await resp.json().catch(() => ({}));
+  let resp;
+  let payload = {};
+  try {
+    resp = await fetch(`${cacheBaseUrl()}/api/odds?${params}`);
+    payload = await resp.json().catch(() => ({}));
+  } catch (e) {
+    return fallbackToDirectFeed(sport, market, scope, kind, `Cache offline: ${e.message}`);
+  }
   if (!resp.ok || !payload.ok) {
-    return { ok: false, error: payload.error || `Cache HTTP ${resp.status}` };
+    const error = payload.error || `Cache HTTP ${resp.status}`;
+    return fallbackToDirectFeed(sport, market, scope, kind, error);
   }
   if (payload.updatedAt) {
     const age = Math.max(0, Math.round((payload.ageMs || 0) / 1000));
     setStatus(`Cache ${age}s old`, payload.stale ? 'warn' : 'ok');
   }
   return { ok: true, data: payload.data || [], requestCount: 0 };
+}
+async function fallbackToDirectFeed(sport, market, scope, kind, cacheError) {
+  if (!activeApiKey()) return { ok: false, error: `${cacheError}. Switch Provider mode to The Odds API live feed or sync a valid key to the cache.` };
+  setStatus('Cache failed, trying direct feed...', 'warn');
+  const direct = await fetchOddsApiFeed(sport, market, scope, kind);
+  if (direct.ok) {
+    showToast('Cache failed, so I used the saved API key directly.', 'warn');
+    return direct;
+  }
+  return { ok: false, error: `${cacheError}. Direct feed also failed: ${direct.error}` };
 }
 function oddsApiError(status) {
   if (status === 401 || status === 422) return 'key invalid, exhausted, or unsupported bookmakers';
