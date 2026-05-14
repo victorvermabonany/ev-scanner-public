@@ -1,0 +1,34 @@
+{
+  "name": "EV Scanner",
+  "short_name": "EV Scanner",
+  "description": "EV and arbitrage betting scanner with odds tools and bet tracking.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#070b0f",
+  "theme_color": "#070b0f",
+  "categories": ["sports", "finance", "utilities"],
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "EV Scanner",
+      "short_name": "EV",
+      "url": "./#pre_match_ev",
+      "description": "Open the EV scanner"
+    },
+    {
+      "name": "Arbitrage",
+      "short_name": "Arbs",
+      "url": "./#pre_match_arbs",
+      "description": "Open the arbitrage scanner"
+    }
+  ]
+}

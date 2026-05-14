@@ -3,6 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#070b0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="EV Scanner">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon.svg">
 <title>+EV Scanner</title>
 <style>
   :root {
@@ -6412,6 +6419,12 @@ function init() {
     setStatus('Data source ready', 'ok');
   }
   refreshCacheStatus(true);
+  registerServiceWorker();
+}
+function registerServiceWorker() {
+  if (!('serviceWorker' in navigator)) return;
+  if (!location.protocol.startsWith('http')) return;
+  navigator.serviceWorker.register('sw.js').catch(() => {});
 }
 init();
 </script>
