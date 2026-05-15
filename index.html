@@ -66,10 +66,37 @@
     <section id="dashboard" class="panel active">
       <div class="page-head">
         <div>
-          <h2>Command Center</h2>
-          <p>A fresh pro-style workspace for line shopping, +EV, arbitrage, bankroll sizing, tracking, and free data-source switching.</p>
+          <h2>Find Your Edge.</h2>
+          <p>Real-time EV, arbitrage, line shopping, bankroll sizing, and bet tracking in one clean workspace.</p>
         </div>
         <button class="btn primary" data-jump="ev"><i data-lucide="scan-line"></i>Open Scanner</button>
+      </div>
+
+      <div class="hero-board">
+        <div class="hero-copy">
+          <span class="eyebrow">EdgeLabs live board</span>
+          <h3>Scan the market before the number disappears.</h3>
+          <p>Use a backend cache for real odds, keep your sportsbook list tight, and compare implied probability against sharper references before placing anything.</p>
+          <div class="hero-actions">
+            <button class="btn primary" data-quick-scan="ev" type="button"><i data-lucide="zap"></i>Scan EV</button>
+            <button class="btn secondary" data-quick-scan="arb" type="button"><i data-lucide="split"></i>Scan Arbs</button>
+          </div>
+        </div>
+        <div class="pick-preview" aria-label="Scanner preview">
+          <div class="preview-top"><span>Live Preview</span><strong id="real_setup_badge">Backend</strong></div>
+          <div class="preview-pick">
+            <div><strong>Best EV</strong><span id="hero_ev_label">Run scan</span></div>
+            <b id="hero_ev_value">--</b>
+          </div>
+          <div class="preview-pick">
+            <div><strong>Best Arb</strong><span id="hero_arb_label">Run scan</span></div>
+            <b id="hero_arb_value">--</b>
+          </div>
+          <div class="preview-slip">
+            <span id="hero_books_count">0 books</span>
+            <span id="hero_feed_age">No scan yet</span>
+          </div>
+        </div>
       </div>
 
       <div class="grid-4">
@@ -326,7 +353,12 @@
             <option value="custom">Custom compatible endpoint</option>
             <option value="demo">Demo feed</option>
           </select>
-          <label for="api_key">Key for selected provider</label>
+          <label for="backend_provider">Backend provider</label>
+          <select id="backend_provider">
+            <option value="propline">PropLine backend</option>
+            <option value="oddsapi">The Odds API backend</option>
+          </select>
+          <label id="api_key_label" for="api_key">Provider key</label>
           <input id="api_key" type="password" placeholder="paste key" autocomplete="off">
           <label for="api_keys">Extra keys you own for this provider</label>
           <textarea id="api_keys" placeholder="one key per line"></textarea>
@@ -342,7 +374,7 @@
           </div>
           <div class="health-card">
             <strong>Safer public setup</strong>
-            <span>Use backend cache/proxy mode when the site is public. Your API key stays on your server instead of being exposed in the browser.</span>
+            <span>Use backend cache/proxy mode when the site is public. Pick PropLine or The Odds API above, paste your key, copy the backend command, then run it in Terminal.</span>
             <button id="test_backend_btn" class="btn secondary" type="button"><i data-lucide="activity"></i>Test Backend</button>
             <button class="btn secondary" data-copy-start-command type="button"><i data-lucide="copy"></i>Copy Start Command</button>
             <span id="backend_health">Backend not checked yet.</span>

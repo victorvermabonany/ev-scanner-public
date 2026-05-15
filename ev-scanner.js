@@ -100,6 +100,7 @@ const FREE_SOURCES = [
 
 let settings = loadJson(STORE.settings, {
   provider: 'backend',
+  backendProvider: 'propline',
   keyMap: {},
   customEndpoint: '',
   backendEndpoint: 'http://localhost:8787',
@@ -111,6 +112,7 @@ let settings = loadJson(STORE.settings, {
   unitPct: 3
 });
 settings.keyMap = settings.keyMap && typeof settings.keyMap === 'object' ? settings.keyMap : {};
+settings.backendProvider = settings.backendProvider || 'propline';
 let selectedBooks = cleanBookKeys(loadJson(STORE.selectedBooks, DEFAULT_BOOKS));
 let bets = loadJson(STORE.bets, []);
 let feedCache = loadJson(STORE.cache, {});
@@ -150,14 +152,17 @@ function cleanBookKeys(keys, fallback = DEFAULT_BOOKS, allowEmpty = false) {
   return clean.length || allowEmpty ? clean : fallback.slice();
 }
 function selectedProviderKeys() {
-  const entry = settings.keyMap[settings.provider] || { keys: [], active: 0 };
+  const entry = settings.keyMap[keyProvider()] || { keys: [], active: 0 };
   const keys = Array.isArray(entry.keys) ? unique(entry.keys.map(String).map(s => s.trim())) : [];
   const active = Math.max(0, Math.min(numberOr(entry.active, 0), Math.max(0, keys.length - 1)));
   return { keys, active, key: keys[active] || '' };
 }
 function saveProviderKeys(keys, active = 0) {
-  settings.keyMap[settings.provider] = { keys: unique(keys), active };
+  settings.keyMap[keyProvider()] = { keys: unique(keys), active };
   saveSettings();
+}
+function keyProvider() {
+  return settings.provider === 'backend' ? (settings.backendProvider || 'propline') : settings.provider;
 }
 function saveSettings() { saveJson(STORE.settings, settings); }
 function activeSports(value) { return value === 'all' ? SPORTS.filter(s => s[0] !== 'all').map(s => s[0]) : [value]; }
@@ -251,6 +256,7 @@ function bindEvents() {
   $('watch_btn').addEventListener('click', toggleWatch);
   $('save_settings_btn').addEventListener('click', saveSettingsFromInputs);
   $('provider_mode').addEventListener('change', switchProvider);
+  if ($('backend_provider')) $('backend_provider').addEventListener('change', switchBackendProvider);
   $('test_backend_btn').addEventListener('click', () => checkBackendHealth(false));
   $('manual_add_btn').addEventListener('click', addManualBet);
   $('export_tracker_btn').addEventListener('click', () => exportJson({ bets }, 'edgelab-tracker.json'));
@@ -269,6 +275,7 @@ function showTab(name) {
 }
 function hydrateSettings() {
   $('provider_mode').value = settings.provider || 'demo';
+  if ($('backend_provider')) $('backend_provider').value = settings.backendProvider || 'propline';
   hydrateProviderKeys();
   $('backend_endpoint').value = settings.backendEndpoint || 'http://localhost:8787';
   $('custom_endpoint').value = settings.customEndpoint || '';
@@ -284,6 +291,7 @@ function hydrateProviderKeys() {
   const current = selectedProviderKeys();
   $('api_key').value = current.key;
   $('api_keys').value = current.keys.filter(k => k !== current.key).join('\n');
+  if ($('api_key_label')) $('api_key_label').textContent = settings.provider === 'backend' ? `${backendProviderLabel()} server key` : `Key for ${providerLabel()}`;
 }
 function readKeyInputs() {
   return unique([$('api_key').value.trim(), ...$('api_keys').value.split(/\n|,/).map(s => s.trim())]);
@@ -291,14 +299,24 @@ function readKeyInputs() {
 function switchProvider() {
   saveProviderKeys(readKeyInputs(), selectedProviderKeys().active);
   settings.provider = $('provider_mode').value;
+  if ($('backend_provider')) settings.backendProvider = $('backend_provider').value || 'propline';
   hydrateProviderKeys();
   quota = { used: 0, remaining: '?' };
   saveSettings();
   renderStatus();
   toast(`Switched to ${providerLabel()}.`);
 }
+function switchBackendProvider() {
+  saveProviderKeys(readKeyInputs(), selectedProviderKeys().active);
+  settings.backendProvider = $('backend_provider').value || 'propline';
+  hydrateProviderKeys();
+  saveSettings();
+  renderStatus();
+  toast(`Backend provider set to ${backendProviderLabel()}.`);
+}
 function saveSettingsFromInputs() {
   settings.provider = $('provider_mode').value;
+  settings.backendProvider = $('backend_provider')?.value || settings.backendProvider || 'propline';
   settings.backendEndpoint = normalizeEndpoint($('backend_endpoint').value.trim() || 'http://localhost:8787');
   settings.customEndpoint = $('custom_endpoint').value.trim();
   settings.cacheMinutes = Math.max(0, numberOr($('cache_minutes').value, 3));
@@ -315,6 +333,9 @@ function saveSettingsFromInputs() {
 }
 function providerLabel() {
   return { demo: 'Demo', opticodds: 'OpticOdds', propline: 'PropLine', oddsapi: 'The Odds API', backend: 'Backend cache', custom: 'Custom' }[settings.provider] || 'Demo';
+}
+function backendProviderLabel() {
+  return { propline: 'PropLine', oddsapi: 'The Odds API' }[settings.backendProvider || 'propline'] || 'PropLine';
 }
 function providerNeedsKey() { return settings.provider === 'opticodds' || settings.provider === 'propline' || settings.provider === 'oddsapi'; }
 function providerReady() {
@@ -358,7 +379,7 @@ function feedBannerState() {
     return { show: true, tone: backendHealth.ok ? 'warn' : 'err', title: backendHealth.ok ? 'Backend Needs Key' : 'Feed Offline', text: backendHealth.message };
   }
   if (settings.provider === 'backend' && !backendHealth.checked) {
-    return { show: true, tone: 'warn', title: 'Backend Not Checked', text: 'Click Test Backend in Settings, or start the real odds backend.' };
+    return { show: true, tone: 'warn', title: 'Backend Not Checked', text: `Copy the ${backendProviderLabel()} backend command, run it in Terminal, then click Test Backend.` };
   }
   if (providerReady()) return { show: true, tone: 'warn', title: 'Live Feed Setup Needed', text: providerReady() };
   if (loadedGames.length) return { show: false, tone: 'ok', title: 'Feed Connected', text: freshnessState().label };
@@ -371,7 +392,7 @@ function quotaLabel() {
 }
 function providerSubtitle(missing) {
   if (settings.provider === 'demo') return 'demo/test data only';
-  if (settings.provider === 'backend') return backendHealth.ready ? 'real odds backend ready' : (missing || 'start backend server');
+  if (settings.provider === 'backend') return backendHealth.ready ? `${backendProviderLabel()} backend ready` : (missing || `start ${backendProviderLabel()} backend`);
   return missing || 'live-ready';
 }
 function freshnessState() {
@@ -506,6 +527,12 @@ function renderRealSetup() {
   if ($('arb_results')) $('arb_results').innerHTML = html;
 }
 async function checkBackendHealth(silent = false) {
+  if ($('backend_endpoint')) {
+    settings.backendEndpoint = normalizeEndpoint($('backend_endpoint').value.trim() || 'http://localhost:8787');
+    settings.backendProvider = $('backend_provider')?.value || settings.backendProvider || 'propline';
+    saveProviderKeys(readKeyInputs(), selectedProviderKeys().active);
+    saveSettings();
+  }
   const endpoint = normalizeEndpoint(settings.backendEndpoint || 'http://localhost:8787');
   try {
     const resp = await fetch(`${endpoint}/api/health?ts=${Date.now()}`);
@@ -516,8 +543,8 @@ async function checkBackendHealth(silent = false) {
       ok: data.ok === true,
       ready: data.ready === true,
       message: data.ready
-        ? `Backend ready: ${data.provider || 'provider'} cache ${data.cacheSeconds || '?'}s.`
-        : `Backend is running, but no API key is set on the server.`
+        ? `Backend ready: ${data.provider || 'provider'} cache ${data.cacheSeconds || '?'}s, ${data.cacheItems ?? 0}/${data.maxCacheItems ?? '?'} cached.`
+        : `Backend is running, but no API key is set on the server. Copy the backend command with your ${backendProviderLabel()} key and restart it.`
     };
     if (!silent) toast(backendHealth.message, data.ready ? 'ok' : 'warn');
   } catch (err) {
@@ -1310,6 +1337,13 @@ function renderDashboard() {
   $('dash_best_ev_sub').textContent = bestEv ? `${bestEv.book} · ${bestEv.outcome}` : 'scan to update';
   $('dash_best_arb').textContent = bestArb ? fmtPct(bestArb.profitRate * 100) : '--';
   $('dash_best_arb_sub').textContent = bestArb ? `${bestArb.legs.length} legs · ${signedMoney(bestArb.profit)}` : 'scan to update';
+  if ($('hero_ev_value')) $('hero_ev_value').textContent = bestEv ? fmtPct(bestEv.ev * 100) : '--';
+  if ($('hero_ev_label')) $('hero_ev_label').textContent = bestEv ? `${bestEv.book} · ${bestEv.outcome}` : 'Run EV scan';
+  if ($('hero_arb_value')) $('hero_arb_value').textContent = bestArb ? fmtPct(bestArb.profitRate * 100) : '--';
+  if ($('hero_arb_label')) $('hero_arb_label').textContent = bestArb ? `${bestArb.legs.length} legs · ${signedMoney(bestArb.profit)}` : 'Run arb scan';
+  if ($('real_setup_badge')) $('real_setup_badge').textContent = realSetupLabel();
+  if ($('hero_books_count')) $('hero_books_count').textContent = `${selectedBooks.length} book${selectedBooks.length === 1 ? '' : 's'}`;
+  if ($('hero_feed_age')) $('hero_feed_age').textContent = freshnessState().label;
   const settled = bets.filter(b => b.status !== 'pending');
   const profit = settled.reduce((s, b) => s + (Number(b.profit) || 0), 0);
   $('dash_profit').textContent = signedMoney(profit);
@@ -1429,7 +1463,7 @@ function handleActions(e) {
   const demoNow = e.target.closest('[data-demo-now]');
   if (demoNow) { switchToDemoMode(); return; }
   const copyStart = e.target.closest('[data-copy-start-command]');
-  if (copyStart) { copyText(startBackendCommand()); return; }
+  if (copyStart) { copyText(startBackendCommand(), 'Backend command copied. Paste it into Terminal, then click Test Backend.'); return; }
   const confidenceHelp = e.target.closest('[data-confidence-help]');
   if (confidenceHelp) { toast(confidenceExplanation(confidenceHelp.dataset.confidenceHelp), 'ok'); return; }
   const quickScan = e.target.closest('[data-quick-scan]');
@@ -1456,7 +1490,18 @@ function handleActions(e) {
   if (jump) showTab(jump.dataset.jump);
 }
 function startBackendCommand() {
-  return 'ODDS_PROVIDER=propline PROP_LINE_API_KEY="paste_your_key_here" node /Users/victor/Downloads/edge-cache-server.mjs';
+  settings.backendProvider = $('backend_provider')?.value || settings.backendProvider || 'propline';
+  settings.backendEndpoint = normalizeEndpoint($('backend_endpoint')?.value?.trim() || settings.backendEndpoint || 'http://localhost:8787');
+  const provider = settings.backendProvider || 'propline';
+  const key = readKeyInputs()[0] || selectedProviderKeys().key || 'paste_your_key_here';
+  const envName = provider === 'propline' ? 'PROP_LINE_API_KEY' : 'ODDS_API_KEY';
+  const safeKey = shellDoubleQuote(key);
+  const cacheSeconds = Math.max(15, Math.round(numberOr($('stale_seconds')?.value, settings.staleSeconds || 75)));
+  const maxPropEvents = Math.max(1, Math.min(30, Math.round(numberOr($('max_prop_events')?.value, settings.maxPropEvents || 10))));
+  return `ODDS_PROVIDER=${provider} ${envName}=${safeKey} CACHE_SECONDS=${cacheSeconds} MAX_PROP_EVENTS=${maxPropEvents} node /Users/victor/Downloads/edge-cache-server.mjs`;
+}
+function shellDoubleQuote(value) {
+  return `"${String(value || '').replace(/(["\\$`])/g, '\\$1')}"`;
 }
 function switchToDemoMode() {
   settings.provider = 'demo';
@@ -1498,8 +1543,8 @@ function evText(row) {
 function arbText(row) {
   return `ARB ${row.event} | ${prettyMarket(row.market)} | profit ${fmtPct(row.profitRate * 100)} ${signedMoney(row.profit)}\n${row.legs.map(l => `${l.book} | ${l.outcome} | ${fmtOdds(l.odds)} | stake ${money(l.stake)}`).join('\n')}`;
 }
-async function copyText(text) {
-  try { await navigator.clipboard.writeText(text); toast('Copied.'); }
+async function copyText(text, message = 'Copied.') {
+  try { await navigator.clipboard.writeText(text); toast(message); }
   catch { toast('Could not copy from this browser.', 'warn'); }
 }
 function openBook(key) {
