@@ -3,6 +3,8 @@ import http from 'node:http';
 const PORT = Number(process.env.PORT || 8787);
 const CACHE_SECONDS = Number(process.env.CACHE_SECONDS || 45);
 const MAX_PROP_EVENTS = Number(process.env.MAX_PROP_EVENTS || 10);
+const MAX_CACHE_ITEMS = Number(process.env.MAX_CACHE_ITEMS || 300);
+const FETCH_TIMEOUT_MS = Number(process.env.FETCH_TIMEOUT_MS || 10000);
 const PROVIDER = String(process.env.ODDS_PROVIDER || 'oddsapi').toLowerCase();
 const API_KEY = process.env.ODDS_API_KEY || process.env.PROP_LINE_API_KEY || process.env.API_KEY || '';
 const startedAt = new Date().toISOString();
@@ -34,7 +36,21 @@ function isPropMarket(market) {
 }
 
 async function fetchJson(url) {
-  const resp = await fetch(url);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  let resp;
+  try {
+    resp = await fetch(url, { signal: controller.signal });
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      const timeoutErr = new Error(`Provider request timed out after ${FETCH_TIMEOUT_MS}ms`);
+      timeoutErr.status = 504;
+      throw timeoutErr;
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
   const text = await resp.text();
   let data = null;
   try { data = text ? JSON.parse(text) : null; }
@@ -46,6 +62,12 @@ async function fetchJson(url) {
     throw err;
   }
   return { data, headers: Object.fromEntries(resp.headers.entries()) };
+}
+
+function trimCache() {
+  while (cache.size > MAX_CACHE_ITEMS) {
+    cache.delete(cache.keys().next().value);
+  }
 }
 
 function providerBase() {
@@ -112,6 +134,9 @@ const server = http.createServer(async (req, res) => {
       providerKey: PROVIDER,
       hasApiKey: Boolean(API_KEY),
       cacheSeconds: CACHE_SECONDS,
+      cacheItems: cache.size,
+      maxCacheItems: MAX_CACHE_ITEMS,
+      fetchTimeoutMs: FETCH_TIMEOUT_MS,
       maxPropEvents: MAX_PROP_EVENTS,
       startedAt
     });
@@ -141,6 +166,7 @@ const server = http.createServer(async (req, res) => {
       'x-requests-used': headers['x-requests-used'] || headers['x-ratelimit-used'] || ''
     };
     cache.set(key, { at: Date.now(), data, headers: quotaHeaders });
+    trimCache();
     return json(res, 200, { data, cached: false, updatedAt: new Date().toISOString() }, quotaHeaders);
   } catch (err) {
     return json(res, err.status || 500, { error: err.message || 'Backend cache failed' });
@@ -149,5 +175,5 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, () => {
   console.log(`EdgeLabs cache server running on http://localhost:${PORT}`);
-  console.log(`Provider: ${PROVIDER} | cache: ${CACHE_SECONDS}s | max prop events: ${MAX_PROP_EVENTS}`);
+  console.log(`Provider: ${PROVIDER} | cache: ${CACHE_SECONDS}s | max prop events: ${MAX_PROP_EVENTS} | timeout: ${FETCH_TIMEOUT_MS}ms`);
 });
