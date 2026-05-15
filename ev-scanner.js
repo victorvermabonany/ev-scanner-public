@@ -1330,7 +1330,7 @@ function renderEV() {
     $('ev_results').innerHTML = noRowsHtml('ev');
     return;
   }
-  $('ev_results').innerHTML = `<div class="table-card">
+  $('ev_results').innerHTML = `<div class="table-card ev-table">
     <div class="table-head"><strong>Positive EV Board</strong><div class="table-meta"><span class="tag green">${rows.length} edges</span><span class="tag ${freshnessState().tone === 'warn' ? 'amber' : 'blue'}">${escapeHtml(freshnessState().label)}</span></div></div>
     <div class="table-scroll"><table><thead><tr><th>EV</th><th>Stake</th><th>Event</th><th>Bet</th><th>Book</th><th>Odds</th><th>No-vig</th><th>Width</th><th>Confidence</th><th>Actions</th></tr></thead>
     <tbody>${rows.map(evRow).join('')}</tbody></table></div><div id="ev_detail" class="details"></div></div>`;
@@ -1368,7 +1368,7 @@ function renderArbs() {
     $('arb_results').innerHTML = noRowsHtml('arb', msg);
     return;
   }
-  $('arb_results').innerHTML = `<div class="table-card">
+  $('arb_results').innerHTML = `<div class="table-card arb-table">
     <div class="table-head"><strong>Arbitrage Board</strong><div class="table-meta"><span class="tag blue">${rows.length} arbs</span><span class="tag ${freshnessState().tone === 'warn' ? 'amber' : 'blue'}">${escapeHtml(freshnessState().label)}</span></div></div>
     <div class="table-scroll"><table><thead><tr><th>Profit</th><th>Stake</th><th>Event</th><th>Market</th><th>Legs</th><th>Payout</th><th>Actions</th></tr></thead>
     <tbody>${rows.map(arbRow).join('')}</tbody></table></div><div id="arb_detail" class="details"></div></div>`;
