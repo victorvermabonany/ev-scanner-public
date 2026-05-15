@@ -127,6 +127,7 @@ let lastFetchAt = 0;
 let lastCacheHit = false;
 let lastError = '';
 let backendHealth = { checked: false, ok: false, ready: false, message: 'Backend not checked yet.' };
+let fallbackDemoActive = false;
 
 function $(id) { return document.getElementById(id); }
 function loadJson(key, fallback) {
@@ -350,15 +351,15 @@ function normalizeEndpoint(value) {
 function renderStatus() {
   const missing = providerReady();
   const fresh = freshnessState();
-  $('source_badge').textContent = providerLabel();
-  $('source_badge').className = `pill ${missing ? 'warn' : 'ok'}`;
+  $('source_badge').textContent = fallbackDemoActive ? 'Demo preview' : providerLabel();
+  $('source_badge').className = `pill ${fallbackDemoActive || missing ? 'warn' : 'ok'}`;
   $('fresh_badge').textContent = fresh.label;
   $('fresh_badge').className = `pill ${fresh.tone}`;
   $('quota_badge').textContent = quotaLabel();
   $('quota_badge').className = `pill ${quota.remaining === '?' ? 'blue' : 'blue'}`;
   $('side_source').textContent = `${providerLabel()} feed`;
   $('settings_provider_tag').textContent = providerLabel();
-  $('dash_provider').textContent = providerLabel();
+  $('dash_provider').textContent = fallbackDemoActive ? 'Demo Preview' : providerLabel();
   $('dash_provider_sub').textContent = providerSubtitle(missing);
   $('unit_tag').textContent = `${money(unitStake())} unit`;
   if ($('backend_health')) $('backend_health').textContent = backendHealth.message;
@@ -375,6 +376,7 @@ function renderFeedBanner() {
 function feedBannerState() {
   if (lastError) return { show: true, tone: 'err', title: 'Feed Error', text: lastError };
   if (settings.provider === 'demo') return { show: true, tone: 'warn', title: 'Demo Mode', text: 'This board is using test odds. Switch to backend/live mode for real odds.' };
+  if (fallbackDemoActive) return { show: true, tone: 'warn', title: 'Demo Preview Active', text: `${backendHealth.message} The board below is sample data so the app still works.` };
   if (settings.provider === 'backend' && backendHealth.checked && !backendHealth.ready) {
     return { show: true, tone: backendHealth.ok ? 'warn' : 'err', title: backendHealth.ok ? 'Backend Needs Key' : 'Feed Offline', text: backendHealth.message };
   }
@@ -392,11 +394,13 @@ function quotaLabel() {
 }
 function providerSubtitle(missing) {
   if (settings.provider === 'demo') return 'demo/test data only';
+  if (fallbackDemoActive) return 'sample data while backend is offline';
   if (settings.provider === 'backend') return backendHealth.ready ? `${backendProviderLabel()} backend ready` : (missing || `start ${backendProviderLabel()} backend`);
   return missing || 'live-ready';
 }
 function freshnessState() {
   if (lastError) return { label: 'Load error', tone: 'err' };
+  if (fallbackDemoActive) return { label: 'Demo preview', tone: 'warn' };
   if (!lastFetchAt) return { label: loadedGames.length ? `${loadedGames.length} demo events` : 'No scan yet', tone: settings.provider === 'demo' ? 'blue' : 'warn' };
   const ageMs = Date.now() - lastFetchAt;
   const stale = ageMs > (settings.staleSeconds || 75) * 1000;
@@ -404,6 +408,7 @@ function freshnessState() {
   return { label: `${ageLabel(ageMs)}${suffix}`, tone: stale ? 'warn' : 'ok' };
 }
 function realSetupLabel() {
+  if (fallbackDemoActive) return 'Demo preview active';
   if (settings.provider === 'backend') return backendHealth.ready ? 'Ready for real scan' : 'Backend setup needed';
   return providerReady() ? 'Live setup needed' : 'Ready for real scan';
 }
@@ -498,6 +503,7 @@ function dashboardSetupCards() {
 }
 
 async function scanDemoOnLoad() {
+  fallbackDemoActive = false;
   loadedGames = demoFeed();
   lastFetchAt = Date.now();
   lastCacheHit = false;
@@ -511,12 +517,29 @@ async function bootInitialFeed() {
     await scanDemoOnLoad();
     return;
   }
+  fallbackDemoActive = false;
   loadedGames = [];
   evResults = [];
   arbResults = [];
   renderRealSetup();
   renderAll();
-  if (settings.provider === 'backend') await checkBackendHealth(true);
+  if (settings.provider === 'backend') {
+    const health = await checkBackendHealth(true);
+    if (!health.ready) {
+      loadDemoPreview(health.message);
+      evResults = computeEV(loadedGames, { mode: 'all', minEv: .01, maxOdds: 500 });
+      arbResults = computeArbs(loadedGames, { mode: 'all', minProfit: 0, stake: 100 });
+      renderAll();
+    }
+  }
+}
+function loadDemoPreview(reason = '') {
+  fallbackDemoActive = true;
+  loadedGames = demoFeed();
+  lastFetchAt = Date.now();
+  lastCacheHit = false;
+  lastError = '';
+  if (reason) backendHealth.message = reason;
 }
 function renderRealSetup() {
   const message = settings.provider === 'backend'
@@ -567,10 +590,19 @@ async function scanEV() {
   if (settings.provider === 'backend') {
     const health = await checkBackendHealth(true);
     if (!health.ready) {
-      lastError = health.message;
-      renderError('ev_results', health.message);
-      toast(health.message, 'warn');
-      showTab('settings');
+      loadDemoPreview(health.message);
+      evResults = computeEV(loadedGames, {
+        mode: $('ev_mode').value,
+        minEv: numberOr($('ev_min').value, 1) / 100,
+        maxOdds: Math.abs(numberOr($('ev_max_odds').value, 500))
+      });
+      arbResults = computeArbs(loadedGames, {
+        mode: $('arb_mode')?.value || 'all',
+        minProfit: numberOr($('arb_min')?.value, 0) / 100,
+        stake: numberOr($('arb_stake')?.value, 100)
+      });
+      renderAll();
+      toast('Backend is offline, so I loaded demo EV results instead.', 'warn');
       return;
     }
   }
@@ -581,6 +613,7 @@ async function scanEV() {
   try {
     lastError = '';
     lastCacheHit = false;
+    fallbackDemoActive = false;
     loadedGames = await loadFeeds({ sport: $('ev_sport').value, market: $('ev_market').value });
     evResults = computeEV(loadedGames, {
       mode: $('ev_mode').value,
@@ -606,10 +639,19 @@ async function scanArbs() {
   if (settings.provider === 'backend') {
     const health = await checkBackendHealth(true);
     if (!health.ready) {
-      lastError = health.message;
-      renderError('arb_results', health.message);
-      toast(health.message, 'warn');
-      showTab('settings');
+      loadDemoPreview(health.message);
+      evResults = computeEV(loadedGames, {
+        mode: $('ev_mode')?.value || 'all',
+        minEv: numberOr($('ev_min')?.value, 1) / 100,
+        maxOdds: Math.abs(numberOr($('ev_max_odds')?.value, 500))
+      });
+      arbResults = computeArbs(loadedGames, {
+        mode: $('arb_mode').value,
+        minProfit: numberOr($('arb_min').value, 0) / 100,
+        stake: numberOr($('arb_stake').value, 100)
+      });
+      renderAll();
+      toast('Backend is offline, so I loaded demo arb results instead.', 'warn');
       return;
     }
   }
@@ -620,6 +662,7 @@ async function scanArbs() {
   try {
     lastError = '';
     lastCacheHit = false;
+    fallbackDemoActive = false;
     loadedGames = await loadFeeds({ sport: $('arb_sport').value, market: $('arb_market').value });
     arbResults = computeArbs(loadedGames, {
       mode: $('arb_mode').value,
@@ -642,8 +685,18 @@ async function loadBoardFeed() {
   const missing = providerReady();
   if (missing) { toast(missing, 'warn'); showTab('settings'); return; }
   if (!selectedBooks.length) { toast('Pick at least one sportsbook first.', 'warn'); return; }
+  if (settings.provider === 'backend') {
+    const health = await checkBackendHealth(true);
+    if (!health.ready) {
+      loadDemoPreview(health.message);
+      renderAll();
+      toast('Backend is offline, so I loaded the demo odds screen instead.', 'warn');
+      return;
+    }
+  }
   lastError = '';
   lastCacheHit = false;
+  fallbackDemoActive = false;
   loadedGames = await loadFeeds({ sport: $('ev_sport').value, market: $('ev_market').value });
   renderAll();
 }
@@ -1227,6 +1280,7 @@ function sortArbRows(a, b) {
 function emptyReason(kind) {
   if (!selectedBooks.length) return 'No sportsbooks are selected. Click one sportsbook chip or use All/Core above.';
   if (lastError) return lastError;
+  if (fallbackDemoActive) return 'Demo preview is loaded because the backend is offline. Start the backend for real odds.';
   if (!loadedGames.length && settings.provider !== 'demo') return settings.provider === 'backend'
     ? 'Real odds mode is on. Start the backend cache server, test it in Settings, then run a scan.'
     : 'Live odds mode is on. Add/save your provider key, then run a scan.';
@@ -1237,7 +1291,7 @@ function emptyReason(kind) {
 function noRowsHtml(kind, message = '') {
   const reason = message || emptyReason(kind);
   const title = kind === 'arb' ? 'No arbitrage results loaded.' : 'No EV results loaded.';
-  const setupActions = !loadedGames.length && settings.provider !== 'demo'
+  const setupActions = !loadedGames.length && settings.provider !== 'demo' && !fallbackDemoActive
     ? `${setupChecklistHtml()}<div class="detail-actions" style="justify-content:center;"><button class="btn primary" data-jump="settings" type="button"><i data-lucide="settings"></i>Open Settings</button><button class="btn secondary" data-copy-start-command type="button"><i data-lucide="copy"></i>Copy Start Command</button><button class="btn secondary" data-demo-now type="button"><i data-lucide="play"></i>Use Demo Only</button></div>`
     : '';
   return `<div class="empty"><div><strong>${escapeHtml(title)}</strong><br>${escapeHtml(reason)}${setupActions}</div></div>`;
@@ -1504,6 +1558,7 @@ function shellDoubleQuote(value) {
   return `"${String(value || '').replace(/(["\\$`])/g, '\\$1')}"`;
 }
 function switchToDemoMode() {
+  fallbackDemoActive = false;
   settings.provider = 'demo';
   saveSettings();
   hydrateSettings();
