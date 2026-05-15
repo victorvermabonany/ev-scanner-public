@@ -20,11 +20,11 @@
 <link rel="stylesheet" href="ev-scanner.css">
 </head>
 <body>
-<div class="layout">
-  <aside class="sidebar">
+<div class="layout edge-site">
+  <header class="site-header">
     <div class="brand">
-      <div class="brand-mark">EV</div>
-      <div><h1>EdgeLabsOdds.com</h1><span>EV + arb terminal</span></div>
+      <div class="brand-mark">EL</div>
+      <div><h1>EdgeLabs Odds</h1><span>Positive EV + arbitrage command center</span></div>
     </div>
     <nav class="nav" aria-label="Main">
       <button class="active" data-tab="dashboard"><i data-lucide="layout-dashboard"></i><span>Dashboard</span></button>
@@ -36,11 +36,11 @@
       <button data-tab="info"><i data-lucide="circle-help"></i><span>Info</span></button>
       <button data-tab="settings"><i data-lucide="settings"></i><span>Settings</span></button>
     </nav>
-    <div class="source-card">
+    <div class="source-card header-source">
       <strong id="side_source">Real odds feed</strong>
       <p id="side_source_text">Backend cache mode is the safest real setup. Demo mode is only for testing the layout.</p>
     </div>
-  </aside>
+  </header>
 
   <main class="main">
     <div class="topbar">
@@ -64,37 +64,76 @@
     </div>
 
     <section id="dashboard" class="panel active">
-      <div class="page-head">
-        <div>
-          <h2>Find Your Edge.</h2>
-          <p>Real-time EV, arbitrage, line shopping, bankroll sizing, and bet tracking in one clean workspace.</p>
+      <div class="home-hero">
+        <div class="home-copy">
+          <span class="eyebrow">Built for line shoppers</span>
+          <h2>Find mispriced bets before the market catches up.</h2>
+          <p>EdgeLabs compares sportsbook odds against no-vig reference prices, flags positive EV, sizes arbitrage, and keeps the math honest.</p>
+          <div class="hero-actions">
+            <button class="btn primary" data-quick-scan="ev" type="button"><i data-lucide="zap"></i>Scan +EV</button>
+            <button class="btn secondary" data-quick-scan="arb" type="button"><i data-lucide="split"></i>Scan Arbs</button>
+            <button class="btn ghost" data-jump="settings" type="button"><i data-lucide="plug"></i>Connect Feed</button>
+          </div>
+          <div class="trust-row">
+            <span>Real odds via backend cache</span>
+            <span>No-vig probability model</span>
+            <span>CSV + bet tracker included</span>
+          </div>
         </div>
-        <button class="btn primary" data-jump="ev"><i data-lucide="scan-line"></i>Open Scanner</button>
+        <div class="market-console" aria-label="Scanner preview">
+          <div class="console-top">
+            <span>Market Pulse</span>
+            <strong id="real_setup_badge">Backend</strong>
+          </div>
+          <div class="console-line featured">
+            <span>Best +EV</span>
+            <strong id="hero_ev_value">--</strong>
+            <small id="hero_ev_label">Run EV scan</small>
+          </div>
+          <div class="console-line">
+            <span>Best arbitrage</span>
+            <strong id="hero_arb_value">--</strong>
+            <small id="hero_arb_label">Run arb scan</small>
+          </div>
+          <div class="console-mini-grid">
+            <div><b id="hero_books_count">0 books</b><span>selected</span></div>
+            <div><b id="hero_feed_age">No scan yet</b><span>feed age</span></div>
+          </div>
+        </div>
       </div>
 
-      <div class="hero-board">
-        <div class="hero-copy">
-          <span class="eyebrow">EdgeLabs live board</span>
-          <h3>Scan the market before the number disappears.</h3>
-          <p>Use a backend cache for real odds, keep your sportsbook list tight, and compare implied probability against sharper references before placing anything.</p>
-          <div class="hero-actions">
-            <button class="btn primary" data-quick-scan="ev" type="button"><i data-lucide="zap"></i>Scan EV</button>
-            <button class="btn secondary" data-quick-scan="arb" type="button"><i data-lucide="split"></i>Scan Arbs</button>
+      <div class="home-workspace">
+        <div class="scan-card">
+          <div class="card-title"><h3>Start Scanning</h3><span class="tag green">live workflow</span></div>
+          <div class="home-scan-grid">
+            <button class="scan-tile primary-tile" data-quick-scan="ev" type="button">
+              <i data-lucide="trending-up"></i>
+              <span>Positive EV</span>
+              <small>Find prices above fair probability</small>
+            </button>
+            <button class="scan-tile" data-quick-scan="arb" type="button">
+              <i data-lucide="split"></i>
+              <span>Arbitrage</span>
+              <small>Find all-outcome profit setups</small>
+            </button>
+            <button class="scan-tile" data-jump="odds" type="button">
+              <i data-lucide="table-2"></i>
+              <span>Odds Screen</span>
+              <small>Line shop selected sportsbooks</small>
+            </button>
+            <button class="scan-tile" data-jump="tracker" type="button">
+              <i data-lucide="receipt-text"></i>
+              <span>Tracker</span>
+              <small>Log ROI, CLV, and results</small>
+            </button>
           </div>
         </div>
-        <div class="pick-preview" aria-label="Scanner preview">
-          <div class="preview-top"><span>Live Preview</span><strong id="real_setup_badge">Backend</strong></div>
-          <div class="preview-pick">
-            <div><strong>Best EV</strong><span id="hero_ev_label">Run scan</span></div>
-            <b id="hero_ev_value">--</b>
-          </div>
-          <div class="preview-pick">
-            <div><strong>Best Arb</strong><span id="hero_arb_label">Run scan</span></div>
-            <b id="hero_arb_value">--</b>
-          </div>
-          <div class="preview-slip">
-            <span id="hero_books_count">0 books</span>
-            <span id="hero_feed_age">No scan yet</span>
+        <div class="logic-card">
+          <div class="card-title"><h3>The Math</h3><span class="tag blue">not hype</span></div>
+          <div class="logic-stack">
+            <div><b>+EV</b><span>True probability x payout is greater than your stake.</span></div>
+            <div><b>No-vig</b><span>Reference odds are converted into fair probability by removing sportsbook margin.</span></div>
+            <div><b>Arb</b><span>Best prices across books imply less than 100%, so every outcome can be covered.</span></div>
           </div>
         </div>
       </div>
