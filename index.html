@@ -1222,15 +1222,15 @@
       <button data-tab="settings"><i data-lucide="settings"></i><span>Settings</span></button>
     </nav>
     <div class="source-card">
-      <strong id="side_source">Demo feed</strong>
-      <p id="side_source_text">Demo mode gives you a full working board without paying for data. Add PropLine or The Odds API when you want live odds.</p>
+      <strong id="side_source">Real odds feed</strong>
+      <p id="side_source_text">Backend cache mode is the safest real setup. Demo mode is only for testing the layout.</p>
     </div>
   </aside>
 
   <main class="main">
     <div class="topbar">
       <div class="searchbox"><i data-lucide="search"></i><input id="global_search" placeholder="Search teams, players, markets, or books"></div>
-      <span id="source_badge" class="pill ok">Demo</span>
+      <span id="source_badge" class="pill warn">Real setup</span>
       <span id="fresh_badge" class="pill blue">Ready</span>
       <span id="quota_badge" class="pill warn">Quota unknown</span>
       <div class="toolbar-actions">
@@ -1252,7 +1252,7 @@
         <div class="metric"><div class="label">Best EV</div><div id="dash_best_ev" class="value pos">--</div><div id="dash_best_ev_sub" class="sub">scan to update</div></div>
         <div class="metric"><div class="label">Best Arb</div><div id="dash_best_arb" class="value blue-text">--</div><div id="dash_best_arb_sub" class="sub">scan to update</div></div>
         <div class="metric"><div class="label">Tracked P/L</div><div id="dash_profit" class="value">$0.00</div><div id="dash_roi" class="sub">0 bets</div></div>
-        <div class="metric"><div class="label">Feed Mode</div><div id="dash_provider" class="value">Demo</div><div id="dash_provider_sub" class="sub">free built-in data</div></div>
+        <div class="metric"><div class="label">Feed Mode</div><div id="dash_provider" class="value">Backend</div><div id="dash_provider_sub" class="sub">real odds mode</div></div>
       </div>
 
       <div class="grid-2">
@@ -1455,7 +1455,7 @@
       <div class="page-head">
         <div>
           <h2>Settings</h2>
-          <p>Keys are saved only in this browser. Demo mode remains available when no live key is connected.</p>
+          <p>Real odds need either the backend cache server or a live provider key. Demo mode is only for testing.</p>
         </div>
         <button id="save_settings_btn" class="btn primary" type="button"><i data-lucide="save"></i>Save Settings</button>
       </div>
@@ -1465,12 +1465,12 @@
           <div class="card-title"><h3>Data Source</h3><span class="tag green" id="settings_provider_tag">Demo</span></div>
           <label for="provider_mode">Provider</label>
           <select id="provider_mode">
-            <option value="demo">Demo feed</option>
+            <option value="backend">Backend cache/proxy</option>
             <option value="opticodds">OpticOdds live feed</option>
             <option value="propline">PropLine live feed</option>
             <option value="oddsapi">The Odds API live feed</option>
-            <option value="backend">Backend cache/proxy</option>
             <option value="custom">Custom compatible endpoint</option>
+            <option value="demo">Demo feed</option>
           </select>
           <label for="api_key">Key for selected provider</label>
           <input id="api_key" type="password" placeholder="paste key" autocomplete="off">
@@ -1489,6 +1489,8 @@
           <div class="health-card">
             <strong>Safer public setup</strong>
             <span>Use backend cache/proxy mode when the site is public. Your API key stays on your server instead of being exposed in the browser.</span>
+            <button id="test_backend_btn" class="btn secondary" type="button"><i data-lucide="activity"></i>Test Backend</button>
+            <span id="backend_health">Backend not checked yet.</span>
           </div>
         </div>
         <div class="card">
@@ -1617,7 +1619,7 @@ const FREE_SOURCES = [
 ];
 
 let settings = loadJson(STORE.settings, {
-  provider: 'demo',
+  provider: 'backend',
   keyMap: {},
   customEndpoint: '',
   backendEndpoint: 'http://localhost:8787',
@@ -1642,6 +1644,7 @@ let quota = { used: 0, remaining: '?' };
 let lastFetchAt = 0;
 let lastCacheHit = false;
 let lastError = '';
+let backendHealth = { checked: false, ok: false, ready: false, message: 'Backend not checked yet.' };
 
 function $(id) { return document.getElementById(id); }
 function loadJson(key, fallback) {
@@ -1740,6 +1743,7 @@ function kellyStake(prob, odds) {
 }
 
 function init() {
+  migrateRealMode();
   fillSelect('ev_sport', SPORTS);
   fillSelect('arb_sport', SPORTS);
   fillSelect('ev_market', MARKETS);
@@ -1749,9 +1753,17 @@ function init() {
   renderFreeSources();
   bindEvents();
   renderAll();
-  scanDemoOnLoad();
+  bootInitialFeed();
   setInterval(renderStatus, 30000);
   refreshIcons();
+}
+function migrateRealMode() {
+  const key = 'edgelab_real_mode_migration_v1';
+  if (!localStorage.getItem(key) && settings.provider === 'demo') {
+    settings.provider = 'backend';
+    saveSettings();
+  }
+  localStorage.setItem(key, '1');
 }
 function fillSelect(id, rows) { $(id).innerHTML = rows.map(([v, l]) => `<option value="${v}">${l}</option>`).join(''); }
 function refreshIcons() { if (window.lucide) window.lucide.createIcons(); }
@@ -1769,6 +1781,7 @@ function bindEvents() {
   $('watch_btn').addEventListener('click', toggleWatch);
   $('save_settings_btn').addEventListener('click', saveSettingsFromInputs);
   $('provider_mode').addEventListener('change', switchProvider);
+  $('test_backend_btn').addEventListener('click', () => checkBackendHealth(false));
   $('manual_add_btn').addEventListener('click', addManualBet);
   $('export_tracker_btn').addEventListener('click', () => exportJson({ bets }, 'edgelab-tracker.json'));
   $('export_all_btn').addEventListener('click', () => exportJson({ settings, selectedBooks, bets }, 'edgelab-backup.json'));
@@ -1850,20 +1863,37 @@ function renderStatus() {
   $('source_badge').className = `pill ${missing ? 'warn' : 'ok'}`;
   $('fresh_badge').textContent = fresh.label;
   $('fresh_badge').className = `pill ${fresh.tone}`;
-  $('quota_badge').textContent = quota.remaining === '?' ? 'Quota unknown' : `${quota.remaining} req left`;
+  $('quota_badge').textContent = quotaLabel();
+  $('quota_badge').className = `pill ${quota.remaining === '?' ? 'warn' : 'blue'}`;
   $('side_source').textContent = `${providerLabel()} feed`;
   $('settings_provider_tag').textContent = providerLabel();
   $('dash_provider').textContent = providerLabel();
-  $('dash_provider_sub').textContent = settings.provider === 'demo' ? 'free built-in data' : (missing || 'live-ready');
+  $('dash_provider_sub').textContent = providerSubtitle(missing);
   $('unit_tag').textContent = `${money(unitStake())} unit`;
+  if ($('backend_health')) $('backend_health').textContent = backendHealth.message;
+}
+function quotaLabel() {
+  if (settings.provider === 'demo') return 'Demo - no quota';
+  if (quota.remaining !== '?') return `${quota.remaining} req left`;
+  if (settings.provider === 'backend') return backendHealth.checked ? (backendHealth.ready ? 'Backend ready' : 'Backend needs key') : 'Backend not checked';
+  return 'Quota unavailable';
+}
+function providerSubtitle(missing) {
+  if (settings.provider === 'demo') return 'demo/test data only';
+  if (settings.provider === 'backend') return backendHealth.ready ? 'real odds backend ready' : (missing || 'start backend server');
+  return missing || 'live-ready';
 }
 function freshnessState() {
   if (lastError) return { label: 'Load error', tone: 'err' };
-  if (!lastFetchAt) return { label: loadedGames.length ? `${loadedGames.length} demo events` : 'Ready', tone: 'blue' };
+  if (!lastFetchAt) return { label: loadedGames.length ? `${loadedGames.length} demo events` : realSetupLabel(), tone: settings.provider === 'demo' ? 'blue' : 'warn' };
   const ageMs = Date.now() - lastFetchAt;
   const stale = ageMs > (settings.staleSeconds || 75) * 1000;
   const suffix = lastCacheHit ? ' cached' : '';
   return { label: `${ageLabel(ageMs)}${suffix}`, tone: stale ? 'warn' : 'ok' };
+}
+function realSetupLabel() {
+  if (settings.provider === 'backend') return backendHealth.ready ? 'Ready for real scan' : 'Backend setup needed';
+  return providerReady() ? 'Live setup needed' : 'Ready for real scan';
 }
 function ageLabel(ms) {
   const sec = Math.max(0, Math.round(ms / 1000));
@@ -1943,6 +1973,48 @@ async function scanDemoOnLoad() {
   arbResults = computeArbs(loadedGames, { mode: 'all', minProfit: 0, stake: 100 });
   renderAll();
 }
+async function bootInitialFeed() {
+  if (settings.provider === 'demo') {
+    await scanDemoOnLoad();
+    return;
+  }
+  loadedGames = [];
+  evResults = [];
+  arbResults = [];
+  renderRealSetup();
+  renderAll();
+  if (settings.provider === 'backend') await checkBackendHealth(true);
+}
+function renderRealSetup() {
+  const message = settings.provider === 'backend'
+    ? 'Real odds mode is selected. Start the backend cache server, then press Scan EV.'
+    : 'Live provider mode is selected. Add/save your key, then press Scan EV.';
+  const html = `<div class="empty"><div><strong>Real odds setup needed.</strong><br>${escapeHtml(message)}<div class="detail-actions" style="justify-content:center;"><button class="btn primary" data-jump="settings" type="button"><i data-lucide="settings"></i>Open Settings</button><button class="btn secondary" data-demo-now type="button"><i data-lucide="play"></i>Use Demo Only</button></div></div></div>`;
+  if ($('ev_results')) $('ev_results').innerHTML = html;
+  if ($('arb_results')) $('arb_results').innerHTML = html;
+}
+async function checkBackendHealth(silent = false) {
+  const endpoint = normalizeEndpoint(settings.backendEndpoint || 'http://localhost:8787');
+  try {
+    const resp = await fetch(`${endpoint}/api/health?ts=${Date.now()}`);
+    if (!resp.ok) throw new Error(`Backend health HTTP ${resp.status}`);
+    const data = await resp.json();
+    backendHealth = {
+      checked: true,
+      ok: data.ok === true,
+      ready: data.ready === true,
+      message: data.ready
+        ? `Backend ready: ${data.provider || 'provider'} cache ${data.cacheSeconds || '?'}s.`
+        : `Backend is running, but no API key is set on the server.`
+    };
+    if (!silent) toast(backendHealth.message, data.ready ? 'ok' : 'warn');
+  } catch (err) {
+    backendHealth = { checked: true, ok: false, ready: false, message: `Backend offline at ${endpoint}. Start edge-cache-server.mjs first.` };
+    if (!silent) toast(backendHealth.message, 'err');
+  }
+  renderStatus();
+  return backendHealth;
+}
 async function refreshActive() {
   const active = document.querySelector('.panel.active')?.id || 'dashboard';
   if (active === 'arb') return scanArbs();
@@ -1952,6 +2024,17 @@ async function refreshActive() {
 async function scanEV() {
   const missing = providerReady();
   if (missing) { toast(missing, 'warn'); showTab('settings'); return; }
+  if (!selectedBooks.length) { toast('Pick at least one sportsbook before scanning real odds.', 'warn'); return; }
+  if (settings.provider === 'backend') {
+    const health = await checkBackendHealth(true);
+    if (!health.ready) {
+      lastError = health.message;
+      renderError('ev_results', health.message);
+      toast(health.message, 'warn');
+      showTab('settings');
+      return;
+    }
+  }
   const button = $('ev_scan_btn');
   button.disabled = true;
   button.innerHTML = '<i data-lucide="loader"></i>Scanning';
@@ -1980,6 +2063,17 @@ async function scanEV() {
 async function scanArbs() {
   const missing = providerReady();
   if (missing) { toast(missing, 'warn'); showTab('settings'); return; }
+  if (selectedBooks.length < 2) { toast('Pick at least two sportsbooks for arbitrage.', 'warn'); return; }
+  if (settings.provider === 'backend') {
+    const health = await checkBackendHealth(true);
+    if (!health.ready) {
+      lastError = health.message;
+      renderError('arb_results', health.message);
+      toast(health.message, 'warn');
+      showTab('settings');
+      return;
+    }
+  }
   const button = $('arb_scan_btn');
   button.disabled = true;
   button.innerHTML = '<i data-lucide="loader"></i>Scanning';
@@ -2008,6 +2102,7 @@ async function scanArbs() {
 async function loadBoardFeed() {
   const missing = providerReady();
   if (missing) { toast(missing, 'warn'); showTab('settings'); return; }
+  if (!selectedBooks.length) { toast('Pick at least one sportsbook first.', 'warn'); return; }
   lastError = '';
   lastCacheHit = false;
   loadedGames = await loadFeeds({ sport: $('ev_sport').value, market: $('ev_market').value });
@@ -2606,9 +2701,20 @@ function sortArbRows(a, b) {
 function emptyReason(kind) {
   if (!selectedBooks.length) return 'No sportsbooks are selected. Click one sportsbook chip or use All/Core above.';
   if (lastError) return lastError;
-  if (!loadedGames.length) return 'No feed is loaded yet. Run a scan, or switch to demo mode to test the board.';
+  if (!loadedGames.length && settings.provider !== 'demo') return settings.provider === 'backend'
+    ? 'Real odds mode is on. Start the backend cache server, test it in Settings, then run a scan.'
+    : 'Live odds mode is on. Add/save your provider key, then run a scan.';
+  if (!loadedGames.length) return 'No feed is loaded yet. Run a scan, or use Demo Only to test the board.';
   if (kind === 'arb') return 'No arbs passed the current sportsbook, timing, profit, and market filters. Arbs also require exact same line/player matching across books.';
   return 'No rows passed the sportsbook, timing, confidence, search, and EV filters. Try lowering Min EV or changing market.';
+}
+function noRowsHtml(kind, message = '') {
+  const reason = message || emptyReason(kind);
+  const title = kind === 'arb' ? 'No arbitrage results loaded.' : 'No EV results loaded.';
+  const setupActions = !loadedGames.length && settings.provider !== 'demo'
+    ? `<div class="detail-actions" style="justify-content:center;"><button class="btn primary" data-jump="settings" type="button"><i data-lucide="settings"></i>Open Settings</button><button class="btn secondary" data-demo-now type="button"><i data-lucide="play"></i>Use Demo Only</button></div>`
+    : '';
+  return `<div class="empty"><div><strong>${escapeHtml(title)}</strong><br>${escapeHtml(reason)}${setupActions}</div></div>`;
 }
 function currentEVRows() {
   const selected = new Set(selectedBooks);
@@ -2632,7 +2738,7 @@ function renderEV() {
   $('ev_loaded_tag').textContent = `${rows.length} result${rows.length === 1 ? '' : 's'}`;
   $('ev_nav_count').textContent = rows.length;
   if (!rows.length) {
-    $('ev_results').innerHTML = `<div class="empty"><div><strong>No EV results loaded.</strong><br>${escapeHtml(emptyReason('ev'))}</div></div>`;
+    $('ev_results').innerHTML = noRowsHtml('ev');
     return;
   }
   $('ev_results').innerHTML = `<div class="table-card">
@@ -2663,7 +2769,7 @@ function renderArbs() {
     const msg = selectedBooks.length < 2
       ? 'Pick at least two sportsbooks to show arbitrage, because every arb needs multiple books.'
       : emptyReason('arb');
-    $('arb_results').innerHTML = `<div class="empty"><div><strong>No arbitrage results loaded.</strong><br>${escapeHtml(msg)}</div></div>`;
+    $('arb_results').innerHTML = noRowsHtml('arb', msg);
     return;
   }
   $('arb_results').innerHTML = `<div class="table-card">
@@ -2699,8 +2805,14 @@ function renderDashboard() {
   $('dashboard_opps').innerHTML = top.length ? top.map(item => {
     const isArb = item.legs;
     return `<div class="bet-row"><div><strong>${escapeHtml(item.event)}</strong><div class="mini">${isArb ? `Arb ${fmtPct(item.profitRate * 100)} · ${item.legs.length} legs` : `EV ${fmtPct(item.ev * 100)} · ${item.book}`}</div></div><span class="tag ${isArb ? 'blue' : 'green'}">${isArb ? signedMoney(item.profit) : item.confidence.label}</span><button class="icon-btn" data-jump="${isArb ? 'arb' : 'ev'}"><i data-lucide="arrow-right"></i></button></div>`;
-  }).join('') : '<div class="empty" style="min-height:160px;box-shadow:none;">Run a scan to fill this board.</div>';
+  }).join('') : dashboardEmptyHtml();
   renderTrackerStats();
+}
+function dashboardEmptyHtml() {
+  if (settings.provider !== 'demo' && !loadedGames.length) {
+    return `<div class="empty" style="min-height:160px;box-shadow:none;"><div><strong>Real odds are not connected yet.</strong><br>${escapeHtml(emptyReason('ev'))}<div class="detail-actions" style="justify-content:center;"><button class="btn primary" data-jump="settings" type="button"><i data-lucide="settings"></i>Open Settings</button><button class="btn secondary" data-demo-now type="button"><i data-lucide="play"></i>Use Demo Only</button></div></div></div>`;
+  }
+  return '<div class="empty" style="min-height:160px;box-shadow:none;">Run a scan to fill this board.</div>';
 }
 function renderOddsScreen() {
   const events = loadedGames.filter(g => visibleBookmakers(g).length);
@@ -2778,6 +2890,8 @@ function renderTrackerStats() {
 function handleActions(e) {
   const bookAction = e.target.closest('[data-book-action]');
   if (bookAction) { setBookGroup(bookAction.dataset.bookAction); return; }
+  const demoNow = e.target.closest('[data-demo-now]');
+  if (demoNow) { switchToDemoMode(); return; }
   const row = e.target.closest('[data-select-result]');
   if (row) { selectedResultKey = row.dataset.selectResult; renderSelectedDetails(); }
   const copy = e.target.closest('[data-copy]');
@@ -2792,6 +2906,14 @@ function handleActions(e) {
   if (settle) settleBet(settle.dataset.settle);
   const jump = e.target.closest('[data-jump]');
   if (jump) showTab(jump.dataset.jump);
+}
+function switchToDemoMode() {
+  settings.provider = 'demo';
+  saveSettings();
+  hydrateSettings();
+  quota = { used: 0, remaining: '?' };
+  scanDemoOnLoad();
+  toast('Demo mode loaded. This is test data, not real odds.', 'warn');
 }
 function renderSelectedDetails() {
   const ev = evResults.find(r => r.key === selectedResultKey);

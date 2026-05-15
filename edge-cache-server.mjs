@@ -5,6 +5,7 @@ const CACHE_SECONDS = Number(process.env.CACHE_SECONDS || 45);
 const MAX_PROP_EVENTS = Number(process.env.MAX_PROP_EVENTS || 10);
 const PROVIDER = String(process.env.ODDS_PROVIDER || 'oddsapi').toLowerCase();
 const API_KEY = process.env.ODDS_API_KEY || process.env.PROP_LINE_API_KEY || process.env.API_KEY || '';
+const startedAt = new Date().toISOString();
 const cache = new Map();
 
 const BASES = {
@@ -49,6 +50,10 @@ async function fetchJson(url) {
 
 function providerBase() {
   return BASES[PROVIDER] || BASES.oddsapi;
+}
+
+function providerName() {
+  return PROVIDER === 'propline' ? 'PropLine' : 'The Odds API';
 }
 
 function providerKeyParam() {
@@ -100,7 +105,16 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
 
   if (url.pathname === '/api/health') {
-    return json(res, 200, { ok: true, provider: PROVIDER, cacheSeconds: CACHE_SECONDS, maxPropEvents: MAX_PROP_EVENTS });
+    return json(res, 200, {
+      ok: true,
+      ready: Boolean(API_KEY),
+      provider: providerName(),
+      providerKey: PROVIDER,
+      hasApiKey: Boolean(API_KEY),
+      cacheSeconds: CACHE_SECONDS,
+      maxPropEvents: MAX_PROP_EVENTS,
+      startedAt
+    });
   }
 
   if (url.pathname !== '/api/odds') {

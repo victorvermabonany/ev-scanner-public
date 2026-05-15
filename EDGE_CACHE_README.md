@@ -2,6 +2,16 @@
 
 This optional local backend keeps API keys out of the public website and caches odds responses.
 
+## Easiest Way
+
+Double-click:
+
+```text
+/Users/victor/Downloads/Start EdgeLabs Real Odds.command
+```
+
+Paste your real API key when Terminal asks. Keep that Terminal window open.
+
 ## Start With The Odds API
 
 ```bash
