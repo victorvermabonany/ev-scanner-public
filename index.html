@@ -1707,11 +1707,12 @@ function renderBookChips() {
 function toggleBook(key, event) {
   const selected = new Set(cleanBookKeys(selectedBooks, [key]));
   const wasSelected = selected.has(key);
-  if (wasSelected && selected.size === 1) {
+  const removeRequested = event.altKey || event.metaKey || event.ctrlKey || event.shiftKey;
+  if (wasSelected && removeRequested && selected.size === 1) {
     toast('Keep at least one sportsbook selected.', 'warn');
     return;
   }
-  if (wasSelected) selected.delete(key);
+  if (wasSelected && removeRequested) selected.delete(key);
   else selected.add(key);
   selectedBooks = cleanBookKeys(Array.from(selected), [key]);
   saveJson(STORE.selectedBooks, selectedBooks);
