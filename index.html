@@ -382,6 +382,20 @@
     color: #d8ffe2;
   }
   .book-chip.active::before { background: var(--green); }
+  .book-chip.active::after {
+    content: "x";
+    display: grid;
+    place-items: center;
+    width: 15px;
+    height: 15px;
+    margin-left: 2px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.14);
+    color: currentColor;
+    font-size: 10px;
+    line-height: 1;
+    font-weight: 950;
+  }
   .book-chip.sharp.active { border-color: rgba(106,184,255,.48); background: rgba(106,184,255,.12); color: #d8edff; }
   .book-chip.sharp.active::before { background: var(--blue); }
 
@@ -1734,7 +1748,10 @@ function renderStatus() {
   $('unit_tag').textContent = `${money(unitStake())} unit`;
 }
 function renderBookChips() {
-  const html = BOOKS.map(book => `<button class="book-chip ${book.type === 'sharp' || book.type === 'exchange' ? 'sharp' : ''} ${selectedBooks.includes(book.key) ? 'active' : ''}" data-book="${book.key}" type="button">${escapeHtml(book.name)}</button>`).join('');
+  const html = BOOKS.map(book => {
+    const active = selectedBooks.includes(book.key);
+    return `<button class="book-chip ${book.type === 'sharp' || book.type === 'exchange' ? 'sharp' : ''} ${active ? 'active' : ''}" data-book="${book.key}" aria-pressed="${active ? 'true' : 'false'}" title="${active ? 'Click to remove' : 'Click to add'}" type="button">${escapeHtml(book.name)}</button>`;
+  }).join('');
   $('ev_book_chips').innerHTML = html;
   $('arb_book_chips').innerHTML = html;
   document.querySelectorAll('[data-book]').forEach(btn => btn.addEventListener('click', e => toggleBook(e.currentTarget.dataset.book, e)));
@@ -1742,12 +1759,11 @@ function renderBookChips() {
 function toggleBook(key, event) {
   const selected = new Set(cleanBookKeys(selectedBooks, [key]));
   const wasSelected = selected.has(key);
-  const removeRequested = event.altKey || event.metaKey || event.ctrlKey || event.shiftKey;
-  if (wasSelected && removeRequested && selected.size === 1) {
+  if (wasSelected && selected.size === 1) {
     toast('Keep at least one sportsbook selected.', 'warn');
     return;
   }
-  if (wasSelected && removeRequested) selected.delete(key);
+  if (wasSelected) selected.delete(key);
   else selected.add(key);
   selectedBooks = cleanBookKeys(Array.from(selected), [key]);
   saveJson(STORE.selectedBooks, selectedBooks);
