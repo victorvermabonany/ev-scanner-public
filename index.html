@@ -3630,16 +3630,17 @@
     <div class="grid-2">
       <div class="card">
         <div class="card-title"><h3>Data Source</h3><span class="tag">Provider-ready</span></div>
-        <p class="help">Start with The Odds API. If you buy a better feed later, use Custom JSON Endpoint and point it at a backend that returns The Odds API-shaped odds arrays.</p>
+        <p class="help">Switch between The Odds API, PropLine, your local cache, or any backend that returns The Odds API-shaped odds arrays. Save a different key for each live provider.</p>
         <label for="provider_mode">Provider mode</label>
         <select id="provider_mode">
           <option value="oddsapi">The Odds API live feed</option>
+          <option value="propline">PropLine live feed</option>
           <option value="cache">Local backend cache</option>
           <option value="custom">Custom JSON endpoint</option>
         </select>
-        <label for="api_key">Key</label>
-        <input id="api_key" type="password" placeholder="paste key" autocomplete="off">
-        <label for="api_keys">Extra keys you own, one per line</label>
+        <label for="api_key">Key for selected provider</label>
+        <input id="api_key" type="password" placeholder="paste provider key" autocomplete="off">
+        <label for="api_keys">Extra keys you own for this provider, one per line</label>
         <textarea id="api_keys" placeholder="key_1&#10;key_2&#10;key_3"></textarea>
         <label for="custom_endpoint">Custom endpoint template</label>
         <input id="custom_endpoint" placeholder="https://your-server.example/odds?sport={sport}&market={market}&books={bookmakers}">
@@ -3809,6 +3810,7 @@ const STORAGE_KEYS = {
   apiKey: 'api_key',
   apiKeys: 'api_keys',
   activeApiKey: 'active_api_key',
+  providerKeyMap: 'provider_key_map',
   providerMode: 'provider_mode',
   customEndpoint: 'custom_endpoint',
   cacheEndpoint: 'cache_endpoint',
@@ -3828,6 +3830,7 @@ const DEFAULT_SOFT_BOOKS = ['betmgm','draftkings','fanduel','williamhill_us','es
 const DEFAULT_SHARP_BOOKS = ['pinnacle','betonlineag','lowvig','bovada','mybookieag'];
 const COMMON_BOOKS = [
   ['betmgm', 'BetMGM'],
+  ['betrivers', 'BetRivers'],
   ['draftkings', 'DraftKings'],
   ['fanduel', 'FanDuel'],
   ['williamhill_us', 'Caesars'],
@@ -3839,7 +3842,14 @@ const COMMON_BOOKS = [
   ['betonlineag', 'BetOnline'],
   ['bovada', 'Bovada'],
   ['mybookieag', 'MyBookie'],
-  ['lowvig', 'LowVig']
+  ['lowvig', 'LowVig'],
+  ['unibet', 'Unibet'],
+  ['underdog', 'Underdog'],
+  ['prizepicks', 'PrizePicks'],
+  ['kalshi', 'Kalshi'],
+  ['polymarket', 'Polymarket'],
+  ['matchbook', 'Matchbook'],
+  ['smarkets', 'Smarkets']
 ];
 const SPORT_KEYS = ['baseball_mlb','basketball_nba','icehockey_nhl','soccer_usa_mls','americanfootball_nfl','basketball_wnba'];
 const MARKET_KEYS = ['h2h','spreads','totals'];
@@ -3856,6 +3866,7 @@ const PROP_EVENT_LIMIT = 12;
 const CACHE_DEFAULT_ENDPOINT = 'http://localhost:8777';
 const BOOK_URLS = {
   betmgm: 'https://sports.betmgm.com/',
+  betrivers: 'https://www.betrivers.com/',
   draftkings: 'https://sportsbook.draftkings.com/',
   fanduel: 'https://sportsbook.fanduel.com/',
   williamhill_us: 'https://www.caesars.com/sportsbook-and-casino',
@@ -3869,7 +3880,14 @@ const BOOK_URLS = {
   betonlineag: 'https://www.betonline.ag/',
   bovada: 'https://www.bovada.lv/',
   mybookieag: 'https://mybookie.ag/',
-  lowvig: 'https://www.lowvig.ag/'
+  lowvig: 'https://www.lowvig.ag/',
+  unibet: 'https://www.unibet.com/',
+  underdog: 'https://underdogfantasy.com/',
+  prizepicks: 'https://www.prizepicks.com/',
+  kalshi: 'https://kalshi.com/',
+  polymarket: 'https://polymarket.com/',
+  matchbook: 'https://www.matchbook.com/',
+  smarkets: 'https://smarkets.com/'
 };
 
 let bets = safeParse(localStorage.getItem(STORAGE_KEYS.bets), []);
@@ -3881,6 +3899,12 @@ apiKeys = Array.isArray(apiKeys) ? apiKeys.map(String).map(s => s.trim()).filter
 if (apiKey && !apiKeys.includes(apiKey)) apiKeys.unshift(apiKey);
 let activeApiKeyIndex = numberOr(localStorage.getItem(STORAGE_KEYS.activeApiKey), 0);
 let providerMode = localStorage.getItem(STORAGE_KEYS.providerMode) || 'oddsapi';
+let providerKeyMap = safeParse(localStorage.getItem(STORAGE_KEYS.providerKeyMap), {});
+providerKeyMap = providerKeyMap && typeof providerKeyMap === 'object' && !Array.isArray(providerKeyMap) ? providerKeyMap : {};
+if (apiKeys.length && !providerKeyMap.oddsapi) {
+  providerKeyMap.oddsapi = { apiKeys: apiKeys.slice(), activeApiKeyIndex };
+  localStorage.setItem(STORAGE_KEYS.providerKeyMap, JSON.stringify(providerKeyMap));
+}
 let customEndpoint = localStorage.getItem(STORAGE_KEYS.customEndpoint) || '';
 let cacheEndpoint = localStorage.getItem(STORAGE_KEYS.cacheEndpoint) || CACHE_DEFAULT_ENDPOINT;
 let alertSettings = safeParse(localStorage.getItem(STORAGE_KEYS.alertSettings), { enabled: false, interval: 180, minEV: 3, minArb: 0.5 });
@@ -3932,6 +3956,51 @@ function listFromStorage(key, fallback) {
 function cleanKeyList(values) {
   return Array.from(new Set(values.map(v => String(v || '').trim()).filter(Boolean)));
 }
+function providerUsesKeys(mode = providerMode) {
+  return mode === 'oddsapi' || mode === 'propline';
+}
+function providerLabel(mode = providerMode) {
+  if (mode === 'propline') return 'PropLine';
+  if (mode === 'cache') return 'Local cache';
+  if (mode === 'custom') return 'Custom endpoint';
+  return 'The Odds API';
+}
+function readKeyInputs() {
+  const primary = $('api_key') ? $('api_key').value.trim() : activeApiKey();
+  const extras = $('api_keys') ? $('api_keys').value.split(/\n|,/).map(s => s.trim()).filter(Boolean) : apiKeys;
+  return cleanKeyList([primary, ...extras]);
+}
+function saveProviderKeys(mode, keys, index = activeApiKeyIndex) {
+  if (!providerUsesKeys(mode)) return;
+  const clean = cleanKeyList(keys || []);
+  providerKeyMap[mode] = {
+    apiKeys: clean,
+    activeApiKeyIndex: clean.length ? Math.max(0, Math.min(Number(index) || 0, clean.length - 1)) : 0
+  };
+  localStorage.setItem(STORAGE_KEYS.providerKeyMap, JSON.stringify(providerKeyMap));
+}
+function loadProviderKeys(mode) {
+  const saved = providerKeyMap[mode] || {};
+  apiKeys = cleanKeyList(Array.isArray(saved.apiKeys) ? saved.apiKeys : []);
+  activeApiKeyIndex = apiKeys.length ? Math.max(0, Math.min(numberOr(saved.activeApiKeyIndex, 0), apiKeys.length - 1)) : 0;
+  apiKey = apiKeys[activeApiKeyIndex] || '';
+  localStorage.setItem(STORAGE_KEYS.apiKeys, JSON.stringify(apiKeys));
+  localStorage.setItem(STORAGE_KEYS.activeApiKey, String(activeApiKeyIndex));
+  localStorage.setItem(STORAGE_KEYS.apiKey, apiKey);
+}
+function switchProviderMode(nextMode) {
+  saveProviderKeys(providerMode, readKeyInputs(), activeApiKeyIndex);
+  providerMode = nextMode;
+  loadProviderKeys(providerMode);
+  apiRequestsUsed = 0;
+  apiRequestsRemaining = '?';
+  localStorage.setItem(STORAGE_KEYS.apiUsed, '0');
+  localStorage.setItem(STORAGE_KEYS.apiRemaining, '?');
+  persistApiSource();
+  hydrateKeyInputs();
+  updateApiUsage();
+  setStatus(apiReadyMessage() ? 'Data source needs setup' : `${providerLabel()} ready`, apiReadyMessage() ? 'warn' : 'ok');
+}
 function activeApiKey() {
   if (!apiKeys.length && apiKey) apiKeys = [apiKey];
   if (!apiKeys.length) return '';
@@ -3950,6 +4019,7 @@ function rotateApiKey(reason = '') {
   }
   activeApiKeyIndex = (activeApiKeyIndex + 1) % apiKeys.length;
   apiKey = activeApiKey();
+  saveProviderKeys(providerMode, apiKeys, activeApiKeyIndex);
   localStorage.setItem(STORAGE_KEYS.activeApiKey, String(activeApiKeyIndex));
   localStorage.setItem(STORAGE_KEYS.apiKey, apiKey);
   updateApiUsage();
@@ -3959,6 +4029,7 @@ function rotateApiKey(reason = '') {
 function persistApiSource() {
   apiKeys = cleanKeyList(apiKeys);
   apiKey = activeApiKey();
+  saveProviderKeys(providerMode, apiKeys, activeApiKeyIndex);
   localStorage.setItem(STORAGE_KEYS.apiKey, apiKey);
   localStorage.setItem(STORAGE_KEYS.apiKeys, JSON.stringify(apiKeys));
   localStorage.setItem(STORAGE_KEYS.activeApiKey, String(activeApiKeyIndex));
@@ -3966,6 +4037,7 @@ function persistApiSource() {
   localStorage.setItem(STORAGE_KEYS.customEndpoint, customEndpoint);
   localStorage.setItem(STORAGE_KEYS.cacheEndpoint, cacheEndpoint);
 }
+if (providerKeyMap[providerMode]) loadProviderKeys(providerMode);
 function configuredBookKeys() {
   return Array.from(new Set([...softBooks, ...sharpBooks]));
 }
@@ -3991,16 +4063,17 @@ function scopedBookmakerText(scope, kind = 'scan') {
   return booksForScope(scope, kind).join(',');
 }
 function needsApiKey() {
-  return providerMode === 'oddsapi';
+  return providerUsesKeys(providerMode);
 }
 function apiReadyMessage() {
   if (providerMode === 'cache') return cacheEndpoint ? '' : 'Add your local cache endpoint in Settings first.';
   if (providerMode === 'custom') return customEndpoint ? '' : 'Add a custom endpoint in Settings first.';
-  return activeApiKey() ? '' : 'Add your The Odds API key in Settings first.';
+  return activeApiKey() ? '' : `Add your ${providerLabel()} key in Settings first.`;
 }
 async function fetchOddsFeed(sport, market, scope, kind = 'scan') {
   if (providerMode === 'cache') return fetchCacheOddsFeed(sport, market, scope, kind);
   if (providerMode === 'custom') return fetchCustomOddsFeed(sport, market, scope, kind);
+  if (providerMode === 'propline') return fetchPropLineFeed(sport, market, scope, kind);
   return fetchOddsApiFeed(sport, market, scope, kind);
 }
 async function fetchOddsApiFeed(sport, market, scope, kind = 'scan') {
@@ -4090,6 +4163,81 @@ async function fetchOddsApiEventMarketFeed(sport, market, scope, kind = 'scan') 
   }
   return { ok: false, error: lastError || 'No usable API key returned prop odds' };
 }
+async function fetchPropLineFeed(sport, market, scope, kind = 'scan') {
+  if (isPropMarket(market)) return fetchPropLineEventMarketFeed(sport, market, scope, kind);
+  let tries = Math.max(1, apiKeys.length || 1);
+  let lastError = '';
+  while (tries-- > 0) {
+    const key = activeApiKey();
+    const params = new URLSearchParams({
+      apiKey: key,
+      markets: market
+    });
+    const resp = await fetch(`https://api.prop-line.com/v1/sports/${sport}/odds?${params}`);
+    captureQuota(resp);
+    if (resp.ok) return { ok: true, data: await resp.json() };
+    lastError = providerHttpError(resp.status);
+    if ((resp.status === 401 || resp.status === 422 || resp.status === 429) && apiKeys.length > 1) {
+      rotateApiKey(`${lastError}. Trying the next saved ${providerLabel()} key.`);
+      continue;
+    }
+    return { ok: false, error: lastError };
+  }
+  return { ok: false, error: lastError || `No usable ${providerLabel()} key returned data` };
+}
+async function fetchPropLineEventMarketFeed(sport, market, scope, kind = 'scan') {
+  let tries = Math.max(1, apiKeys.length || 1);
+  let lastError = '';
+  while (tries-- > 0) {
+    const key = activeApiKey();
+    const eventsResp = await fetch(`https://api.prop-line.com/v1/sports/${sport}/events?${new URLSearchParams({ apiKey: key })}`);
+    captureQuota(eventsResp);
+    if (!eventsResp.ok) {
+      lastError = providerHttpError(eventsResp.status);
+      if ((eventsResp.status === 401 || eventsResp.status === 422 || eventsResp.status === 429) && apiKeys.length > 1) {
+        rotateApiKey(`${lastError}. Trying the next saved ${providerLabel()} key.`);
+        continue;
+      }
+      return { ok: false, error: lastError };
+    }
+
+    const events = await eventsResp.json();
+    const now = Date.now();
+    const eventList = (Array.isArray(events) ? events : [])
+      .filter(event => {
+        if (!event.commence_time) return true;
+        return new Date(event.commence_time).getTime() >= now - 6 * 60 * 60 * 1000;
+      })
+      .slice(0, PROP_EVENT_LIMIT);
+    const data = [];
+    let requestCount = 0;
+
+    for (const event of eventList) {
+      const params = new URLSearchParams({
+        apiKey: key,
+        markets: market
+      });
+      const resp = await fetch(`https://api.prop-line.com/v1/sports/${sport}/events/${event.id}/odds?${params}`);
+      requestCount++;
+      captureQuota(resp);
+      if (resp.ok) {
+        const eventOdds = await resp.json();
+        if (eventOdds && Array.isArray(eventOdds.bookmakers) && eventOdds.bookmakers.length) data.push(eventOdds);
+        continue;
+      }
+      if (resp.status === 404 || resp.status === 422) {
+        lastError = `${prettyMarket(market)} unavailable for current ${prettySport(sport)} events`;
+        continue;
+      }
+      lastError = providerHttpError(resp.status);
+      if (resp.status === 429) break;
+    }
+
+    if (data.length) return { ok: true, data, requestCount: Math.max(1, requestCount) };
+    return { ok: false, error: lastError || `${prettyMarket(market)} unavailable for current ${prettySport(sport)} events`, requestCount: Math.max(1, requestCount) };
+  }
+  return { ok: false, error: lastError || `No usable ${providerLabel()} key returned prop odds` };
+}
 async function fetchCustomOddsFeed(sport, market, scope, kind = 'scan') {
   const books = scopedBookmakerText(scope, kind);
   const url = customEndpoint
@@ -4130,19 +4278,24 @@ async function fetchCacheOddsFeed(sport, market, scope, kind = 'scan') {
   return { ok: true, data: payload.data || [], requestCount: 0 };
 }
 async function fallbackToDirectFeed(sport, market, scope, kind, cacheError) {
-  if (!activeApiKey()) return { ok: false, error: `${cacheError}. Switch Provider mode to The Odds API live feed or sync a valid key to the cache.` };
+  if (!activeApiKey()) return { ok: false, error: `${cacheError}. Switch Provider mode to a live feed or sync a valid key to the cache.` };
   setStatus('Cache failed, trying direct feed...', 'warn');
-  const direct = await fetchOddsApiFeed(sport, market, scope, kind);
+  const direct = providerMode === 'propline'
+    ? await fetchPropLineFeed(sport, market, scope, kind)
+    : await fetchOddsApiFeed(sport, market, scope, kind);
   if (direct.ok) {
     showToast('Cache failed, so I used the saved API key directly.', 'warn');
     return direct;
   }
   return { ok: false, error: `${cacheError}. Direct feed also failed: ${direct.error}` };
 }
-function oddsApiError(status) {
-  if (status === 401 || status === 422) return 'key invalid, exhausted, or unsupported bookmakers';
+function providerHttpError(status) {
+  if (status === 401 || status === 422) return 'key invalid, exhausted, or unsupported market/book';
   if (status === 429) return 'quota exhausted';
   return `HTTP ${status}`;
+}
+function oddsApiError(status) {
+  return providerHttpError(status);
 }
 function normalizeBookName(value) {
   return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, '').trim();
@@ -4153,6 +4306,7 @@ function bookUrl(bookKey, bookTitle) {
   const normalized = normalizeBookName(bookTitle || bookKey);
   const aliases = {
     betmgm: 'betmgm',
+    betrivers: 'betrivers',
     draftkings: 'draftkings',
     fanduel: 'fanduel',
     caesars: 'caesars',
@@ -4168,7 +4322,15 @@ function bookUrl(bookKey, bookTitle) {
     bovada: 'bovada',
     mybookie: 'mybookieag',
     mybookieag: 'mybookieag',
-    lowvig: 'lowvig'
+    lowvig: 'lowvig',
+    unibet: 'unibet',
+    underdog: 'underdog',
+    underdogfantasy: 'underdog',
+    prizepicks: 'prizepicks',
+    kalshi: 'kalshi',
+    polymarket: 'polymarket',
+    matchbook: 'matchbook',
+    smarkets: 'smarkets'
   };
   const key = aliases[normalized];
   return key ? BOOK_URLS[key] : '';
@@ -4958,8 +5120,12 @@ function dedupeArbs(list) {
 }
 
 function captureQuota(resp) {
-  const remaining = resp.headers.get('x-requests-remaining');
-  const used = resp.headers.get('x-requests-used');
+  const remaining = resp.headers.get('x-requests-remaining')
+    || resp.headers.get('x-ratelimit-remaining')
+    || resp.headers.get('x-rate-limit-remaining');
+  const used = resp.headers.get('x-requests-used')
+    || resp.headers.get('x-ratelimit-used')
+    || resp.headers.get('x-rate-limit-used');
   if (remaining !== null) {
     apiRequestsRemaining = remaining;
     localStorage.setItem(STORAGE_KEYS.apiRemaining, remaining);
@@ -5985,13 +6151,11 @@ function saveApiKey() {
   providerMode = $('provider_mode').value;
   customEndpoint = $('custom_endpoint').value.trim();
   cacheEndpoint = $('cache_endpoint').value.trim() || CACHE_DEFAULT_ENDPOINT;
-  const primary = $('api_key').value.trim();
-  const extras = $('api_keys').value.split(/\n|,/).map(s => s.trim()).filter(Boolean);
-  apiKeys = cleanKeyList([primary, ...extras]);
+  apiKeys = readKeyInputs();
   activeApiKeyIndex = Math.min(activeApiKeyIndex, Math.max(0, apiKeys.length - 1));
   persistApiSource();
   updateApiUsage();
-  setStatus(apiReadyMessage() ? 'Data source needs setup' : 'Data source ready', apiReadyMessage() ? 'warn' : 'ok');
+  setStatus(apiReadyMessage() ? 'Data source needs setup' : `${providerLabel()} ready`, apiReadyMessage() ? 'warn' : 'ok');
   showToast('Data source saved.', 'ok');
   if (providerMode === 'cache') syncCacheConfig();
 }
@@ -6034,6 +6198,7 @@ function exportData() {
     customEndpoint,
     cacheEndpoint,
     apiKeys,
+    providerKeyMap,
     activeApiKeyIndex,
     softBooks,
     sharpBooks,
@@ -6066,6 +6231,7 @@ function importData(file) {
       providerMode = data.providerMode || providerMode;
       customEndpoint = data.customEndpoint || customEndpoint;
       cacheEndpoint = data.cacheEndpoint || cacheEndpoint;
+      providerKeyMap = data.providerKeyMap && typeof data.providerKeyMap === 'object' ? data.providerKeyMap : providerKeyMap;
       apiKeys = Array.isArray(data.apiKeys) ? cleanKeyList(data.apiKeys) : apiKeys;
       activeApiKeyIndex = numberOr(data.activeApiKeyIndex, activeApiKeyIndex);
       softBooks = Array.isArray(data.softBooks) ? data.softBooks : softBooks;
@@ -6141,18 +6307,21 @@ function updateApiUsage() {
     ? `Local cache${cacheEndpoint ? ` at ${cacheEndpoint}` : ' missing'}`
     : providerMode === 'custom'
       ? `Custom endpoint${customEndpoint ? ' ready' : ' missing'}`
-      : `${apiKeys.length || 0} saved key${apiKeys.length === 1 ? '' : 's'}, active ${activeApiKeyIndex + 1}: ${maskKey(activeApiKey())}`;
+      : `${providerLabel()}: ${apiKeys.length || 0} saved key${apiKeys.length === 1 ? '' : 's'}, active ${activeApiKeyIndex + 1}: ${maskKey(activeApiKey())}`;
   const quota = apiRequestsRemaining === '?'
-    ? (providerMode === 'cache' ? 'Cache quota appears after the backend makes a successful refresh.' : 'Quota appears after your first successful The Odds API scan.')
+    ? (providerMode === 'cache' ? 'Cache quota appears after the backend makes a successful refresh.' : `Quota appears after your first successful ${providerLabel()} scan, if the provider sends quota headers.`)
     : `${apiRequestsUsed || 0} requests used, ${apiRequestsRemaining} remaining.`;
   $('api_usage').innerHTML = `<span class="source-pill">${escapeHtml(source)}</span><br>${escapeHtml(quota)}`;
+}
+function hydrateKeyInputs() {
+  $('api_key').value = activeApiKey();
+  $('api_keys').value = apiKeys.filter(key => key !== activeApiKey()).join('\n');
 }
 function hydrateInputs() {
   $('bankroll').value = bankroll;
   $('unit_pct').value = unitPct;
   $('provider_mode').value = providerMode;
-  $('api_key').value = activeApiKey();
-  $('api_keys').value = apiKeys.filter(key => key !== activeApiKey()).join('\n');
+  hydrateKeyInputs();
   $('custom_endpoint').value = customEndpoint;
   $('cache_endpoint').value = cacheEndpoint;
   $('soft_books_input').value = softBooks.join(',');
@@ -6303,6 +6472,7 @@ function bindEvents() {
   $('tool_boost_btn').addEventListener('click', calcToolBoost);
   $('tool_parlay_btn').addEventListener('click', calcToolParlay);
   $('save_api_btn').addEventListener('click', saveApiKey);
+  $('provider_mode').addEventListener('change', e => switchProviderMode(e.target.value));
   $('rotate_key_btn').addEventListener('click', () => {
     rotateApiKey('Add more keys you own before rotating.');
     hydrateInputs();
