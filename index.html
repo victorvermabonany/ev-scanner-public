@@ -5,13 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#080a0d">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="EdgeLab Odds">
+<meta name="apple-mobile-web-app-title" content="EdgeLabs Odds">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="application-name" content="EdgeLabs Odds">
+<meta name="description" content="EdgeLabsOdds.com is an EV and arbitrage odds terminal with sportsbook line shopping, OpticOdds, PropLine, calculators, and bet tracking.">
+<meta property="og:title" content="EdgeLabsOdds.com">
+<meta property="og:description" content="EV scanner, arbitrage scanner, odds screen, calculators, and bet tracker for sharper sportsbook line shopping.">
+<meta property="og:type" content="website">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/icon.svg">
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-<title>EdgeLabOdds.com | EV + Arb Terminal</title>
+<title>EdgeLabsOdds.com | EV + Arb Terminal</title>
 <style>
   :root {
     color-scheme: dark;
@@ -1146,7 +1151,7 @@
   <aside class="sidebar">
     <div class="brand">
       <div class="brand-mark">EV</div>
-      <div><h1>EdgeLabOdds.com</h1><span>EV + arb terminal</span></div>
+      <div><h1>EdgeLabsOdds.com</h1><span>EV + arb terminal</span></div>
     </div>
     <nav class="nav" aria-label="Main">
       <button class="active" data-tab="dashboard"><i data-lucide="layout-dashboard"></i><span>Dashboard</span></button>
@@ -1370,6 +1375,7 @@
           <label for="provider_mode">Provider</label>
           <select id="provider_mode">
             <option value="demo">Demo feed</option>
+            <option value="opticodds">OpticOdds live feed</option>
             <option value="propline">PropLine live feed</option>
             <option value="oddsapi">The Odds API live feed</option>
             <option value="custom">Custom compatible endpoint</option>
@@ -1447,6 +1453,34 @@ const BOOKS = [
 ];
 const SHARP_KEYS = ['pinnacle','betonlineag','lowvig','bovada','matchbook','smarkets','kalshi','polymarket'];
 const DEFAULT_BOOKS = ['draftkings','fanduel','betmgm','betrivers','williamhill_us','espnbet','fanatics','bet365','pinnacle','betonlineag','bovada','lowvig'];
+const OPTICODDS_LEAGUES = {
+  baseball_mlb: { sport: 'baseball', league: 'mlb' },
+  basketball_nba: { sport: 'basketball', league: 'nba' },
+  basketball_wnba: { sport: 'basketball', league: 'wnba' },
+  americanfootball_nfl: { sport: 'football', league: 'nfl' },
+  icehockey_nhl: { sport: 'hockey', league: 'nhl' },
+  soccer_usa_mls: { sport: 'soccer', league: 'mls' }
+};
+const OPTICODDS_BOOKS = {
+  draftkings: 'DraftKings',
+  fanduel: 'FanDuel',
+  betmgm: 'BetMGM',
+  betrivers: 'BetRivers',
+  williamhill_us: 'Caesars',
+  espnbet: 'ESPN BET',
+  fanatics: 'Fanatics',
+  bet365: 'Bet365',
+  hardrockbet: 'Hard Rock',
+  bovada: 'Bovada',
+  pinnacle: 'Pinnacle',
+  betonlineag: 'BetOnline',
+  lowvig: 'LowVig',
+  unibet: 'Unibet',
+  kalshi: 'Kalshi',
+  polymarket: 'Polymarket',
+  matchbook: 'Matchbook',
+  smarkets: 'Smarkets'
+};
 const SPORTS = [
   ['all', 'All sports'],
   ['baseball_mlb', 'MLB'],
@@ -1474,6 +1508,7 @@ const PROP_MARKETS_BY_SPORT = {
 };
 const PROP_MARKETS = Array.from(new Set(Object.values(PROP_MARKETS_BY_SPORT).flat()));
 const FREE_SOURCES = [
+  { name: 'OpticOdds', detail: 'Paid serious feed with 100+ books, fixtures, odds snapshots, streaming, props, history, deep links, and limits where available.', url: 'https://opticodds.com/sports-betting-api', best: 'Best paid upgrade' },
   { name: 'PropLine', detail: '1,000 free requests/day, props-first, The Odds API compatible, 13 books plus exchanges.', url: 'https://www.prop-line.com/', best: 'Best free prop feed' },
   { name: 'The Odds API', detail: 'Reliable compatible odds shape, smaller free quota, good for main lines.', url: 'https://the-odds-api.com/', best: 'Simple baseline' },
   { name: 'Odds-API.io', detail: 'Free tier advertises 100 requests/hour and live/pre-match odds; use through custom adapter if needed.', url: 'https://odds-api.io/pricing/free', best: 'Extra free source' },
@@ -1678,9 +1713,9 @@ function saveSettingsFromInputs() {
   toast('Settings saved.');
 }
 function providerLabel() {
-  return { demo: 'Demo', propline: 'PropLine', oddsapi: 'The Odds API', custom: 'Custom' }[settings.provider] || 'Demo';
+  return { demo: 'Demo', opticodds: 'OpticOdds', propline: 'PropLine', oddsapi: 'The Odds API', custom: 'Custom' }[settings.provider] || 'Demo';
 }
-function providerNeedsKey() { return settings.provider === 'propline' || settings.provider === 'oddsapi'; }
+function providerNeedsKey() { return settings.provider === 'opticodds' || settings.provider === 'propline' || settings.provider === 'oddsapi'; }
 function providerReady() {
   if (settings.provider === 'demo') return '';
   if (settings.provider === 'custom') return settings.customEndpoint ? '' : 'Add a custom endpoint template in Settings.';
@@ -1849,10 +1884,60 @@ async function fetchMarket(sport, market) {
   const cached = feedCache[cacheKey];
   const cacheMs = (settings.cacheMinutes || 0) * 60000;
   if (cached && cacheMs > 0 && Date.now() - cached.at < cacheMs) return cached.data;
+  if (settings.provider === 'opticodds') {
+    const opticData = await fetchOpticOddsMarket(sport, market);
+    feedCache[cacheKey] = { at: Date.now(), data: opticData };
+    saveJson(STORE.cache, feedCache);
+    return opticData;
+  }
   const data = isPropMarket(market) ? await fetchEventMarket(sport, market) : await fetchSportMarket(sport, market);
   feedCache[cacheKey] = { at: Date.now(), data };
   saveJson(STORE.cache, feedCache);
   return data;
+}
+async function fetchOpticOddsMarket(sport, market) {
+  const config = OPTICODDS_LEAGUES[sport];
+  if (!config) return [];
+  const fixtures = await fetchOpticOddsFixtures(config);
+  const fixtureIds = fixtures.map(fixture => fixture.id).filter(Boolean).slice(0, 24);
+  if (!fixtureIds.length) return [];
+
+  const all = [];
+  const sportsbookChunks = chunk(selectedOpticOddsBooks(), 5);
+  const fixtureChunks = chunk(fixtureIds, 8);
+  for (const ids of fixtureChunks) {
+    for (const books of sportsbookChunks) {
+      const markets = opticOddsMarkets(sport, market);
+      const data = await fetchOpticOddsSnapshot(ids, books, markets, sport);
+      all.push(...data);
+    }
+  }
+  return mergeGamesById(all);
+}
+async function fetchOpticOddsFixtures(config) {
+  const params = new URLSearchParams({
+    key: selectedProviderKeys().key,
+    sport: config.sport,
+    league: config.league
+  });
+  const resp = await fetch(`https://api.opticodds.com/api/v3/fixtures/active?${params}`);
+  captureQuota(resp);
+  if (!resp.ok) throw new Error(`OpticOdds fixtures HTTP ${resp.status}`);
+  return unwrapFeed(await resp.json());
+}
+async function fetchOpticOddsSnapshot(fixtureIds, sportsbooks, markets, sport) {
+  const params = new URLSearchParams({
+    key: selectedProviderKeys().key,
+    odds_format: 'AMERICAN',
+    is_main: 'true'
+  });
+  fixtureIds.forEach(id => params.append('fixture_id', id));
+  sportsbooks.forEach(book => params.append('sportsbook', book));
+  markets.forEach(market => params.append('market', market));
+  const resp = await fetch(`https://api.opticodds.com/api/v3/fixtures/odds?${params}`);
+  captureQuota(resp);
+  if (!resp.ok) throw new Error(`OpticOdds odds HTTP ${resp.status}`);
+  return normalizeOpticOddsFeed(await resp.json(), sport);
 }
 async function fetchSportMarket(sport, market) {
   if (settings.provider === 'custom') {
@@ -1894,6 +1979,129 @@ async function fetchEventMarket(sport, market) {
 }
 function selectedBookText() {
   return unique([...selectedBooks, ...SHARP_KEYS]).join(',');
+}
+function selectedOpticOddsBooks() {
+  return unique([...selectedBooks, ...SHARP_KEYS])
+    .map(key => OPTICODDS_BOOKS[key])
+    .filter(Boolean);
+}
+function chunk(items, size) {
+  const groups = [];
+  for (let i = 0; i < items.length; i += size) groups.push(items.slice(i, i + size));
+  return groups;
+}
+function mergeGamesById(games) {
+  const byId = new Map();
+  for (const game of games) {
+    if (!game || !game.id) continue;
+    if (!byId.has(game.id)) byId.set(game.id, game);
+    else mergeGameMarkets(byId.get(game.id), game);
+  }
+  return Array.from(byId.values());
+}
+function opticOddsMarkets(sport, market) {
+  const spread = sport === 'baseball_mlb' ? 'run_line' : sport === 'icehockey_nhl' ? 'puck_line' : 'point_spread';
+  const total = sport === 'baseball_mlb' ? 'total_runs' : sport === 'icehockey_nhl' || sport === 'soccer_usa_mls' ? 'total_goals' : 'total_points';
+  const map = {
+    h2h: ['moneyline'],
+    spreads: [spread],
+    totals: [total]
+  };
+  if (map[market]) return map[market];
+  if (isPropMarket(market)) return [market];
+  return ['moneyline', spread, total];
+}
+function normalizeOpticOddsFeed(payload, sport) {
+  return unwrapFeed(payload)
+    .map(fixture => normalizeOpticOddsFixture(fixture, sport))
+    .filter(game => game.bookmakers.length);
+}
+function normalizeOpticOddsFixture(fixture, sport) {
+  const home = firstName(fixture.home_competitors) || fixture.home_team || fixture.home || 'Home';
+  const away = firstName(fixture.away_competitors) || fixture.away_team || fixture.away || 'Away';
+  const game = {
+    id: fixture.id || fixture.fixture_id || `${away}_${home}_${fixture.start_date || fixture.commence_time || ''}`,
+    _sport: sport,
+    sport_key: sport,
+    commence_time: fixture.start_date || fixture.commence_time || fixture.start_time,
+    home_team: home,
+    away_team: away,
+    in_play: fixture.is_live === true || fixture.status === 'live',
+    bookmakers: []
+  };
+  const books = new Map();
+  for (const odd of fixture.odds || []) {
+    const bookKey = opticOddsBookKey(odd.sportsbook || odd.sportsbook_name || odd.book || odd.bookmaker);
+    const marketKey = opticOddsMarketKey(odd.market_id || odd.market || odd.market_name);
+    if (!bookKey || !marketKey || odd.price == null) continue;
+    if (!books.has(bookKey)) books.set(bookKey, { key: bookKey, title: bookByKey(bookKey).name, markets: [] });
+    const book = books.get(bookKey);
+    let market = book.markets.find(m => m.key === marketKey);
+    if (!market) {
+      market = { key: marketKey, outcomes: [] };
+      book.markets.push(market);
+    }
+    const outcome = opticOddsOutcome(odd, marketKey, game);
+    if (outcome) market.outcomes.push(outcome);
+  }
+  game.bookmakers = Array.from(books.values())
+    .map(book => ({ ...book, markets: book.markets.filter(market => market.outcomes.length) }))
+    .filter(book => book.markets.length);
+  return game;
+}
+function firstName(list) {
+  return Array.isArray(list) && list[0] ? list[0].name : '';
+}
+function opticOddsBookKey(value) {
+  const raw = normalizeToken(value);
+  if (!raw) return '';
+  const found = BOOKS.find(book => normalizeToken(book.name) === raw || normalizeToken(OPTICODDS_BOOKS[book.key]) === raw);
+  return found ? found.key : raw;
+}
+function opticOddsMarketKey(value) {
+  const raw = normalizeToken(value);
+  if (!raw) return '';
+  if (raw.includes('moneyline')) return 'h2h';
+  if (raw.includes('spread') || raw.includes('runline') || raw.includes('puckline')) return 'spreads';
+  if (raw.includes('total')) return 'totals';
+  const prop = PROP_MARKETS.find(key => normalizeToken(key) === raw || raw.includes(normalizeToken(key)));
+  return prop || raw;
+}
+function opticOddsOutcome(odd, marketKey, game) {
+  const price = Number(odd.price);
+  if (!Number.isFinite(price)) return null;
+  const rawName = String(odd.name || odd.selection || odd.selection_name || '').trim();
+  const line = String(odd.selection_line || odd.side || '').toLowerCase();
+  const point = odd.points == null ? odd.point : odd.points;
+  if (marketKey === 'h2h') {
+    return { name: opticTeamName(rawName, odd, game), price };
+  }
+  if (marketKey === 'spreads') {
+    return { name: opticTeamName(rawName, odd, game), price, point: Number(point) };
+  }
+  const totalName = line.includes('under') || rawName.toLowerCase().includes('under') ? 'Under' : 'Over';
+  if (marketKey === 'totals') {
+    return { name: totalName, price, point: Number(point) };
+  }
+  return {
+    name: totalName,
+    description: odd.player_name || odd.player?.name || odd.selection || cleanOpticPlayerName(rawName),
+    price,
+    point: Number(point)
+  };
+}
+function opticTeamName(rawName, odd, game) {
+  const raw = String(odd.selection || odd.selection_name || rawName || '').trim();
+  if (raw && normalizeToken(raw).includes(normalizeToken(game.home_team))) return game.home_team;
+  if (raw && normalizeToken(raw).includes(normalizeToken(game.away_team))) return game.away_team;
+  if (raw && raw.toLowerCase() !== 'over' && raw.toLowerCase() !== 'under') return raw.replace(/\s+[+-]?\d+(\.\d+)?$/, '');
+  return game.home_team;
+}
+function cleanOpticPlayerName(value) {
+  return String(value || 'Player').replace(/\b(over|under)\b/ig, '').replace(/[+-]?\d+(\.\d+)?/g, '').trim() || 'Player';
+}
+function normalizeToken(value) {
+  return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
 }
 function unwrapFeed(payload) {
   if (Array.isArray(payload)) return payload;

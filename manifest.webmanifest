@@ -1,7 +1,7 @@
 {
-  "name": "EdgeLab Odds",
-  "short_name": "EdgeLabOdds",
-  "description": "EdgeLabOdds.com style free odds terminal with EV scanning, arbitrage, line shopping, calculators, and bet tracking.",
+  "name": "EdgeLabs Odds",
+  "short_name": "EdgeLabsOdds",
+  "description": "EdgeLabsOdds.com style odds terminal with EV scanning, arbitrage, line shopping, calculators, and bet tracking.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -19,13 +19,13 @@
   ],
   "shortcuts": [
     {
-      "name": "EdgeLab Odds EV",
+      "name": "EdgeLabs Odds EV",
       "short_name": "EV",
       "url": "./#ev",
       "description": "Open the EV scanner"
     },
     {
-      "name": "EdgeLab Odds Arbs",
+      "name": "EdgeLabs Odds Arbs",
       "short_name": "Arbs",
       "url": "./#arb",
       "description": "Open the arbitrage scanner"
