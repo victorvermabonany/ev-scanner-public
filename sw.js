@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ev-scanner-v1';
+const CACHE_NAME = 'edgelab-v2';
 const APP_SHELL = [
   './',
   './ev-scanner.html',

@@ -1,13 +1,13 @@
 {
-  "name": "EV Scanner",
-  "short_name": "EV Scanner",
-  "description": "EV and arbitrage betting scanner with odds tools and bet tracking.",
+  "name": "EdgeLab Odds Terminal",
+  "short_name": "EdgeLab",
+  "description": "Free odds terminal with EV scanning, arbitrage, line shopping, calculators, and bet tracking.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#070b0f",
-  "theme_color": "#070b0f",
+  "background_color": "#080a0d",
+  "theme_color": "#080a0d",
   "categories": ["sports", "finance", "utilities"],
   "icons": [
     {
@@ -21,13 +21,13 @@
     {
       "name": "EV Scanner",
       "short_name": "EV",
-      "url": "./#pre_match_ev",
+      "url": "./#ev",
       "description": "Open the EV scanner"
     },
     {
       "name": "Arbitrage",
       "short_name": "Arbs",
-      "url": "./#pre_match_arbs",
+      "url": "./#arb",
       "description": "Open the arbitrage scanner"
     }
   ]
