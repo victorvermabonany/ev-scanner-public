@@ -349,6 +349,84 @@
   }
   .toolbar.tight { grid-template-columns: 1fr 1fr .8fr .8fr auto auto; }
   .toolbar-actions { display: flex; gap: 8px; align-items: center; }
+  .scan-toolbar {
+    grid-template-columns: minmax(160px, 1fr) minmax(160px, 1fr) auto auto auto;
+  }
+  .scan-toolbar.arb-main {
+    grid-template-columns: minmax(160px, 1fr) minmax(160px, 1fr) minmax(130px, .7fr) auto auto;
+  }
+  .advanced-panel {
+    margin: -2px 0 12px;
+    border: 1px solid rgba(255,255,255,.09);
+    border-radius: 8px;
+    background: rgba(255,255,255,.018);
+    overflow: hidden;
+  }
+  .advanced-panel summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 42px;
+    padding: 10px 12px;
+    color: var(--muted);
+    font-weight: 900;
+    cursor: pointer;
+    list-style: none;
+  }
+  .advanced-panel summary::-webkit-details-marker { display: none; }
+  .advanced-panel summary::after {
+    content: "+";
+    margin-left: auto;
+    color: var(--faint);
+    font-size: 18px;
+    line-height: 1;
+  }
+  .advanced-panel[open] summary::after { content: "-"; }
+  .advanced-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    padding: 0 12px 12px;
+  }
+  .feed-banner {
+    display: none;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    margin: 0 0 14px;
+    padding: 12px 14px;
+    border: 1px solid rgba(244,201,93,.32);
+    border-radius: 8px;
+    background:
+      linear-gradient(90deg, rgba(244,201,93,.12), rgba(255,255,255,.02)),
+      #0b0f12;
+    box-shadow: var(--shadow-tight);
+  }
+  .feed-banner.show { display: grid; }
+  .feed-banner.err {
+    border-color: rgba(255,107,115,.42);
+    background:
+      linear-gradient(90deg, rgba(255,107,115,.14), rgba(255,255,255,.02)),
+      #0b0f12;
+  }
+  .feed-banner.ok {
+    border-color: rgba(101,229,143,.34);
+    background:
+      linear-gradient(90deg, rgba(101,229,143,.12), rgba(255,255,255,.02)),
+      #0b0f12;
+  }
+  .feed-banner strong { display: block; margin-bottom: 2px; }
+  .feed-banner span { color: var(--muted); font-size: 12px; line-height: 1.35; }
+  .quick-actions {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .quick-action {
+    justify-content: flex-start;
+    min-height: 52px;
+  }
 
   .book-strip {
     display: flex;
@@ -370,6 +448,42 @@
     min-height: 32px;
     padding: 6px 9px;
     font-size: 12px;
+  }
+  .book-groups {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .book-group {
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 8px;
+    background: rgba(255,255,255,.02);
+    overflow: hidden;
+  }
+  .book-group summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 38px;
+    padding: 9px 10px;
+    color: #d8e1e6;
+    font-size: 12px;
+    font-weight: 950;
+    cursor: pointer;
+    list-style: none;
+  }
+  .book-group summary::-webkit-details-marker { display: none; }
+  .book-group summary span {
+    color: var(--faint);
+    font-weight: 850;
+  }
+  .book-group-body {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    padding: 0 10px 10px;
   }
   .book-chip {
     display: inline-flex;
@@ -1186,8 +1300,8 @@
     .source-card { display: none; }
     .topbar { grid-template-columns: 1fr auto; }
     .topbar .pill { display: none; }
-    .toolbar, .toolbar.tight { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .grid-4, .provider-grid, .detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .toolbar, .toolbar.tight, .scan-toolbar, .scan-toolbar.arb-main, .advanced-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-4, .provider-grid, .detail-grid, .quick-actions, .book-groups { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .calc-grid, .odds-board { grid-template-columns: 1fr; }
   }
 
@@ -1196,7 +1310,8 @@
     .topbar { margin: -10px -10px 12px; grid-template-columns: 1fr auto; }
     .page-head { align-items: flex-start; flex-direction: column; }
     .page-head h2 { font-size: 25px; }
-    .toolbar, .toolbar.tight, .grid-2, .grid-3, .grid-4, .info-grid, .provider-grid, .detail-grid { grid-template-columns: 1fr; }
+    .toolbar, .toolbar.tight, .scan-toolbar, .scan-toolbar.arb-main, .advanced-grid, .grid-2, .grid-3, .grid-4, .info-grid, .provider-grid, .detail-grid, .quick-actions, .book-groups { grid-template-columns: 1fr; }
+    .feed-banner { grid-template-columns: 1fr; }
     .toolbar-actions { align-items: stretch; flex-direction: column; }
     table { min-width: 920px; }
     .sidebar { padding: 10px; }
@@ -1238,6 +1353,14 @@
         <button id="watch_btn" class="btn secondary" type="button"><i data-lucide="radar"></i>Watch</button>
       </div>
     </div>
+    <div id="feed_banner" class="feed-banner" role="status" aria-live="polite">
+      <i data-lucide="triangle-alert"></i>
+      <div><strong id="feed_banner_title">Feed Offline</strong><span id="feed_banner_text">Start backend server or switch to Demo Mode.</span></div>
+      <div class="toolbar-actions">
+        <button class="btn secondary" data-jump="settings" type="button"><i data-lucide="settings"></i>Settings</button>
+        <button class="btn ghost" data-demo-now type="button"><i data-lucide="play"></i>Demo</button>
+      </div>
+    </div>
 
     <section id="dashboard" class="panel active">
       <div class="page-head">
@@ -1254,6 +1377,18 @@
         <div class="metric"><div class="label">Tracked P/L</div><div id="dash_profit" class="value">$0.00</div><div id="dash_roi" class="sub">0 bets</div></div>
         <div class="metric"><div class="label">Feed Mode</div><div id="dash_provider" class="value">Backend</div><div id="dash_provider_sub" class="sub">real odds mode</div></div>
       </div>
+      <div class="quick-actions">
+        <button class="btn primary quick-action" data-quick-scan="ev" type="button"><i data-lucide="scan-line"></i>Scan EV</button>
+        <button class="btn secondary quick-action" data-quick-scan="arb" type="button"><i data-lucide="split"></i>Scan Arbs</button>
+        <button class="btn secondary quick-action" data-jump="odds" type="button"><i data-lucide="table-2"></i>Odds Screen</button>
+        <button class="btn secondary quick-action" data-jump="tracker" type="button"><i data-lucide="receipt-text"></i>Tracker</button>
+      </div>
+      <div class="grid-4">
+        <div class="metric"><div class="label">Last Scan</div><div id="dash_last_scan" class="value">--</div><div id="dash_last_scan_sub" class="sub">waiting</div></div>
+        <div class="metric"><div class="label">Markets Scanned</div><div id="dash_markets" class="value blue-text">0</div><div id="dash_markets_sub" class="sub">loaded markets</div></div>
+        <div class="metric"><div class="label">Books Connected</div><div id="dash_books" class="value">0</div><div id="dash_books_sub" class="sub">selected books</div></div>
+        <div class="metric"><div class="label">Feed Latency</div><div id="dash_latency" class="value amber-text">--</div><div id="dash_latency_sub" class="sub">source age</div></div>
+      </div>
 
       <div class="grid-2">
         <div class="card">
@@ -1261,7 +1396,7 @@
           <div id="dashboard_opps" class="tracker-list"></div>
         </div>
         <div class="card">
-          <div class="card-title"><h3>Free Stack</h3><span class="tag blue">No paid services required</span></div>
+          <div class="card-title"><h3>Setup Status</h3><span class="tag blue">live readiness</span></div>
           <div class="provider-grid" id="dash_free_stack"></div>
         </div>
       </div>
@@ -1276,19 +1411,24 @@
         <span class="tag green" id="ev_loaded_tag">0 results</span>
       </div>
 
-      <div class="toolbar">
+      <div class="toolbar scan-toolbar">
         <div><label for="ev_sport">Sport</label><select id="ev_sport"></select></div>
         <div><label for="ev_market">Market</label><select id="ev_market"></select></div>
-        <div><label for="ev_mode">Timing</label><select id="ev_mode"><option value="all">Pre-match + live</option><option value="prematch">Pre-match only</option><option value="live">Live only</option></select></div>
-        <div><label for="ev_min">Min EV %</label><input id="ev_min" type="number" value="1" step="0.1"></div>
-        <div><label for="ev_max_odds">Max odds</label><input id="ev_max_odds" type="number" value="500" step="1"></div>
-        <div><label for="ev_sort">Sort</label><select id="ev_sort" data-live-filter><option value="ev">Best EV</option><option value="confidence">Confidence</option><option value="time">Start time</option><option value="stake">Stake</option><option value="odds">Odds</option><option value="probability">True probability</option></select></div>
-        <div><label for="ev_conf">Confidence</label><select id="ev_conf" data-live-filter><option value="all">All grades</option><option value="A">A only</option><option value="B">B+</option><option value="C">C+</option></select></div>
-        <div><label for="ev_window">Starts</label><select id="ev_window" data-live-filter><option value="all">Any time</option><option value="6">Next 6h</option><option value="24">Next 24h</option><option value="72">Next 72h</option></select></div>
         <button id="ev_scan_btn" class="btn primary" type="button"><i data-lucide="scan-line"></i>Scan EV</button>
         <button id="ev_export_btn" class="btn secondary" type="button"><i data-lucide="download"></i>CSV</button>
         <button id="ev_clear_btn" class="btn ghost" type="button"><i data-lucide="x"></i>Clear</button>
       </div>
+      <details class="advanced-panel">
+        <summary><i data-lucide="sliders-horizontal"></i>Advanced filters</summary>
+        <div class="advanced-grid">
+          <div><label for="ev_mode">Timing</label><select id="ev_mode"><option value="all">Pre-match + live</option><option value="prematch">Pre-match only</option><option value="live">Live only</option></select></div>
+          <div><label for="ev_min">Min EV %</label><input id="ev_min" type="number" value="1" step="0.1"></div>
+          <div><label for="ev_max_odds">Max odds</label><input id="ev_max_odds" type="number" value="500" step="1"></div>
+          <div><label for="ev_sort">Sort</label><select id="ev_sort" data-live-filter><option value="ev">Best EV</option><option value="confidence">Confidence</option><option value="time">Start time</option><option value="stake">Stake</option><option value="odds">Odds</option><option value="probability">True probability</option></select></div>
+          <div><label for="ev_conf">Confidence</label><select id="ev_conf" data-live-filter><option value="all">All grades</option><option value="A">A only</option><option value="B">B+</option><option value="C">C+</option></select></div>
+          <div><label for="ev_window">Starts</label><select id="ev_window" data-live-filter><option value="all">Any time</option><option value="6">Next 6h</option><option value="24">Next 24h</option><option value="72">Next 72h</option></select></div>
+        </div>
+      </details>
       <div class="book-tools">
         <div class="toolbar-actions">
           <button class="btn ghost" data-book-action="all" type="button">All</button>
@@ -1314,17 +1454,22 @@
         <span class="tag blue" id="arb_loaded_tag">0 results</span>
       </div>
 
-      <div class="toolbar tight">
+      <div class="toolbar scan-toolbar arb-main">
         <div><label for="arb_sport">Sport</label><select id="arb_sport"></select></div>
         <div><label for="arb_market">Market</label><select id="arb_market"></select></div>
-        <div><label for="arb_mode">Timing</label><select id="arb_mode"><option value="all">Pre-match + live</option><option value="prematch">Pre-match only</option><option value="live">Live only</option></select></div>
         <div><label for="arb_stake">Total stake</label><input id="arb_stake" type="number" value="100" step="1"></div>
-        <div><label for="arb_min">Min profit %</label><input id="arb_min" type="number" value="0" step="0.1"></div>
-        <div><label for="arb_sort">Sort</label><select id="arb_sort" data-live-filter><option value="profit">Profit %</option><option value="cash">Profit $</option><option value="time">Start time</option><option value="implied">Lowest implied</option><option value="legs">Fewest legs</option></select></div>
-        <div><label for="arb_window">Starts</label><select id="arb_window" data-live-filter><option value="all">Any time</option><option value="6">Next 6h</option><option value="24">Next 24h</option><option value="72">Next 72h</option></select></div>
         <button id="arb_scan_btn" class="btn primary" type="button"><i data-lucide="split"></i>Scan Arbs</button>
         <button id="arb_export_btn" class="btn secondary" type="button"><i data-lucide="download"></i>CSV</button>
       </div>
+      <details class="advanced-panel">
+        <summary><i data-lucide="sliders-horizontal"></i>Advanced filters</summary>
+        <div class="advanced-grid">
+          <div><label for="arb_mode">Timing</label><select id="arb_mode"><option value="all">Pre-match + live</option><option value="prematch">Pre-match only</option><option value="live">Live only</option></select></div>
+          <div><label for="arb_min">Min profit %</label><input id="arb_min" type="number" value="0" step="0.1"></div>
+          <div><label for="arb_sort">Sort</label><select id="arb_sort" data-live-filter><option value="profit">Profit %</option><option value="cash">Profit $</option><option value="time">Start time</option><option value="implied">Lowest implied</option><option value="legs">Fewest legs</option></select></div>
+          <div><label for="arb_window">Starts</label><select id="arb_window" data-live-filter><option value="all">Any time</option><option value="6">Next 6h</option><option value="24">Next 24h</option><option value="72">Next 72h</option></select></div>
+        </div>
+      </details>
       <div class="book-tools">
         <div class="toolbar-actions">
           <button class="btn ghost" data-book-action="all" type="button">All</button>
@@ -1556,6 +1701,12 @@ const BOOKS = [
 ];
 const SHARP_KEYS = ['pinnacle','betonlineag','lowvig','bovada','matchbook','smarkets','kalshi','polymarket'];
 const DEFAULT_BOOKS = ['draftkings','fanduel','betmgm','betrivers','williamhill_us','espnbet','fanatics','bet365','pinnacle','betonlineag','bovada','lowvig'];
+const BOOK_GROUPS = [
+  { id: 'soft', label: 'Recreational books', keys: BOOKS.filter(book => book.type === 'soft').map(book => book.key), open: true },
+  { id: 'sharp', label: 'Sharp references', keys: BOOKS.filter(book => book.type === 'sharp').map(book => book.key), open: true },
+  { id: 'dfs', label: 'Props apps', keys: BOOKS.filter(book => book.type === 'dfs').map(book => book.key), open: false },
+  { id: 'exchange', label: 'Exchanges', keys: BOOKS.filter(book => book.type === 'exchange').map(book => book.key), open: false }
+];
 const OPTICODDS_LEAGUES = {
   baseball_mlb: { sport: 'baseball', league: 'mlb' },
   basketball_nba: { sport: 'basketball', league: 'nba' },
@@ -1871,6 +2022,28 @@ function renderStatus() {
   $('dash_provider_sub').textContent = providerSubtitle(missing);
   $('unit_tag').textContent = `${money(unitStake())} unit`;
   if ($('backend_health')) $('backend_health').textContent = backendHealth.message;
+  renderFeedBanner();
+}
+function renderFeedBanner() {
+  const el = $('feed_banner');
+  if (!el) return;
+  const state = feedBannerState();
+  el.className = `feed-banner ${state.show ? 'show' : ''} ${state.tone}`;
+  $('feed_banner_title').textContent = state.title;
+  $('feed_banner_text').textContent = state.text;
+}
+function feedBannerState() {
+  if (lastError) return { show: true, tone: 'err', title: 'Feed Error', text: lastError };
+  if (settings.provider === 'demo') return { show: true, tone: 'warn', title: 'Demo Mode', text: 'This board is using test odds. Switch to backend/live mode for real odds.' };
+  if (settings.provider === 'backend' && backendHealth.checked && !backendHealth.ready) {
+    return { show: true, tone: backendHealth.ok ? 'warn' : 'err', title: backendHealth.ok ? 'Backend Needs Key' : 'Feed Offline', text: backendHealth.message };
+  }
+  if (settings.provider === 'backend' && !backendHealth.checked) {
+    return { show: true, tone: 'warn', title: 'Backend Not Checked', text: 'Click Test Backend in Settings, or start the real odds backend.' };
+  }
+  if (providerReady()) return { show: true, tone: 'warn', title: 'Live Feed Setup Needed', text: providerReady() };
+  if (loadedGames.length) return { show: false, tone: 'ok', title: 'Feed Connected', text: freshnessState().label };
+  return { show: true, tone: 'warn', title: 'Ready For Real Odds', text: 'Run a scan after your backend or live key is connected.' };
 }
 function quotaLabel() {
   if (settings.provider === 'demo') return 'Demo - no quota';
@@ -1903,10 +2076,17 @@ function ageLabel(ms) {
   return `Updated ${Math.floor(min / 60)}h ago`;
 }
 function renderBookChips() {
-  const html = BOOKS.map(book => {
-    const active = selectedBooks.includes(book.key);
-    return `<button class="book-chip ${book.type === 'sharp' || book.type === 'exchange' ? 'sharp' : ''} ${active ? 'active' : ''}" data-book="${book.key}" aria-pressed="${active ? 'true' : 'false'}" title="${active ? 'Click to remove' : 'Click to add'}" type="button">${escapeHtml(book.name)}</button>`;
+  const html = BOOK_GROUPS.map(group => {
+    const activeCount = group.keys.filter(key => selectedBooks.includes(key)).length;
+    const chips = group.keys.map(key => {
+      const book = bookByKey(key);
+      const active = selectedBooks.includes(book.key);
+      return `<button class="book-chip ${book.type === 'sharp' || book.type === 'exchange' ? 'sharp' : ''} ${active ? 'active' : ''}" data-book="${book.key}" aria-pressed="${active ? 'true' : 'false'}" title="${active ? 'Click to remove' : 'Click to add'}" type="button">${escapeHtml(book.name)}</button>`;
+    }).join('');
+    return `<details class="book-group" ${group.open || activeCount ? 'open' : ''}><summary>${escapeHtml(group.label)} <span>${activeCount}/${group.keys.length}</span></summary><div class="book-group-body">${chips}</div></details>`;
   }).join('');
+  $('ev_book_chips').className = 'book-groups';
+  $('arb_book_chips').className = 'book-groups';
   $('ev_book_chips').innerHTML = html;
   $('arb_book_chips').innerHTML = html;
   document.querySelectorAll('[data-book-count]').forEach(el => {
@@ -1960,8 +2140,22 @@ function recomputeLoadedResults() {
 }
 function renderFreeSources() {
   const html = FREE_SOURCES.map(s => `<div class="provider-card"><strong>${escapeHtml(s.name)}</strong><p>${escapeHtml(s.detail)}</p><p style="margin-top:8px;"><span class="tag blue">${escapeHtml(s.best)}</span></p><p style="margin-top:8px;"><a href="${s.url}" target="_blank" rel="noreferrer">Open source</a></p></div>`).join('');
-  $('dash_free_stack').innerHTML = html;
+  $('dash_free_stack').innerHTML = dashboardSetupCards();
   $('settings_sources').innerHTML = html;
+}
+function dashboardSetupCards() {
+  const healthTone = settings.provider === 'demo' ? 'amber' : backendHealth.ready || settings.provider !== 'backend' && !providerReady() ? 'green' : 'amber';
+  const feedText = settings.provider === 'backend'
+    ? backendHealth.message
+    : settings.provider === 'demo'
+      ? 'Demo mode is active. Results are test data only.'
+      : providerReady() || `${providerLabel()} key saved.`;
+  return [
+    ['Feed', providerLabel(), feedText, healthTone],
+    ['Books', `${selectedBooks.length} selected`, selectedBooks.length ? 'Book filter is ready.' : 'Pick at least one sportsbook.', selectedBooks.length ? 'green' : 'amber'],
+    ['Last scan', lastFetchAt ? ageLabel(Date.now() - lastFetchAt) : '--', loadedGames.length ? `${loadedGames.length} events loaded.` : 'No real feed loaded yet.', loadedGames.length ? 'blue' : 'amber'],
+    ['Next step', settings.provider === 'backend' && !backendHealth.ready ? 'Start backend' : 'Run scan', settings.provider === 'backend' && !backendHealth.ready ? 'Open Settings and test backend.' : 'Use Scan EV or Scan Arbs.', 'blue']
+  ].map(([label, value, detail, tone]) => `<div class="provider-card"><strong>${escapeHtml(label)}</strong><p><span class="tag ${tone}">${escapeHtml(value)}</span></p><p style="margin-top:8px;">${escapeHtml(detail)}</p></div>`).join('');
 }
 
 async function scanDemoOnLoad() {
@@ -2757,9 +2951,15 @@ function evRow(row) {
     <td><div class="price">${fmtOdds(row.odds)}</div><div class="mini">${(row.bookProb * 100).toFixed(2)}% implied</div></td>
     <td><strong>${row.fairOdds}</strong><div class="mini">${escapeHtml(row.refBook)} ${fmtOdds(row.refOdds)}</div></td>
     <td>${row.vig.toFixed(2)}%</td>
-    <td><span class="tag ${row.confidence.label === 'A' ? 'green' : row.confidence.label === 'B' ? 'blue' : 'amber'}">${row.confidence.label} · ${row.confidence.score}</span></td>
+    <td><span class="tag ${row.confidence.label === 'A' ? 'green' : row.confidence.label === 'B' ? 'blue' : 'amber'}" title="${escapeHtml(confidenceExplanation(row.confidence.label))}">${row.confidence.label} · ${row.confidence.score}</span></td>
     <td><div class="row-actions"><button class="icon-btn" title="Copy" data-copy="${escapeHtml(encodeURIComponent(evText(row)))}"><i data-lucide="copy"></i></button><button class="icon-btn" title="Open book" data-open-book="${row.bookKey}"><i data-lucide="external-link"></i></button><button class="icon-btn" title="Track" data-track-ev="${escapeHtml(row.key)}"><i data-lucide="plus"></i></button></div></td>
   </tr>`;
+}
+function confidenceExplanation(label) {
+  if (label === 'A') return 'A = stronger edge, cleaner market width, and sharp/consensus reference support.';
+  if (label === 'B') return 'B = moderate market agreement with usable reference pricing.';
+  if (label === 'C') return 'C = lower sample quality, wider market, or faster-moving price.';
+  return 'D = fragile signal. Recheck the market carefully before acting.';
 }
 function renderArbs() {
   const rows = currentArbRows();
@@ -2800,13 +3000,34 @@ function renderDashboard() {
   $('dash_profit').textContent = signedMoney(profit);
   $('dash_profit').className = `value ${profit >= 0 ? 'pos' : 'neg'}`;
   $('dash_roi').textContent = `${bets.length} bet${bets.length === 1 ? '' : 's'} tracked`;
+  const marketCount = countLoadedMarkets();
+  const feedAgeSeconds = lastFetchAt ? Math.max(0, Math.round((Date.now() - lastFetchAt) / 1000)) : null;
+  $('dash_last_scan').textContent = lastFetchAt ? ageLabel(Date.now() - lastFetchAt).replace('Updated ', '') : '--';
+  $('dash_last_scan_sub').textContent = lastCacheHit ? 'from cache' : (lastFetchAt ? 'fresh request' : 'waiting');
+  $('dash_markets').textContent = marketCount;
+  $('dash_markets_sub').textContent = `${loadedGames.length} event${loadedGames.length === 1 ? '' : 's'} loaded`;
+  $('dash_books').textContent = selectedBooks.length;
+  $('dash_books_sub').textContent = selectedBooks.length ? 'sportsbooks selected' : 'none selected';
+  $('dash_latency').textContent = feedAgeSeconds == null ? '--' : `${feedAgeSeconds}s`;
+  $('dash_latency').className = `value ${feedAgeSeconds != null && feedAgeSeconds <= (settings.staleSeconds || 75) ? 'pos' : 'amber-text'}`;
+  $('dash_latency_sub').textContent = freshnessState().label;
   const top = [...evResults.slice(0, 3), ...arbResults.slice(0, 2)];
   $('dash_opps_tag').textContent = `${top.length} loaded`;
   $('dashboard_opps').innerHTML = top.length ? top.map(item => {
     const isArb = item.legs;
     return `<div class="bet-row"><div><strong>${escapeHtml(item.event)}</strong><div class="mini">${isArb ? `Arb ${fmtPct(item.profitRate * 100)} · ${item.legs.length} legs` : `EV ${fmtPct(item.ev * 100)} · ${item.book}`}</div></div><span class="tag ${isArb ? 'blue' : 'green'}">${isArb ? signedMoney(item.profit) : item.confidence.label}</span><button class="icon-btn" data-jump="${isArb ? 'arb' : 'ev'}"><i data-lucide="arrow-right"></i></button></div>`;
   }).join('') : dashboardEmptyHtml();
+  if ($('dash_free_stack')) $('dash_free_stack').innerHTML = dashboardSetupCards();
   renderTrackerStats();
+}
+function countLoadedMarkets() {
+  const keys = [];
+  for (const game of loadedGames || []) {
+    for (const book of game.bookmakers || []) {
+      for (const market of book.markets || []) keys.push(`${game.id}:${market.key}`);
+    }
+  }
+  return unique(keys).length;
 }
 function dashboardEmptyHtml() {
   if (settings.provider !== 'demo' && !loadedGames.length) {
@@ -2892,6 +3113,14 @@ function handleActions(e) {
   if (bookAction) { setBookGroup(bookAction.dataset.bookAction); return; }
   const demoNow = e.target.closest('[data-demo-now]');
   if (demoNow) { switchToDemoMode(); return; }
+  const quickScan = e.target.closest('[data-quick-scan]');
+  if (quickScan) {
+    const kind = quickScan.dataset.quickScan;
+    showTab(kind === 'arb' ? 'arb' : 'ev');
+    if (kind === 'arb') scanArbs();
+    else scanEV();
+    return;
+  }
   const row = e.target.closest('[data-select-result]');
   if (row) { selectedResultKey = row.dataset.selectResult; renderSelectedDetails(); }
   const copy = e.target.closest('[data-copy]');
