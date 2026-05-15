@@ -1490,8 +1490,7 @@ let settings = loadJson(STORE.settings, {
   unitPct: 3
 });
 settings.keyMap = settings.keyMap && typeof settings.keyMap === 'object' ? settings.keyMap : {};
-let selectedBooks = loadJson(STORE.selectedBooks, DEFAULT_BOOKS);
-selectedBooks = Array.isArray(selectedBooks) && selectedBooks.length ? selectedBooks : DEFAULT_BOOKS.slice();
+let selectedBooks = cleanBookKeys(loadJson(STORE.selectedBooks, DEFAULT_BOOKS));
 let bets = loadJson(STORE.bets, []);
 let feedCache = loadJson(STORE.cache, {});
 let loadedGames = [];
@@ -1519,6 +1518,12 @@ function numberOr(value, fallback) {
 }
 function unique(items) { return Array.from(new Set(items.filter(Boolean))); }
 function bookByKey(key) { return BOOKS.find(b => b.key === key) || { key, name: key, type: 'soft', url: '' }; }
+function cleanBookKeys(keys, fallback = DEFAULT_BOOKS) {
+  const raw = Array.isArray(keys) ? keys : fallback;
+  const selected = new Set(raw.map(String).filter(Boolean));
+  const clean = BOOKS.map(book => book.key).filter(key => selected.has(key));
+  return clean.length ? clean : fallback.slice();
+}
 function selectedProviderKeys() {
   const entry = settings.keyMap[settings.provider] || { keys: [], active: 0 };
   const keys = Array.isArray(entry.keys) ? unique(entry.keys.map(String).map(s => s.trim())) : [];
@@ -1700,12 +1705,32 @@ function renderBookChips() {
   document.querySelectorAll('[data-book]').forEach(btn => btn.addEventListener('click', e => toggleBook(e.currentTarget.dataset.book, e)));
 }
 function toggleBook(key, event) {
-  if (!event.shiftKey && !event.metaKey && !event.ctrlKey) selectedBooks = [key];
-  else selectedBooks = selectedBooks.includes(key) ? selectedBooks.filter(b => b !== key) : [...selectedBooks, key];
-  if (!selectedBooks.length) selectedBooks = [key];
+  const selected = new Set(cleanBookKeys(selectedBooks, [key]));
+  const wasSelected = selected.has(key);
+  if (wasSelected && selected.size === 1) {
+    toast('Keep at least one sportsbook selected.', 'warn');
+    return;
+  }
+  if (wasSelected) selected.delete(key);
+  else selected.add(key);
+  selectedBooks = cleanBookKeys(Array.from(selected), [key]);
   saveJson(STORE.selectedBooks, selectedBooks);
   renderBookChips();
+  recomputeLoadedResults();
   renderResults();
+}
+function recomputeLoadedResults() {
+  if (!loadedGames.length) return;
+  evResults = computeEV(loadedGames, {
+    mode: $('ev_mode')?.value || 'all',
+    minEv: numberOr($('ev_min')?.value, 1) / 100,
+    maxOdds: Math.abs(numberOr($('ev_max_odds')?.value, 500))
+  });
+  arbResults = computeArbs(loadedGames, {
+    mode: $('arb_mode')?.value || 'all',
+    minProfit: numberOr($('arb_min')?.value, 0) / 100,
+    stake: numberOr($('arb_stake')?.value, 100)
+  });
 }
 function renderFreeSources() {
   const html = FREE_SOURCES.map(s => `<div class="provider-card"><strong>${escapeHtml(s.name)}</strong><p>${escapeHtml(s.detail)}</p><p style="margin-top:8px;"><span class="tag blue">${escapeHtml(s.best)}</span></p><p style="margin-top:8px;"><a href="${s.url}" target="_blank" rel="noreferrer">Open source</a></p></div>`).join('');
@@ -2083,7 +2108,10 @@ function searchFilter(row) {
   return JSON.stringify(row).toLowerCase().includes(q);
 }
 function renderEV() {
-  const rows = evResults.filter(searchFilter);
+  const selected = new Set(selectedBooks);
+  const rows = evResults
+    .filter(row => selected.has(row.bookKey))
+    .filter(searchFilter);
   $('ev_loaded_tag').textContent = `${rows.length} result${rows.length === 1 ? '' : 's'}`;
   $('ev_nav_count').textContent = rows.length;
   if (!rows.length) {
@@ -2111,11 +2139,17 @@ function evRow(row) {
   </tr>`;
 }
 function renderArbs() {
-  const rows = arbResults.filter(searchFilter);
+  const selected = new Set(selectedBooks);
+  const rows = arbResults
+    .filter(row => row.legs.every(leg => selected.has(leg.bookKey)))
+    .filter(searchFilter);
   $('arb_loaded_tag').textContent = `${rows.length} result${rows.length === 1 ? '' : 's'}`;
   $('arb_nav_count').textContent = rows.length;
   if (!rows.length) {
-    $('arb_results').innerHTML = `<div class="empty"><div><strong>No arbitrage results loaded.</strong><br>Scan multiple books and verify every leg before acting.</div></div>`;
+    const msg = selectedBooks.length < 2
+      ? 'Pick at least two sportsbooks to show arbitrage, because every arb needs multiple books.'
+      : 'Scan multiple books and verify every leg before acting.';
+    $('arb_results').innerHTML = `<div class="empty"><div><strong>No arbitrage results loaded.</strong><br>${escapeHtml(msg)}</div></div>`;
     return;
   }
   $('arb_results').innerHTML = `<div class="table-card">
@@ -2377,7 +2411,7 @@ function importAll(e) {
     try {
       const data = JSON.parse(reader.result);
       if (data.settings) settings = data.settings;
-      if (Array.isArray(data.selectedBooks)) selectedBooks = data.selectedBooks;
+      if (Array.isArray(data.selectedBooks)) selectedBooks = cleanBookKeys(data.selectedBooks);
       if (Array.isArray(data.bets)) bets = data.bets;
       saveJson(STORE.settings, settings);
       saveJson(STORE.selectedBooks, selectedBooks);
