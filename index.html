@@ -356,6 +356,21 @@
     gap: 7px;
     margin: 0 0 12px;
   }
+  .book-tools {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin: -2px 0 10px;
+  }
+  .book-tools .toolbar-actions {
+    flex-wrap: wrap;
+  }
+  .book-tools .btn {
+    min-height: 32px;
+    padding: 6px 9px;
+    font-size: 12px;
+  }
   .book-chip {
     display: inline-flex;
     align-items: center;
@@ -409,6 +424,13 @@
     border-bottom: 1px solid rgba(255,255,255,.08);
   }
   .table-head strong { font-size: 15px; }
+  .table-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+  }
   .table-scroll { overflow: auto; }
   table { width: 100%; border-collapse: collapse; min-width: 1060px; }
   th, td {
@@ -480,6 +502,12 @@
     background: rgba(101,229,143,.045);
   }
   .details.show { display: block; }
+  .detail-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
   .detail-grid {
     display: grid;
     grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -502,6 +530,22 @@
     color: var(--muted);
     text-align: center;
     line-height: 1.5;
+  }
+  .empty strong {
+    color: var(--text);
+  }
+
+  .health-card {
+    display: grid;
+    gap: 8px;
+    margin-top: 10px;
+    padding: 10px;
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 8px;
+    background: rgba(255,255,255,.025);
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.45;
   }
 
   .odds-board {
@@ -1238,8 +1282,24 @@
         <div><label for="ev_mode">Timing</label><select id="ev_mode"><option value="all">Pre-match + live</option><option value="prematch">Pre-match only</option><option value="live">Live only</option></select></div>
         <div><label for="ev_min">Min EV %</label><input id="ev_min" type="number" value="1" step="0.1"></div>
         <div><label for="ev_max_odds">Max odds</label><input id="ev_max_odds" type="number" value="500" step="1"></div>
+        <div><label for="ev_sort">Sort</label><select id="ev_sort" data-live-filter><option value="ev">Best EV</option><option value="confidence">Confidence</option><option value="time">Start time</option><option value="stake">Stake</option><option value="odds">Odds</option><option value="probability">True probability</option></select></div>
+        <div><label for="ev_conf">Confidence</label><select id="ev_conf" data-live-filter><option value="all">All grades</option><option value="A">A only</option><option value="B">B+</option><option value="C">C+</option></select></div>
+        <div><label for="ev_window">Starts</label><select id="ev_window" data-live-filter><option value="all">Any time</option><option value="6">Next 6h</option><option value="24">Next 24h</option><option value="72">Next 72h</option></select></div>
         <button id="ev_scan_btn" class="btn primary" type="button"><i data-lucide="scan-line"></i>Scan EV</button>
+        <button id="ev_export_btn" class="btn secondary" type="button"><i data-lucide="download"></i>CSV</button>
         <button id="ev_clear_btn" class="btn ghost" type="button"><i data-lucide="x"></i>Clear</button>
+      </div>
+      <div class="book-tools">
+        <div class="toolbar-actions">
+          <button class="btn ghost" data-book-action="all" type="button">All</button>
+          <button class="btn ghost" data-book-action="default" type="button">Core</button>
+          <button class="btn ghost" data-book-action="soft" type="button">Soft books</button>
+          <button class="btn ghost" data-book-action="sharp" type="button">Sharp refs</button>
+          <button class="btn ghost" data-book-action="dfs" type="button">Props apps</button>
+          <button class="btn ghost" data-book-action="exchange" type="button">Exchanges</button>
+          <button class="btn ghost" data-book-action="clear" type="button">Clear</button>
+        </div>
+        <span class="tag" data-book-count>0 selected</span>
       </div>
       <div id="ev_book_chips" class="book-strip"></div>
       <div id="ev_results"></div>
@@ -1260,7 +1320,22 @@
         <div><label for="arb_mode">Timing</label><select id="arb_mode"><option value="all">Pre-match + live</option><option value="prematch">Pre-match only</option><option value="live">Live only</option></select></div>
         <div><label for="arb_stake">Total stake</label><input id="arb_stake" type="number" value="100" step="1"></div>
         <div><label for="arb_min">Min profit %</label><input id="arb_min" type="number" value="0" step="0.1"></div>
+        <div><label for="arb_sort">Sort</label><select id="arb_sort" data-live-filter><option value="profit">Profit %</option><option value="cash">Profit $</option><option value="time">Start time</option><option value="implied">Lowest implied</option><option value="legs">Fewest legs</option></select></div>
+        <div><label for="arb_window">Starts</label><select id="arb_window" data-live-filter><option value="all">Any time</option><option value="6">Next 6h</option><option value="24">Next 24h</option><option value="72">Next 72h</option></select></div>
         <button id="arb_scan_btn" class="btn primary" type="button"><i data-lucide="split"></i>Scan Arbs</button>
+        <button id="arb_export_btn" class="btn secondary" type="button"><i data-lucide="download"></i>CSV</button>
+      </div>
+      <div class="book-tools">
+        <div class="toolbar-actions">
+          <button class="btn ghost" data-book-action="all" type="button">All</button>
+          <button class="btn ghost" data-book-action="default" type="button">Core</button>
+          <button class="btn ghost" data-book-action="soft" type="button">Soft books</button>
+          <button class="btn ghost" data-book-action="sharp" type="button">Sharp refs</button>
+          <button class="btn ghost" data-book-action="dfs" type="button">Props apps</button>
+          <button class="btn ghost" data-book-action="exchange" type="button">Exchanges</button>
+          <button class="btn ghost" data-book-action="clear" type="button">Clear</button>
+        </div>
+        <span class="tag" data-book-count>0 selected</span>
       </div>
       <div id="arb_book_chips" class="book-strip"></div>
       <div id="arb_results"></div>
@@ -1371,6 +1446,8 @@
         <div class="card info-card"><div class="card-title"><h3>Cons</h3><span class="tag amber">where it breaks</span></div><ul><li>Free APIs have slower refreshes, fewer requests, or limited books.</li><li>Props can be expensive in API calls because each event market may require separate requests.</li><li>Sportsbooks can limit accounts that consistently take bad prices.</li><li>Data delay is the biggest enemy of live betting.</li></ul></div>
         <div class="card info-card"><div class="card-title"><h3>Execution Checklist</h3><span class="tag blue">before bet</span></div><ul><li>Open the sportsbook and confirm the exact event, player, market, line, and odds.</li><li>Skip the play if the line moved or the market name does not match exactly.</li><li>For arbs, place the hardest leg first, then immediately place the other leg.</li><li>Log every bet so ROI and CLV are based on your actual process.</li></ul></div>
         <div class="card info-card"><div class="card-title"><h3>Free Feed Reality</h3><span class="tag">sources</span></div><ul><li>Demo mode is free and useful for testing the workflow.</li><li>PropLine is the strongest free player-prop path in this build.</li><li>The Odds API works well but the free tier is smaller.</li><li>Custom compatible endpoints let you add more free APIs when they match the expected shape.</li></ul></div>
+        <div class="card info-card"><div class="card-title"><h3>Backend Cache</h3><span class="tag green">public-safe</span></div><ul><li>Best setup for sharing the site because API keys stay off the page.</li><li>The backend refreshes and reuses recent responses, which protects quota.</li><li>It also helps with CORS when a data provider blocks browser calls.</li><li>Use shorter cache times for pre-match, and be careful with live betting delays.</li></ul></div>
+        <div class="card info-card"><div class="card-title"><h3>Max Free Setup</h3><span class="tag blue">best path</span></div><ul><li>Use PropLine or The Odds API through backend cache mode.</li><li>Keep selected books tight so each scan uses fewer requests.</li><li>Use props only for the sports you care about because props cost more API calls.</li><li>Export CSV and track CLV to learn which books and markets are worth keeping.</li></ul></div>
       </div>
     </section>
 
@@ -1392,17 +1469,26 @@
             <option value="opticodds">OpticOdds live feed</option>
             <option value="propline">PropLine live feed</option>
             <option value="oddsapi">The Odds API live feed</option>
+            <option value="backend">Backend cache/proxy</option>
             <option value="custom">Custom compatible endpoint</option>
           </select>
           <label for="api_key">Key for selected provider</label>
           <input id="api_key" type="password" placeholder="paste key" autocomplete="off">
           <label for="api_keys">Extra keys you own for this provider</label>
           <textarea id="api_keys" placeholder="one key per line"></textarea>
+          <label for="backend_endpoint">Backend cache endpoint</label>
+          <input id="backend_endpoint" placeholder="http://localhost:8787">
           <label for="custom_endpoint">Custom endpoint template</label>
           <input id="custom_endpoint" placeholder="https://server.example/odds?sport={sport}&market={market}&books={bookmakers}">
           <div class="grid-2" style="margin-top:10px;">
             <div><label for="cache_minutes">Browser cache minutes</label><input id="cache_minutes" type="number" min="0" value="3"></div>
             <div><label for="refresh_seconds">Watch refresh seconds</label><input id="refresh_seconds" type="number" min="30" value="90"></div>
+            <div><label for="stale_seconds">Stale warning seconds</label><input id="stale_seconds" type="number" min="15" value="75"></div>
+            <div><label for="max_prop_events">Max prop events</label><input id="max_prop_events" type="number" min="1" max="30" value="10"></div>
+          </div>
+          <div class="health-card">
+            <strong>Safer public setup</strong>
+            <span>Use backend cache/proxy mode when the site is public. Your API key stays on your server instead of being exposed in the browser.</span>
           </div>
         </div>
         <div class="card">
@@ -1426,6 +1512,7 @@
           <button id="export_all_btn" class="btn secondary" type="button"><i data-lucide="download"></i>Export All</button>
           <label class="btn secondary" for="import_all_file" style="margin:0;cursor:pointer;"><i data-lucide="upload"></i>Import</label>
           <input id="import_all_file" type="file" accept="application/json,.json" hidden>
+          <button id="clear_cache_btn" class="btn secondary" type="button"><i data-lucide="database-zap"></i>Clear Feed Cache</button>
           <button id="wipe_btn" class="btn danger" type="button"><i data-lucide="trash-2"></i>Wipe Local Data</button>
         </div>
       </div>
@@ -1533,8 +1620,11 @@ let settings = loadJson(STORE.settings, {
   provider: 'demo',
   keyMap: {},
   customEndpoint: '',
+  backendEndpoint: 'http://localhost:8787',
   cacheMinutes: 3,
   refreshSeconds: 90,
+  staleSeconds: 75,
+  maxPropEvents: 10,
   bankroll: 350,
   unitPct: 3
 });
@@ -1549,6 +1639,9 @@ let selectedResultKey = '';
 let selectedOddsEventId = '';
 let watchTimer = null;
 let quota = { used: 0, remaining: '?' };
+let lastFetchAt = 0;
+let lastCacheHit = false;
+let lastError = '';
 
 function $(id) { return document.getElementById(id); }
 function loadJson(key, fallback) {
@@ -1567,11 +1660,11 @@ function numberOr(value, fallback) {
 }
 function unique(items) { return Array.from(new Set(items.filter(Boolean))); }
 function bookByKey(key) { return BOOKS.find(b => b.key === key) || { key, name: key, type: 'soft', url: '' }; }
-function cleanBookKeys(keys, fallback = DEFAULT_BOOKS) {
+function cleanBookKeys(keys, fallback = DEFAULT_BOOKS, allowEmpty = false) {
   const raw = Array.isArray(keys) ? keys : fallback;
   const selected = new Set(raw.map(String).filter(Boolean));
   const clean = BOOKS.map(book => book.key).filter(key => selected.has(key));
-  return clean.length ? clean : fallback.slice();
+  return clean.length || allowEmpty ? clean : fallback.slice();
 }
 function selectedProviderKeys() {
   const entry = settings.keyMap[settings.provider] || { keys: [], active: 0 };
@@ -1657,6 +1750,7 @@ function init() {
   bindEvents();
   renderAll();
   scanDemoOnLoad();
+  setInterval(renderStatus, 30000);
   refreshIcons();
 }
 function fillSelect(id, rows) { $(id).innerHTML = rows.map(([v, l]) => `<option value="${v}">${l}</option>`).join(''); }
@@ -1667,7 +1761,9 @@ function bindEvents() {
   $('global_search').addEventListener('input', renderResults);
   $('ev_scan_btn').addEventListener('click', scanEV);
   $('ev_clear_btn').addEventListener('click', () => { evResults = []; renderResults(); toast('EV results cleared.'); });
+  $('ev_export_btn').addEventListener('click', () => exportCsv(currentEVRows(), 'edgelab-ev-results.csv'));
   $('arb_scan_btn').addEventListener('click', scanArbs);
+  $('arb_export_btn').addEventListener('click', () => exportCsv(currentArbRows().map(flattenArbRow), 'edgelab-arb-results.csv'));
   $('odds_reload_btn').addEventListener('click', () => renderOddsScreen());
   $('refresh_all_btn').addEventListener('click', refreshActive);
   $('watch_btn').addEventListener('click', toggleWatch);
@@ -1677,8 +1773,10 @@ function bindEvents() {
   $('export_tracker_btn').addEventListener('click', () => exportJson({ bets }, 'edgelab-tracker.json'));
   $('export_all_btn').addEventListener('click', () => exportJson({ settings, selectedBooks, bets }, 'edgelab-backup.json'));
   $('import_all_file').addEventListener('change', importAll);
+  $('clear_cache_btn').addEventListener('click', clearFeedCache);
   $('wipe_btn').addEventListener('click', wipeLocal);
   document.querySelectorAll('[data-calc]').forEach(btn => btn.addEventListener('click', () => runCalc(btn.dataset.calc)));
+  document.querySelectorAll('[data-live-filter]').forEach(el => el.addEventListener('change', renderResults));
   document.addEventListener('click', handleActions);
 }
 function showTab(name) {
@@ -1689,9 +1787,12 @@ function showTab(name) {
 function hydrateSettings() {
   $('provider_mode').value = settings.provider || 'demo';
   hydrateProviderKeys();
+  $('backend_endpoint').value = settings.backendEndpoint || 'http://localhost:8787';
   $('custom_endpoint').value = settings.customEndpoint || '';
   $('cache_minutes').value = settings.cacheMinutes ?? 3;
   $('refresh_seconds').value = settings.refreshSeconds ?? 90;
+  $('stale_seconds').value = settings.staleSeconds ?? 75;
+  $('max_prop_events').value = settings.maxPropEvents ?? 10;
   $('bankroll').value = settings.bankroll ?? 350;
   $('unit_pct').value = settings.unitPct ?? 3;
   $('manual_stake').value = unitStake();
@@ -1715,9 +1816,12 @@ function switchProvider() {
 }
 function saveSettingsFromInputs() {
   settings.provider = $('provider_mode').value;
+  settings.backendEndpoint = normalizeEndpoint($('backend_endpoint').value.trim() || 'http://localhost:8787');
   settings.customEndpoint = $('custom_endpoint').value.trim();
   settings.cacheMinutes = Math.max(0, numberOr($('cache_minutes').value, 3));
   settings.refreshSeconds = Math.max(30, numberOr($('refresh_seconds').value, 90));
+  settings.staleSeconds = Math.max(15, numberOr($('stale_seconds').value, 75));
+  settings.maxPropEvents = Math.max(1, Math.min(30, numberOr($('max_prop_events').value, 10)));
   settings.bankroll = Math.max(0, numberOr($('bankroll').value, 350));
   settings.unitPct = Math.max(.1, numberOr($('unit_pct').value, 3));
   saveProviderKeys(readKeyInputs(), selectedProviderKeys().active);
@@ -1727,25 +1831,46 @@ function saveSettingsFromInputs() {
   toast('Settings saved.');
 }
 function providerLabel() {
-  return { demo: 'Demo', opticodds: 'OpticOdds', propline: 'PropLine', oddsapi: 'The Odds API', custom: 'Custom' }[settings.provider] || 'Demo';
+  return { demo: 'Demo', opticodds: 'OpticOdds', propline: 'PropLine', oddsapi: 'The Odds API', backend: 'Backend cache', custom: 'Custom' }[settings.provider] || 'Demo';
 }
 function providerNeedsKey() { return settings.provider === 'opticodds' || settings.provider === 'propline' || settings.provider === 'oddsapi'; }
 function providerReady() {
   if (settings.provider === 'demo') return '';
+  if (settings.provider === 'backend') return settings.backendEndpoint ? '' : 'Add your backend cache endpoint in Settings.';
   if (settings.provider === 'custom') return settings.customEndpoint ? '' : 'Add a custom endpoint template in Settings.';
   return selectedProviderKeys().key ? '' : `Add your ${providerLabel()} key in Settings.`;
 }
+function normalizeEndpoint(value) {
+  return String(value || '').replace(/\/+$/, '');
+}
 function renderStatus() {
   const missing = providerReady();
+  const fresh = freshnessState();
   $('source_badge').textContent = providerLabel();
   $('source_badge').className = `pill ${missing ? 'warn' : 'ok'}`;
-  $('fresh_badge').textContent = loadedGames.length ? `${loadedGames.length} events loaded` : 'Ready';
+  $('fresh_badge').textContent = fresh.label;
+  $('fresh_badge').className = `pill ${fresh.tone}`;
   $('quota_badge').textContent = quota.remaining === '?' ? 'Quota unknown' : `${quota.remaining} req left`;
   $('side_source').textContent = `${providerLabel()} feed`;
   $('settings_provider_tag').textContent = providerLabel();
   $('dash_provider').textContent = providerLabel();
   $('dash_provider_sub').textContent = settings.provider === 'demo' ? 'free built-in data' : (missing || 'live-ready');
   $('unit_tag').textContent = `${money(unitStake())} unit`;
+}
+function freshnessState() {
+  if (lastError) return { label: 'Load error', tone: 'err' };
+  if (!lastFetchAt) return { label: loadedGames.length ? `${loadedGames.length} demo events` : 'Ready', tone: 'blue' };
+  const ageMs = Date.now() - lastFetchAt;
+  const stale = ageMs > (settings.staleSeconds || 75) * 1000;
+  const suffix = lastCacheHit ? ' cached' : '';
+  return { label: `${ageLabel(ageMs)}${suffix}`, tone: stale ? 'warn' : 'ok' };
+}
+function ageLabel(ms) {
+  const sec = Math.max(0, Math.round(ms / 1000));
+  if (sec < 60) return `Updated ${sec}s ago`;
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `Updated ${min}m ago`;
+  return `Updated ${Math.floor(min / 60)}h ago`;
 }
 function renderBookChips() {
   const html = BOOKS.map(book => {
@@ -1754,22 +1879,41 @@ function renderBookChips() {
   }).join('');
   $('ev_book_chips').innerHTML = html;
   $('arb_book_chips').innerHTML = html;
+  document.querySelectorAll('[data-book-count]').forEach(el => {
+    el.textContent = `${selectedBooks.length} selected`;
+    el.className = `tag ${selectedBooks.length ? 'green' : 'amber'}`;
+  });
   document.querySelectorAll('[data-book]').forEach(btn => btn.addEventListener('click', e => toggleBook(e.currentTarget.dataset.book, e)));
 }
 function toggleBook(key, event) {
-  const selected = new Set(cleanBookKeys(selectedBooks, [key]));
+  const selected = new Set(cleanBookKeys(selectedBooks, [key], true));
   const wasSelected = selected.has(key);
-  if (wasSelected && selected.size === 1) {
-    toast('Keep at least one sportsbook selected.', 'warn');
-    return;
-  }
   if (wasSelected) selected.delete(key);
   else selected.add(key);
-  selectedBooks = cleanBookKeys(Array.from(selected), [key]);
+  selectedBooks = cleanBookKeys(Array.from(selected), DEFAULT_BOOKS, true);
   saveJson(STORE.selectedBooks, selectedBooks);
   renderBookChips();
   recomputeLoadedResults();
   renderResults();
+  if (!selectedBooks.length) toast('No sportsbooks selected. Click any book to add it back.', 'warn');
+}
+function setBookGroup(action) {
+  const byType = type => BOOKS.filter(book => book.type === type).map(book => book.key);
+  const groups = {
+    all: BOOKS.map(book => book.key),
+    default: DEFAULT_BOOKS,
+    soft: byType('soft'),
+    sharp: SHARP_KEYS,
+    dfs: byType('dfs'),
+    exchange: byType('exchange'),
+    clear: []
+  };
+  selectedBooks = cleanBookKeys(groups[action] || DEFAULT_BOOKS, DEFAULT_BOOKS, true);
+  saveJson(STORE.selectedBooks, selectedBooks);
+  renderBookChips();
+  recomputeLoadedResults();
+  renderResults();
+  toast(selectedBooks.length ? `${selectedBooks.length} sportsbook${selectedBooks.length === 1 ? '' : 's'} selected.` : 'Sportsbook filter cleared.', selectedBooks.length ? 'ok' : 'warn');
 }
 function recomputeLoadedResults() {
   if (!loadedGames.length) return;
@@ -1792,6 +1936,9 @@ function renderFreeSources() {
 
 async function scanDemoOnLoad() {
   loadedGames = demoFeed();
+  lastFetchAt = Date.now();
+  lastCacheHit = false;
+  lastError = '';
   evResults = computeEV(loadedGames, { mode: 'all', minEv: .01, maxOdds: 500 });
   arbResults = computeArbs(loadedGames, { mode: 'all', minProfit: 0, stake: 100 });
   renderAll();
@@ -1810,6 +1957,8 @@ async function scanEV() {
   button.innerHTML = '<i data-lucide="loader"></i>Scanning';
   refreshIcons();
   try {
+    lastError = '';
+    lastCacheHit = false;
     loadedGames = await loadFeeds({ sport: $('ev_sport').value, market: $('ev_market').value });
     evResults = computeEV(loadedGames, {
       mode: $('ev_mode').value,
@@ -1819,8 +1968,9 @@ async function scanEV() {
     renderAll();
     toast(`EV scan loaded ${evResults.length} edge${evResults.length === 1 ? '' : 's'}.`);
   } catch (e) {
-    renderError('ev_results', e.message);
-    toast(e.message, 'err');
+    lastError = friendlyFetchError(e);
+    renderError('ev_results', lastError);
+    toast(lastError, 'err');
   } finally {
     button.disabled = false;
     button.innerHTML = '<i data-lucide="scan-line"></i>Scan EV';
@@ -1835,6 +1985,8 @@ async function scanArbs() {
   button.innerHTML = '<i data-lucide="loader"></i>Scanning';
   refreshIcons();
   try {
+    lastError = '';
+    lastCacheHit = false;
     loadedGames = await loadFeeds({ sport: $('arb_sport').value, market: $('arb_market').value });
     arbResults = computeArbs(loadedGames, {
       mode: $('arb_mode').value,
@@ -1844,8 +1996,9 @@ async function scanArbs() {
     renderAll();
     toast(`Arb scan loaded ${arbResults.length} opportunit${arbResults.length === 1 ? 'y' : 'ies'}.`);
   } catch (e) {
-    renderError('arb_results', e.message);
-    toast(e.message, 'err');
+    lastError = friendlyFetchError(e);
+    renderError('arb_results', lastError);
+    toast(lastError, 'err');
   } finally {
     button.disabled = false;
     button.innerHTML = '<i data-lucide="split"></i>Scan Arbs';
@@ -1855,6 +2008,8 @@ async function scanArbs() {
 async function loadBoardFeed() {
   const missing = providerReady();
   if (missing) { toast(missing, 'warn'); showTab('settings'); return; }
+  lastError = '';
+  lastCacheHit = false;
   loadedGames = await loadFeeds({ sport: $('ev_sport').value, market: $('ev_market').value });
   renderAll();
 }
@@ -1899,15 +2054,21 @@ async function fetchMarket(sport, market) {
   const cacheKey = `${settings.provider}:${sport}:${market}:${selectedBooks.join(',')}`;
   const cached = feedCache[cacheKey];
   const cacheMs = (settings.cacheMinutes || 0) * 60000;
-  if (cached && cacheMs > 0 && Date.now() - cached.at < cacheMs) return cached.data;
+  if (cached && cacheMs > 0 && Date.now() - cached.at < cacheMs) {
+    lastFetchAt = cached.at;
+    lastCacheHit = true;
+    return cached.data;
+  }
   if (settings.provider === 'opticodds') {
     const opticData = await fetchOpticOddsMarket(sport, market);
     feedCache[cacheKey] = { at: Date.now(), data: opticData };
+    lastFetchAt = feedCache[cacheKey].at;
     saveJson(STORE.cache, feedCache);
     return opticData;
   }
   const data = isPropMarket(market) ? await fetchEventMarket(sport, market) : await fetchSportMarket(sport, market);
   feedCache[cacheKey] = { at: Date.now(), data };
+  lastFetchAt = feedCache[cacheKey].at;
   saveJson(STORE.cache, feedCache);
   return data;
 }
@@ -1956,6 +2117,7 @@ async function fetchOpticOddsSnapshot(fixtureIds, sportsbooks, markets, sport) {
   return normalizeOpticOddsFeed(await resp.json(), sport);
 }
 async function fetchSportMarket(sport, market) {
+  if (settings.provider === 'backend') return fetchBackendMarket(sport, market);
   if (settings.provider === 'custom') {
     const url = settings.customEndpoint
       .replaceAll('{sport}', encodeURIComponent(sport))
@@ -1974,13 +2136,14 @@ async function fetchSportMarket(sport, market) {
   return unwrapFeed(await resp.json());
 }
 async function fetchEventMarket(sport, market) {
+  if (settings.provider === 'backend') return fetchBackendMarket(sport, market);
   const key = selectedProviderKeys().key;
   const base = settings.provider === 'propline' ? 'https://api.prop-line.com/v1' : 'https://api.the-odds-api.com/v4';
   if (settings.provider === 'custom') return fetchSportMarket(sport, market);
   const eventsResp = await fetch(`${base}/sports/${sport}/events?${new URLSearchParams({ apiKey: key })}`);
   captureQuota(eventsResp);
   if (!eventsResp.ok) throw new Error(`${providerLabel()} events HTTP ${eventsResp.status}`);
-  const events = unwrapFeed(await eventsResp.json()).slice(0, 10);
+  const events = unwrapFeed(await eventsResp.json()).slice(0, settings.maxPropEvents || 10);
   const out = [];
   for (const event of events) {
     const params = new URLSearchParams({ apiKey: key, regions: 'us,us2,eu', markets: market, oddsFormat: 'american', bookmakers: selectedBookText() });
@@ -1992,6 +2155,22 @@ async function fetchEventMarket(sport, market) {
     }
   }
   return out;
+}
+async function fetchBackendMarket(sport, market) {
+  const endpoint = normalizeEndpoint(settings.backendEndpoint || 'http://localhost:8787');
+  const url = new URL(`${endpoint}/api/odds`);
+  url.searchParams.set('sport', sport);
+  url.searchParams.set('market', market);
+  url.searchParams.set('bookmakers', selectedBookText());
+  url.searchParams.set('oddsFormat', 'american');
+  url.searchParams.set('regions', 'us,us2,eu');
+  const resp = await fetch(url.toString());
+  captureQuota(resp);
+  if (!resp.ok) throw new Error(`Backend cache HTTP ${resp.status}`);
+  const payload = await resp.json();
+  if (payload.cached) lastCacheHit = true;
+  if (payload.updatedAt) lastFetchAt = new Date(payload.updatedAt).getTime() || Date.now();
+  return unwrapFeed(payload);
 }
 function selectedBookText() {
   return unique([...selectedBooks, ...SHARP_KEYS]).join(',');
@@ -2123,6 +2302,8 @@ function unwrapFeed(payload) {
   if (Array.isArray(payload)) return payload;
   if (Array.isArray(payload.events)) return payload.events;
   if (Array.isArray(payload.data)) return payload.data;
+  if (Array.isArray(payload.results)) return payload.results;
+  if (Array.isArray(payload.odds)) return payload.odds;
   if (payload && Array.isArray(payload.bookmakers)) return [payload];
   return [];
 }
@@ -2132,6 +2313,15 @@ function captureQuota(resp) {
   if (remaining != null) quota.remaining = remaining;
   if (used != null) quota.used = parseInt(used, 10) || 0;
   renderStatus();
+}
+function friendlyFetchError(error) {
+  const msg = String(error?.message || error || 'Unknown error');
+  if (msg.includes('401') || msg.includes('403')) return `${providerLabel()} rejected the key or account access. Check the key, plan, and allowed markets.`;
+  if (msg.includes('429')) return `${providerLabel()} rate limit hit. Try backend cache mode, raise browser cache minutes, or wait for quota to reset.`;
+  if (msg.includes('404')) return `${providerLabel()} could not find that sport/market. Props often require a different provider or event-level market.`;
+  if (msg.toLowerCase().includes('failed to fetch')) return `The browser could not reach ${providerLabel()}. This is often CORS, internet, or a blocked endpoint. Backend cache mode usually fixes it.`;
+  if (msg.includes('Backend cache')) return `${msg}. Start edge-cache-server.mjs or check the backend endpoint in Settings.`;
+  return msg;
 }
 
 function computeEV(games, options) {
@@ -2194,8 +2384,8 @@ function computeEV(games, options) {
   return dedupeEV(results).sort((a, b) => b.ev - a.ev);
 }
 function findReferenceMarket(bookmakers, marketKey, excludeKey) {
-  let best = null;
   const order = unique([...SHARP_KEYS, ...bookmakers.map(b => b.key)]);
+  const candidates = [];
   for (const key of order) {
     if (key === excludeKey) continue;
     const book = bookmakers.find(b => b.key === key);
@@ -2204,13 +2394,47 @@ function findReferenceMarket(bookmakers, marketKey, excludeKey) {
     const probs = market.outcomes.map(o => amToProb(o.price));
     if (probs.some(p => !Number.isFinite(p))) continue;
     const vig = (probs.reduce((s, p) => s + p, 0) - 1) * 100;
-    if (!best || vig < best.vig) best = { book, market, vig };
+    if (vig < -2 || vig > 14) continue;
+    candidates.push({ book, market, vig });
   }
-  return best;
+  if (!candidates.length) return null;
+  const consensus = buildConsensusReference(candidates, marketKey);
+  if (consensus) return consensus;
+  return candidates.sort((a, b) => a.vig - b.vig)[0];
+}
+function buildConsensusReference(candidates, marketKey) {
+  if (candidates.length < 2) return null;
+  const sorted = candidates.sort((a, b) => (SHARP_KEYS.includes(b.book.key) ? 1 : 0) - (SHARP_KEYS.includes(a.book.key) ? 1 : 0) || a.vig - b.vig);
+  const base = sorted[0].market;
+  const consensusOutcomes = [];
+  for (const baseOut of base.outcomes || []) {
+    let weight = 0;
+    let weightedProb = 0;
+    for (const candidate of sorted) {
+      const probs = candidate.market.outcomes.map(o => amToProb(o.price));
+      const noVig = powerDevig(probs);
+      const idx = candidate.market.outcomes.findIndex(out => outcomesMatch(marketKey, out, baseOut));
+      if (idx === -1 || !Number.isFinite(noVig[idx])) continue;
+      const w = SHARP_KEYS.includes(candidate.book.key) ? 2 : 1;
+      weight += w;
+      weightedProb += noVig[idx] * w;
+    }
+    if (!weight) return null;
+    const avgProb = weightedProb / weight;
+    consensusOutcomes.push({ ...baseOut, price: Number(decToAm(1 / avgProb)) });
+  }
+  if (consensusOutcomes.length !== (base.outcomes || []).length) return null;
+  return {
+    book: { key: 'consensus', title: `Consensus ${sorted.length}` },
+    market: { key: marketKey, outcomes: consensusOutcomes },
+    vig: 0
+  };
 }
 function outcomesMatch(marketKey, a, b) {
-  if (marketKey === 'h2h') return a.name === b.name;
-  return a.name === b.name && String(a.description || '') === String(b.description || '') && Number(a.point ?? 0) === Number(b.point ?? 0);
+  if (marketKey === 'h2h') return normalizeOutcomeName(a.name) === normalizeOutcomeName(b.name);
+  return normalizeOutcomeName(a.name) === normalizeOutcomeName(b.name)
+    && normalizeOutcomeName(a.description || '') === normalizeOutcomeName(b.description || '')
+    && samePoint(a.point, b.point);
 }
 function formatOutcome(outcome, marketKey) {
   const base = outcome.description ? `${outcome.description} ${outcome.name}` : outcome.name;
@@ -2226,7 +2450,7 @@ function dedupeEV(rows) {
 function confidenceGrade(row) {
   let score = 58;
   score += Math.min(22, Math.max(0, row.ev * 260));
-  score += SHARP_KEYS.includes(row.refKey) ? 10 : 2;
+  score += row.refKey === 'consensus' ? 12 : SHARP_KEYS.includes(row.refKey) ? 10 : 2;
   score += row.vig <= 4 ? 8 : row.vig <= 7 ? 4 : -5;
   score += row.live ? -6 : 3;
   score += Number(row.odds) > 350 ? -7 : 0;
@@ -2269,6 +2493,7 @@ function computeArbs(games, options) {
   for (const group of groups.values()) {
     const legs = Array.from(group.offers.values());
     if (legs.length < 2) continue;
+    if (new Set(legs.map(leg => leg.bookKey)).size < 2) continue;
     if (group.market !== 'h2h' && legs.length !== 2) continue;
     const implied = legs.reduce((s, leg) => s + 1 / leg.decimal, 0);
     const profitRate = 1 / implied - 1;
@@ -2296,11 +2521,24 @@ function computeArbs(games, options) {
 }
 function lineKey(marketKey, outcome) {
   if (marketKey === 'h2h') return 'game';
-  return `${outcome.description || ''}:${outcome.point ?? ''}`;
+  return `${normalizeOutcomeName(outcome.description || '')}:${normalizedPoint(outcome.point)}`;
 }
 function outcomeKey(marketKey, outcome) {
-  if (marketKey === 'h2h') return outcome.name;
-  return `${outcome.description || ''}:${outcome.point ?? ''}:${outcome.name}`;
+  if (marketKey === 'h2h') return normalizeOutcomeName(outcome.name);
+  return `${normalizeOutcomeName(outcome.description || '')}:${normalizedPoint(outcome.point)}:${normalizeOutcomeName(outcome.name)}`;
+}
+function normalizeOutcomeName(value) {
+  return String(value || '').toLowerCase().replace(/\b(the|fc|sc)\b/g, '').replace(/[^a-z0-9]+/g, '').trim();
+}
+function normalizedPoint(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n.toFixed(2) : '';
+}
+function samePoint(a, b) {
+  const left = Number(a ?? 0);
+  const right = Number(b ?? 0);
+  if (!Number.isFinite(left) || !Number.isFinite(right)) return String(a ?? '') === String(b ?? '');
+  return Math.abs(left - right) < 0.001;
 }
 function timingMatch(game, mode) {
   if (mode === 'live') return isLiveGame(game);
@@ -2332,19 +2570,73 @@ function searchFilter(row) {
   if (!q) return true;
   return JSON.stringify(row).toLowerCase().includes(q);
 }
-function renderEV() {
+function confidenceFilter(row) {
+  const min = $('ev_conf')?.value || 'all';
+  if (min === 'all') return true;
+  const floors = { A: 82, B: 70, C: 58 };
+  return (row.confidence?.score || 0) >= (floors[min] || 0);
+}
+function windowFilter(row, value) {
+  if (!value || value === 'all') return true;
+  if (row.live) return true;
+  const hours = Number(value);
+  const time = new Date(row.time).getTime();
+  if (!Number.isFinite(time)) return true;
+  return time - Date.now() <= hours * 3600000;
+}
+function sortEVRows(a, b) {
+  const sort = $('ev_sort')?.value || 'ev';
+  const byTime = (new Date(a.time).getTime() || 0) - (new Date(b.time).getTime() || 0);
+  if (sort === 'confidence') return (b.confidence?.score || 0) - (a.confidence?.score || 0) || b.ev - a.ev;
+  if (sort === 'time') return byTime || b.ev - a.ev;
+  if (sort === 'stake') return b.stake - a.stake || b.ev - a.ev;
+  if (sort === 'odds') return amToDec(b.odds) - amToDec(a.odds) || b.ev - a.ev;
+  if (sort === 'probability') return b.trueProb - a.trueProb || b.ev - a.ev;
+  return b.ev - a.ev;
+}
+function sortArbRows(a, b) {
+  const sort = $('arb_sort')?.value || 'profit';
+  const byTime = (new Date(a.time).getTime() || 0) - (new Date(b.time).getTime() || 0);
+  if (sort === 'cash') return b.profit - a.profit || b.profitRate - a.profitRate;
+  if (sort === 'time') return byTime || b.profitRate - a.profitRate;
+  if (sort === 'implied') return a.implied - b.implied;
+  if (sort === 'legs') return a.legs.length - b.legs.length || b.profitRate - a.profitRate;
+  return b.profitRate - a.profitRate;
+}
+function emptyReason(kind) {
+  if (!selectedBooks.length) return 'No sportsbooks are selected. Click one sportsbook chip or use All/Core above.';
+  if (lastError) return lastError;
+  if (!loadedGames.length) return 'No feed is loaded yet. Run a scan, or switch to demo mode to test the board.';
+  if (kind === 'arb') return 'No arbs passed the current sportsbook, timing, profit, and market filters. Arbs also require exact same line/player matching across books.';
+  return 'No rows passed the sportsbook, timing, confidence, search, and EV filters. Try lowering Min EV or changing market.';
+}
+function currentEVRows() {
   const selected = new Set(selectedBooks);
-  const rows = evResults
+  return evResults
     .filter(row => selected.has(row.bookKey))
-    .filter(searchFilter);
+    .filter(searchFilter)
+    .filter(confidenceFilter)
+    .filter(row => windowFilter(row, $('ev_window')?.value || 'all'))
+    .sort(sortEVRows);
+}
+function currentArbRows() {
+  const selected = new Set(selectedBooks);
+  return arbResults
+    .filter(row => row.legs.every(leg => selected.has(leg.bookKey)))
+    .filter(searchFilter)
+    .filter(row => windowFilter(row, $('arb_window')?.value || 'all'))
+    .sort(sortArbRows);
+}
+function renderEV() {
+  const rows = currentEVRows();
   $('ev_loaded_tag').textContent = `${rows.length} result${rows.length === 1 ? '' : 's'}`;
   $('ev_nav_count').textContent = rows.length;
   if (!rows.length) {
-    $('ev_results').innerHTML = `<div class="empty"><div><strong>No EV results loaded.</strong><br>Scan demo/live odds or widen your filters.</div></div>`;
+    $('ev_results').innerHTML = `<div class="empty"><div><strong>No EV results loaded.</strong><br>${escapeHtml(emptyReason('ev'))}</div></div>`;
     return;
   }
   $('ev_results').innerHTML = `<div class="table-card">
-    <div class="table-head"><strong>Positive EV Board</strong><span class="tag green">${rows.length} edges</span></div>
+    <div class="table-head"><strong>Positive EV Board</strong><div class="table-meta"><span class="tag green">${rows.length} edges</span><span class="tag ${freshnessState().tone === 'warn' ? 'amber' : 'blue'}">${escapeHtml(freshnessState().label)}</span></div></div>
     <div class="table-scroll"><table><thead><tr><th>EV</th><th>Stake</th><th>Event</th><th>Bet</th><th>Book</th><th>Odds</th><th>No-vig</th><th>Width</th><th>Confidence</th><th>Actions</th></tr></thead>
     <tbody>${rows.map(evRow).join('')}</tbody></table></div><div id="ev_detail" class="details"></div></div>`;
 }
@@ -2364,21 +2656,18 @@ function evRow(row) {
   </tr>`;
 }
 function renderArbs() {
-  const selected = new Set(selectedBooks);
-  const rows = arbResults
-    .filter(row => row.legs.every(leg => selected.has(leg.bookKey)))
-    .filter(searchFilter);
+  const rows = currentArbRows();
   $('arb_loaded_tag').textContent = `${rows.length} result${rows.length === 1 ? '' : 's'}`;
   $('arb_nav_count').textContent = rows.length;
   if (!rows.length) {
     const msg = selectedBooks.length < 2
       ? 'Pick at least two sportsbooks to show arbitrage, because every arb needs multiple books.'
-      : 'Scan multiple books and verify every leg before acting.';
+      : emptyReason('arb');
     $('arb_results').innerHTML = `<div class="empty"><div><strong>No arbitrage results loaded.</strong><br>${escapeHtml(msg)}</div></div>`;
     return;
   }
   $('arb_results').innerHTML = `<div class="table-card">
-    <div class="table-head"><strong>Arbitrage Board</strong><span class="tag blue">${rows.length} arbs</span></div>
+    <div class="table-head"><strong>Arbitrage Board</strong><div class="table-meta"><span class="tag blue">${rows.length} arbs</span><span class="tag ${freshnessState().tone === 'warn' ? 'amber' : 'blue'}">${escapeHtml(freshnessState().label)}</span></div></div>
     <div class="table-scroll"><table><thead><tr><th>Profit</th><th>Stake</th><th>Event</th><th>Market</th><th>Legs</th><th>Payout</th><th>Actions</th></tr></thead>
     <tbody>${rows.map(arbRow).join('')}</tbody></table></div><div id="arb_detail" class="details"></div></div>`;
 }
@@ -2414,7 +2703,7 @@ function renderDashboard() {
   renderTrackerStats();
 }
 function renderOddsScreen() {
-  const events = loadedGames.filter(g => (g.bookmakers || []).length);
+  const events = loadedGames.filter(g => visibleBookmakers(g).length);
   $('odds_event_count').textContent = events.length;
   if (!events.length) {
     $('odds_events').innerHTML = '<div class="empty" style="min-height:180px;box-shadow:none;">No events loaded.</div>';
@@ -2422,7 +2711,7 @@ function renderOddsScreen() {
     return;
   }
   if (!selectedOddsEventId || !events.some(e => e.id === selectedOddsEventId)) selectedOddsEventId = events[0].id;
-  $('odds_events').innerHTML = events.map(game => `<button class="event-button ${game.id === selectedOddsEventId ? 'active' : ''}" data-odds-event="${escapeHtml(game.id)}"><strong>${escapeHtml(game.away_team)} @ ${escapeHtml(game.home_team)}</strong><div class="mini">${prettySport(game._sport || inferSport(game))} · ${formatTime(game.commence_time)} · ${(game.bookmakers || []).length} books</div></button>`).join('');
+  $('odds_events').innerHTML = events.map(game => `<button class="event-button ${game.id === selectedOddsEventId ? 'active' : ''}" data-odds-event="${escapeHtml(game.id)}"><strong>${escapeHtml(game.away_team)} @ ${escapeHtml(game.home_team)}</strong><div class="mini">${prettySport(game._sport || inferSport(game))} · ${formatTime(game.commence_time)} · ${visibleBookmakers(game).length} selected books</div></button>`).join('');
   document.querySelectorAll('[data-odds-event]').forEach(btn => btn.addEventListener('click', () => { selectedOddsEventId = btn.dataset.oddsEvent; renderOddsScreen(); }));
   const game = events.find(e => e.id === selectedOddsEventId);
   $('odds_matrix_title').textContent = `${game.away_team} @ ${game.home_team}`;
@@ -2430,7 +2719,7 @@ function renderOddsScreen() {
 }
 function oddsMatrix(game) {
   const markets = new Map();
-  for (const book of game.bookmakers || []) for (const market of book.markets || []) {
+  for (const book of visibleBookmakers(game)) for (const market of book.markets || []) {
     if (!markets.has(market.key)) markets.set(market.key, []);
     markets.get(market.key).push({ book, market });
   }
@@ -2453,6 +2742,11 @@ function oddsMatrix(game) {
     }
     return `<div class="market-matrix"><h4>${prettyMarket(key)}</h4><div class="odds-grid" style="grid-template-columns:170px repeat(${books.length}, minmax(92px,1fr));">${cells.join('')}</div></div>`;
   }).join('');
+}
+function visibleBookmakers(game) {
+  const selected = new Set(selectedBooks);
+  if (!selected.size) return [];
+  return (game.bookmakers || []).filter(book => selected.has(book.key));
 }
 function renderTracker() {
   renderTrackerStats();
@@ -2482,6 +2776,8 @@ function renderTrackerStats() {
   $('track_clv').textContent = clvRows.length ? fmtPct(clvRows.reduce((s, b) => s + (amToProb(b.closeOdds) - amToProb(b.odds)) * -100, 0) / clvRows.length, 2) : '--';
 }
 function handleActions(e) {
+  const bookAction = e.target.closest('[data-book-action]');
+  if (bookAction) { setBookGroup(bookAction.dataset.bookAction); return; }
   const row = e.target.closest('[data-select-result]');
   if (row) { selectedResultKey = row.dataset.selectResult; renderSelectedDetails(); }
   const copy = e.target.closest('[data-copy]');
@@ -2506,16 +2802,19 @@ function renderSelectedDetails() {
     $('ev_detail').classList.add('show');
     $('ev_detail').innerHTML = detailGrid([
       ['True probability', `${(ev.trueProb * 100).toFixed(2)}%`], ['Book implied', `${(ev.bookProb * 100).toFixed(2)}%`],
-      ['Fair odds', ev.fairOdds], ['Reference book', ev.refBook], ['Market width', `${ev.vig.toFixed(2)}%`], ['Recommended stake', money(ev.stake)]
-    ]);
+      ['Fair odds', ev.fairOdds], ['Reference book', ev.refBook], ['Market width', `${ev.vig.toFixed(2)}%`], ['Recommended stake', money(ev.stake)],
+      ['Timing', ev.live ? 'Live' : 'Pre-match'], ['Source age', freshnessState().label], ['Confidence', `${ev.confidence.label} (${ev.confidence.score})`], ['Market', prettyMarket(ev.market)]
+    ]) + `<div class="detail-actions"><button class="btn secondary" data-copy="${escapeHtml(encodeURIComponent(evText(ev)))}" type="button"><i data-lucide="copy"></i>Copy bet</button><button class="btn secondary" data-open-book="${ev.bookKey}" type="button"><i data-lucide="external-link"></i>Open book</button><button class="btn primary" data-track-ev="${escapeHtml(ev.key)}" type="button"><i data-lucide="plus"></i>Track</button></div>`;
   }
   if (arb && $('arb_detail')) {
     $('arb_detail').classList.add('show');
     $('arb_detail').innerHTML = detailGrid([
       ['Total implied', `${(arb.implied * 100).toFixed(2)}%`], ['Profit', signedMoney(arb.profit)], ['Payout', money(arb.payout)],
-      ['Legs', String(arb.legs.length)], ['Market', prettyMarket(arb.market)], ['Timing', arb.live ? 'Live' : 'Pre-match']
-    ]);
+      ['Legs', String(arb.legs.length)], ['Market', prettyMarket(arb.market)], ['Timing', arb.live ? 'Live' : 'Pre-match'],
+      ['Source age', freshnessState().label], ['Line', arb.line || 'game'], ['Books', unique(arb.legs.map(leg => leg.book)).join(', ')]
+    ]) + `<div class="detail-actions"><button class="btn secondary" data-copy="${escapeHtml(encodeURIComponent(arbText(arb)))}" type="button"><i data-lucide="copy"></i>Copy arb</button><button class="btn primary" data-track-arb="${escapeHtml(arb.key)}" type="button"><i data-lucide="plus"></i>Track legs</button></div>`;
   }
+  refreshIcons();
 }
 function detailGrid(items) {
   return `<div class="detail-grid">${items.map(([a, b]) => `<div class="detail-item"><span>${escapeHtml(a)}</span><strong>${escapeHtml(b)}</strong></div>`).join('')}</div>`;
@@ -2628,6 +2927,45 @@ function exportJson(data, name) {
   a.click();
   URL.revokeObjectURL(a.href);
 }
+function exportCsv(rows, name) {
+  if (!rows.length) return toast('Nothing to export.', 'warn');
+  const cleanRows = rows.map(row => {
+    const out = {};
+    for (const [key, value] of Object.entries(row)) {
+      if (typeof value === 'object') continue;
+      out[key] = value;
+    }
+    return out;
+  });
+  const headers = unique(cleanRows.flatMap(row => Object.keys(row)));
+  const csv = [headers.join(','), ...cleanRows.map(row => headers.map(header => csvCell(row[header])).join(','))].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+function csvCell(value) {
+  const text = String(value ?? '');
+  return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+}
+function flattenArbRow(row) {
+  return {
+    key: row.key,
+    sport: row.sport,
+    event: row.event,
+    time: row.time,
+    live: row.live,
+    market: prettyMarket(row.market),
+    line: row.line,
+    profitRate: row.profitRate,
+    profit: row.profit,
+    totalStake: row.totalStake,
+    payout: row.payout,
+    legs: row.legs.map(leg => `${leg.book} ${leg.outcome} ${fmtOdds(leg.odds)} stake ${money(leg.stake)}`).join(' | ')
+  };
+}
 function importAll(e) {
   const file = e.target.files?.[0];
   if (!file) return;
@@ -2648,6 +2986,13 @@ function importAll(e) {
     } catch (err) { toast(`Import failed: ${err.message}`, 'err'); }
   };
   reader.readAsText(file);
+}
+function clearFeedCache() {
+  feedCache = {};
+  saveJson(STORE.cache, feedCache);
+  lastCacheHit = false;
+  toast('Feed cache cleared.');
+  renderStatus();
 }
 function wipeLocal() {
   if (!confirm('Wipe local EdgeLab settings, cache, and tracker data?')) return;
