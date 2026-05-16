@@ -2310,3 +2310,60 @@ textarea {
     grid-template-columns: 70px minmax(0, 1fr);
   }
 }
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+a:focus-visible {
+  outline: 2px solid rgba(166,255,100,.82);
+  outline-offset: 2px;
+}
+
+@media (min-width: 1121px) {
+  body {
+    padding-bottom: 0;
+  }
+
+  .sidebar > .nav {
+    position: static !important;
+    display: grid;
+    gap: 7px;
+    overflow: visible;
+    min-width: 0;
+    padding: 0;
+    border-top: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+
+  .sidebar > .nav button {
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr) auto;
+    min-height: 45px;
+    padding: 10px;
+    flex: initial;
+    flex-direction: initial;
+    justify-content: initial;
+    gap: 10px;
+    text-align: left;
+    font-size: 14px;
+    line-height: 1.2;
+  }
+
+  .sidebar > .nav button span {
+    white-space: normal;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+  }
+}

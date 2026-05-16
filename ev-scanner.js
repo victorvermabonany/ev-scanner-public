@@ -222,6 +222,7 @@ function init() {
   renderBookChips();
   renderFreeSources();
   bindEvents();
+  activateInitialTab();
   renderAll();
   bootInitialFeed();
   setInterval(renderStatus, 30000);
@@ -252,7 +253,7 @@ function bindEvents() {
   $('ev_export_btn').addEventListener('click', () => exportCsv(currentEVRows(), 'edgelab-ev-results.csv'));
   $('arb_scan_btn').addEventListener('click', scanArbs);
   $('arb_export_btn').addEventListener('click', () => exportCsv(currentArbRows().map(flattenArbRow), 'edgelab-arb-results.csv'));
-  $('odds_reload_btn').addEventListener('click', () => renderOddsScreen());
+  $('odds_reload_btn').addEventListener('click', loadBoardFeed);
   $('refresh_all_btn').addEventListener('click', refreshActive);
   $('watch_btn').addEventListener('click', toggleWatch);
   $('save_settings_btn').addEventListener('click', saveSettingsFromInputs);
@@ -267,11 +268,31 @@ function bindEvents() {
   $('wipe_btn').addEventListener('click', wipeLocal);
   document.querySelectorAll('[data-calc]').forEach(btn => btn.addEventListener('click', () => runCalc(btn.dataset.calc)));
   document.querySelectorAll('[data-live-filter]').forEach(el => el.addEventListener('change', renderResults));
+  window.addEventListener('hashchange', () => {
+    const tabName = location.hash.replace('#', '');
+    if ($(tabName)) showTab(tabName, { scroll: false, updateHash: false });
+  });
   document.addEventListener('click', handleActions);
 }
-function showTab(name) {
-  document.querySelectorAll('[data-tab]').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === name));
+function activateInitialTab() {
+  const tabName = location.hash.replace('#', '');
+  if ($(tabName)) showTab(tabName, { scroll: false, updateHash: false });
+}
+function showTab(name, options = {}) {
+  if (!$(name)) return;
+  let activeButton = null;
+  document.querySelectorAll('[data-tab]').forEach(btn => {
+    const active = btn.dataset.tab === name;
+    btn.classList.toggle('active', active);
+    if (active) activeButton = btn;
+  });
   document.querySelectorAll('.panel').forEach(panel => panel.classList.toggle('active', panel.id === name));
+  if (options.updateHash !== false && location.hash !== `#${name}`) history.replaceState(null, '', `#${name}`);
+  if (activeButton) activeButton.scrollIntoView({ block: 'nearest', inline: 'center' });
+  if (options.scroll !== false) {
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' }));
+  }
   refreshIcons();
 }
 function hydrateSettings() {
@@ -682,23 +703,45 @@ async function scanArbs() {
   }
 }
 async function loadBoardFeed() {
-  const missing = providerReady();
-  if (missing) { toast(missing, 'warn'); showTab('settings'); return; }
-  if (!selectedBooks.length) { toast('Pick at least one sportsbook first.', 'warn'); return; }
-  if (settings.provider === 'backend') {
-    const health = await checkBackendHealth(true);
-    if (!health.ready) {
-      loadDemoPreview(health.message);
-      renderAll();
-      toast('Backend is offline, so I loaded the demo odds screen instead.', 'warn');
-      return;
+  const button = $('odds_reload_btn');
+  const originalHtml = button?.innerHTML;
+  if (button) {
+    button.disabled = true;
+    button.innerHTML = '<i data-lucide="loader"></i>Loading';
+    refreshIcons();
+  }
+  try {
+    const missing = providerReady();
+    if (missing) { toast(missing, 'warn'); showTab('settings'); return; }
+    if (!selectedBooks.length) { toast('Pick at least one sportsbook first.', 'warn'); return; }
+    if (settings.provider === 'backend') {
+      const health = await checkBackendHealth(true);
+      if (!health.ready) {
+        loadDemoPreview(health.message);
+        renderAll();
+        toast('Backend is offline, so I loaded the demo odds screen instead.', 'warn');
+        return;
+      }
+    }
+    lastError = '';
+    lastCacheHit = false;
+    fallbackDemoActive = false;
+    loadedGames = await loadFeeds({ sport: $('ev_sport').value, market: $('ev_market').value });
+    renderAll();
+    toast(`Odds screen loaded ${loadedGames.length} event${loadedGames.length === 1 ? '' : 's'}.`);
+  } catch (e) {
+    lastError = friendlyFetchError(e);
+    if ($('odds_events')) renderError('odds_events', lastError);
+    if ($('odds_matrix')) $('odds_matrix').innerHTML = '';
+    renderStatus();
+    toast(lastError, 'err');
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.innerHTML = originalHtml || '<i data-lucide="refresh-cw"></i>Reload Board';
+      refreshIcons();
     }
   }
-  lastError = '';
-  lastCacheHit = false;
-  fallbackDemoActive = false;
-  loadedGames = await loadFeeds({ sport: $('ev_sport').value, market: $('ev_market').value });
-  renderAll();
 }
 async function loadFeeds({ sport, market }) {
   if (settings.provider === 'demo') return demoFeed();
@@ -1220,6 +1263,7 @@ function timingMatch(game, mode) {
   return true;
 }
 function inferSport(game) {
+  if (game._sport || game.sport_key || game.sport) return game._sport || game.sport_key || game.sport;
   const id = String(game.id || '');
   return SPORTS.find(s => id.includes(s[0]))?.[0] || 'baseball_mlb';
 }
@@ -1339,7 +1383,7 @@ function evRow(row) {
   const edgeClass = row.ev >= .06 ? 'hot' : row.ev >= .03 ? '' : 'med';
   return `<tr class="${selectedResultKey === row.key ? 'selected' : ''}" data-select-result="${escapeHtml(row.key)}">
     <td><span class="edge ${edgeClass}">${fmtPct(row.ev * 100)}</span></td>
-    <td><strong>${money(row.stake)}</strong><div class="mini">q Kelly</div></td>
+    <td><strong>${money(row.stake)}</strong><div class="mini">1/4 Kelly</div></td>
     <td class="event-cell"><strong>${escapeHtml(row.event)}</strong><span>${prettySport(row.sport)} · ${formatTime(row.time)} · ${row.live ? 'Live' : 'Pre'}</span></td>
     <td class="bet-cell"><strong>${escapeHtml(row.outcome)}</strong><span>${prettyMarket(row.market)}</span></td>
     <td><span class="book-badge">${escapeHtml(row.book)}</span></td>
