@@ -17,7 +17,7 @@
 <link rel="apple-touch-icon" href="icons/icon.svg">
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <title>EdgeLabsOdds.com | Market Command</title>
-<link rel="stylesheet" href="ev-scanner.css?v=20260517-nuke">
+<link rel="stylesheet" href="ev-scanner.css?v=20260517-edgehero">
 </head>
 <body>
 <div class="layout">
@@ -64,68 +64,90 @@
     </div>
 
     <section id="dashboard" class="panel active">
-      <div class="page-head">
-        <div>
-          <h2>Command The Board.</h2>
-          <p>EV, arbitrage, line shopping, bankroll sizing, and tracking in one faster trading-style workspace.</p>
+      <div class="landing-shell">
+        <div class="landing-nav">
+          <div class="landing-wordmark"><span>edge labs odds</span><strong>Market edge engine</strong></div>
+          <div class="landing-links" aria-label="Homepage sections">
+            <button data-jump="ev" type="button">Features</button>
+            <button data-jump="tracker" type="button">Track Record</button>
+            <button data-jump="settings" type="button">Data Feed</button>
+            <button data-jump="info" type="button">FAQ</button>
+          </div>
+          <button class="btn primary" data-jump="ev" type="button"><i data-lucide="rocket"></i>Launch App</button>
         </div>
-        <button class="btn primary" data-jump="ev"><i data-lucide="scan-line"></i>Open Scanner</button>
-      </div>
 
-      <div class="hero-board">
-        <div class="hero-copy">
-          <span class="eyebrow">EdgeLabs live board</span>
-          <h3>Find the price before the market catches it.</h3>
-          <p>Use a backend cache for real odds, keep your sportsbook list tight, and compare implied probability against sharper references before placing anything.</p>
-          <div class="hero-actions">
-            <button class="btn primary" data-quick-scan="ev" type="button"><i data-lucide="zap"></i>Scan EV</button>
-            <button class="btn secondary" data-quick-scan="arb" type="button"><i data-lucide="split"></i>Scan Arbs</button>
+        <div class="landing-hero">
+          <div class="landing-copy">
+            <span class="eyebrow">EV scanner + arb terminal</span>
+            <h2>Find Your Edge.</h2>
+            <p>Compare prices, surface positive EV, catch arbitrage, and track your bankroll from one clean command screen.</p>
+            <div class="landing-actions">
+              <button class="btn primary" data-quick-scan="ev" type="button"><i data-lucide="zap"></i>Get Started Free</button>
+              <button class="btn secondary" data-jump="odds" type="button"><i data-lucide="table-2"></i>View Odds Board</button>
+            </div>
+            <div class="landing-proof">
+              <div><strong id="dash_markets">0</strong><span id="dash_markets_sub">markets scanned</span></div>
+              <div><strong id="dash_books">0</strong><span id="dash_books_sub">books connected</span></div>
+              <div><strong id="dash_last_scan">--</strong><span id="dash_last_scan_sub">last scan</span></div>
+            </div>
           </div>
-        </div>
-        <div class="pick-preview" aria-label="Scanner preview">
-          <div class="preview-top"><span>Live Preview</span><strong id="real_setup_badge">Backend</strong></div>
-          <div class="preview-pick">
-            <div><strong>Best EV</strong><span id="hero_ev_label">Run scan</span></div>
-            <b id="hero_ev_value">--</b>
-          </div>
-          <div class="preview-pick">
-            <div><strong>Best Arb</strong><span id="hero_arb_label">Run scan</span></div>
-            <b id="hero_arb_value">--</b>
-          </div>
-          <div class="preview-slip">
-            <span id="hero_books_count">0 books</span>
-            <span id="hero_feed_age">No scan yet</span>
-          </div>
-        </div>
-      </div>
 
-      <div class="grid-4">
-        <div class="metric"><div class="label">Best EV</div><div id="dash_best_ev" class="value pos">--</div><div id="dash_best_ev_sub" class="sub">scan to update</div></div>
-        <div class="metric"><div class="label">Best Arb</div><div id="dash_best_arb" class="value blue-text">--</div><div id="dash_best_arb_sub" class="sub">scan to update</div></div>
-        <div class="metric"><div class="label">Tracked P/L</div><div id="dash_profit" class="value">$0.00</div><div id="dash_roi" class="sub">0 bets</div></div>
-        <div class="metric"><div class="label">Feed Mode</div><div id="dash_provider" class="value">Backend</div><div id="dash_provider_sub" class="sub">real odds mode</div></div>
-      </div>
-      <div class="quick-actions">
-        <button class="btn primary quick-action" data-quick-scan="ev" type="button"><i data-lucide="scan-line"></i>Scan EV</button>
-        <button class="btn secondary quick-action" data-quick-scan="arb" type="button"><i data-lucide="split"></i>Scan Arbs</button>
-        <button class="btn secondary quick-action" data-jump="odds" type="button"><i data-lucide="table-2"></i>Odds Screen</button>
-        <button class="btn secondary quick-action" data-jump="tracker" type="button"><i data-lucide="receipt-text"></i>Tracker</button>
-      </div>
-      <div class="grid-4">
-        <div class="metric"><div class="label">Last Scan</div><div id="dash_last_scan" class="value">--</div><div id="dash_last_scan_sub" class="sub">waiting</div></div>
-        <div class="metric"><div class="label">Markets Scanned</div><div id="dash_markets" class="value blue-text">0</div><div id="dash_markets_sub" class="sub">loaded markets</div></div>
-        <div class="metric"><div class="label">Books Connected</div><div id="dash_books" class="value">0</div><div id="dash_books_sub" class="sub">selected books</div></div>
-        <div class="metric"><div class="label">Feed Latency</div><div id="dash_latency" class="value amber-text">--</div><div id="dash_latency_sub" class="sub">source age</div></div>
-      </div>
-
-      <div class="grid-2">
-        <div class="card">
-          <div class="card-title"><h3>Best Opportunities</h3><span class="tag green" id="dash_opps_tag">0 loaded</span></div>
-          <div id="dashboard_opps" class="tracker-list"></div>
+          <div class="hero-ticket" aria-label="Best edge preview">
+            <div class="ticket-top">
+              <span>AI Pick</span>
+              <strong id="real_setup_badge">Backend</strong>
+            </div>
+            <div class="ticket-player">
+              <div class="player-avatar">EV</div>
+              <div>
+                <strong id="hero_ev_label">Run scan</strong>
+                <span>Best positive EV</span>
+              </div>
+              <b id="hero_ev_value">--</b>
+            </div>
+            <div class="ticket-player secondary">
+              <div class="player-avatar blue">AR</div>
+              <div>
+                <strong id="hero_arb_label">Run arb scan</strong>
+                <span>Best arbitrage</span>
+              </div>
+              <b id="hero_arb_value">--</b>
+            </div>
+            <div class="ticket-slip">
+              <span id="hero_books_count">0 books</span>
+              <span id="hero_feed_age">No scan yet</span>
+            </div>
+            <div class="ticket-payout">
+              <span>Edge Snapshot</span>
+              <strong>EV + Arb <small>ready</small></strong>
+            </div>
+          </div>
         </div>
-        <div class="card">
-          <div class="card-title"><h3>Setup Status</h3><span class="tag blue">live readiness</span></div>
-          <div class="provider-grid" id="dash_free_stack"></div>
+
+        <div class="landing-performance">
+          <div class="metric"><div class="label">Best EV</div><div id="dash_best_ev" class="value pos">--</div><div id="dash_best_ev_sub" class="sub">scan to update</div></div>
+          <div class="metric"><div class="label">Best Arb</div><div id="dash_best_arb" class="value blue-text">--</div><div id="dash_best_arb_sub" class="sub">scan to update</div></div>
+          <div class="metric"><div class="label">Tracked P/L</div><div id="dash_profit" class="value">$0.00</div><div id="dash_roi" class="sub">0 bets</div></div>
+          <div class="metric"><div class="label">Feed Mode</div><div id="dash_provider" class="value">Backend</div><div id="dash_provider_sub" class="sub">real odds mode</div></div>
+          <div class="metric compact"><div class="label">Feed Latency</div><div id="dash_latency" class="value amber-text">--</div><div id="dash_latency_sub" class="sub">source age</div></div>
+        </div>
+
+        <div class="quick-actions landing-quick">
+          <button class="btn primary quick-action" data-quick-scan="ev" type="button"><i data-lucide="scan-line"></i>Scan EV</button>
+          <button class="btn secondary quick-action" data-quick-scan="arb" type="button"><i data-lucide="split"></i>Scan Arbs</button>
+          <button class="btn secondary quick-action" data-jump="odds" type="button"><i data-lucide="table-2"></i>Odds Screen</button>
+          <button class="btn secondary quick-action" data-jump="tracker" type="button"><i data-lucide="receipt-text"></i>Tracker</button>
+        </div>
+
+        <div class="landing-panels">
+          <div class="card">
+            <div class="card-title"><h3>Today's Best Edges</h3><span class="tag green" id="dash_opps_tag">0 loaded</span></div>
+            <div id="dashboard_opps" class="tracker-list"></div>
+          </div>
+          <div class="card">
+            <div class="card-title"><h3>Live Readiness</h3><span class="tag blue">setup</span></div>
+            <div class="provider-grid" id="dash_free_stack"></div>
+          </div>
         </div>
       </div>
     </section>
@@ -410,7 +432,7 @@
 </div>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-<script src="ev-math.js?v=20260517-nuke"></script>
-<script src="ev-scanner.js?v=20260517-nuke"></script>
+<script src="ev-math.js?v=20260517-edgehero"></script>
+<script src="ev-scanner.js?v=20260517-edgehero"></script>
 </body>
 </html>

@@ -277,9 +277,11 @@ function bindEvents() {
 function activateInitialTab() {
   const tabName = location.hash.replace('#', '');
   if ($(tabName)) showTab(tabName, { scroll: false, updateHash: false });
+  else document.body.dataset.activeTab = document.querySelector('.panel.active')?.id || 'dashboard';
 }
 function showTab(name, options = {}) {
   if (!$(name)) return;
+  document.body.dataset.activeTab = name;
   let activeButton = null;
   document.querySelectorAll('[data-tab]').forEach(btn => {
     const active = btn.dataset.tab === name;
