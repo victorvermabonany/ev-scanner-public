@@ -1,26 +1,46 @@
 // Client for the Chess.com public API.
 // Docs: https://www.chess.com/news/view/published-data-api
 //
-// No API key or auth is needed, but the API returns 403 if you send no
-// User-Agent, so every request here sets one.
+// No API key or auth is needed, but the API returns 403 if the request has no
+// User-Agent at all, so Node has to set one explicitly.
+//
+// Browsers must NOT set it. `User-Agent` is a forbidden header there: the
+// browser supplies its own, and scripts aren't allowed to override it. Chrome
+// quietly drops the header, but WebKit (so every browser on iOS) can reject
+// the request outright — which showed up as "can't reach Chess.com" on a
+// phone while working fine on desktop. Sending it also risks a CORS preflight,
+// and Chess.com's preflight only permits `Origin`, so a preflighted request
+// would be refused.
 
 const BASE_URL = 'https://api.chess.com/pub';
 const USER_AGENT = 'ChessCoach/0.1 (personal learning project)';
 
+const isNode =
+  typeof process !== 'undefined' && process.versions?.node != null;
+
 class ChessComError extends Error {
-  constructor(message, status) {
-    super(message);
+  constructor(message, status, options) {
+    super(message, options);
     this.name = 'ChessComError';
     this.status = status;
   }
 }
 
 async function getJson(url) {
+  const options = isNode ? { headers: { 'User-Agent': USER_AGENT } } : {};
+
   let response;
   try {
-    response = await fetch(url, { headers: { 'User-Agent': USER_AGENT } });
+    response = await fetch(url, options);
   } catch (cause) {
-    throw new ChessComError(`Could not reach Chess.com (${url})`, 503);
+    // Keep the underlying reason: without it every network-level failure
+    // looks identical and there's nothing to diagnose from.
+    throw new ChessComError(
+      `Could not reach Chess.com — ${cause?.message ?? cause}. ` +
+        'A VPN, content blocker, or offline connection can cause this.',
+      503,
+      { cause }
+    );
   }
 
   if (response.status === 404) {

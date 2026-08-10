@@ -182,9 +182,12 @@ stay quick on a phone; the CLI defaults to 12.
 
 No API key or account needed. Two things to know:
 
-- It returns **403 without a `User-Agent`**, so `shared/chesscom.js` sends
-  one. (Browsers set their own and silently ignore the header we set, which
-  is fine — the 403 is only for a *missing* UA.)
+- It returns **403 without a `User-Agent`**, so `shared/chesscom.js` sends one
+  **from Node only**. Browsers must not: `User-Agent` is a forbidden header
+  there, and while Chrome quietly drops it, WebKit (every browser on iOS) can
+  reject the request outright. Sending it also risks triggering a CORS
+  preflight, and Chess.com's preflight permits only `Origin` — so a
+  preflighted request gets refused.
 - It sends `Access-Control-Allow-Origin: *`, which is what makes the
   no-backend version possible.
 
