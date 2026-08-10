@@ -1,7 +1,34 @@
 import { useRef, useState } from 'react';
 import { fetchRecentGames, ChessComError } from '../../shared/chesscom.js';
 import { analyseGame, formatEval, DEFAULT_THRESHOLD_PAWNS } from '../../shared/analysis.js';
+import { CATEGORY_LABELS } from '../../shared/classify.js';
 import { BrowserEngine } from './lib/engine.js';
+
+const PIECE_NAMES = { p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen', k: 'king' };
+
+/** Plain-language reason for the category, from the detector's own findings. */
+function explain(details = {}) {
+  if (details.hanging_piece) {
+    const name = PIECE_NAMES[details.hanging_piece.pieceType] ?? 'material';
+    return `${name} on ${details.hanging_piece.square} can be taken (+${(
+      details.hanging_piece.gain / 100
+    ).toFixed(1)})`;
+  }
+  if (details.missed_tactic) {
+    return `${details.missed_tactic.bestMove} was available — ${details.missed_tactic.patterns
+      .map((p) => p.name)
+      .join(', ')}`;
+  }
+  if (details.king_safety) {
+    return `${details.king_safety.reason} (king ${details.king_safety.kingSquare}, ${details.king_safety.defenders} defender${
+      details.king_safety.defenders === 1 ? '' : 's'
+    } adjacent)`;
+  }
+  if (details.time_trouble) {
+    return `${details.time_trouble.secondsLeft}s left on the clock`;
+  }
+  return 'no pattern matched';
+}
 
 // Depth 10 keeps a full game under ~30s on a phone. The CLI defaults to 12;
 // raise this if you're on a laptop and want steadier numbers.
@@ -41,6 +68,19 @@ function Blunder({ blunder, game }) {
         </span>
         <span className="blunder__player">{player}</span>
       </div>
+      <div className="blunder__tags">
+        <span className={`tag tag--${blunder.category}`}>
+          {CATEGORY_LABELS[blunder.category]}
+        </span>
+        {blunder.categories
+          ?.filter((name) => name !== blunder.category)
+          .map((name) => (
+            <span key={name} className="tag tag--secondary">
+              {CATEGORY_LABELS[name]}
+            </span>
+          ))}
+      </div>
+      <p className="blunder__why">{explain(blunder.categoryDetails)}</p>
       <div className="blunder__evals">
         <span className="eval">{formatEval(blunder.evalBefore)}</span>
         <span className="blunder__arrow">→</span>

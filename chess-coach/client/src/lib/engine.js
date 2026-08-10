@@ -96,7 +96,7 @@ export class BrowserEngine {
     this.#send(`go depth ${depth}`);
 
     let latest = null;
-    await this.#waitFor((line) => {
+    const finalLine = await this.#waitFor((line) => {
       if (line.startsWith('info ') && line.includes(' score ')) {
         if (!/\b(lowerbound|upperbound)\b/.test(line)) {
           const match = line.match(/ score (cp|mate) (-?\d+)/);
@@ -106,14 +106,19 @@ export class BrowserEngine {
       return line.startsWith('bestmove');
     });
 
-    if (!latest) return { cp: null, mate: null };
+    // The move the engine would have played instead — what a blunder gets
+    // compared against during categorisation.
+    const bestToken = finalLine.split(/\s+/)[1];
+    const bestMove = bestToken && bestToken !== '(none)' ? bestToken : null;
+
+    if (!latest) return { cp: null, mate: null, bestMove };
 
     const whiteToMove = fen.split(' ')[1] === 'w';
     const signed = whiteToMove ? latest.value : -latest.value;
 
     return latest.kind === 'mate'
-      ? { cp: null, mate: signed }
-      : { cp: signed, mate: null };
+      ? { cp: null, mate: signed, bestMove }
+      : { cp: signed, mate: null, bestMove };
   }
 
   async quit() {

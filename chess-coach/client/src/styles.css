@@ -253,3 +253,58 @@ body {
 .game__variant {
   color: var(--bad);
 }
+
+/* blunder categories */
+.blunder__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+}
+
+.tag {
+  padding: 0.15rem 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 500;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.tag--hanging_piece {
+  background: rgba(242, 119, 122, 0.15);
+  color: #f2777a;
+  border-color: rgba(242, 119, 122, 0.35);
+}
+
+.tag--missed_tactic {
+  background: rgba(122, 162, 247, 0.15);
+  color: var(--accent);
+  border-color: rgba(122, 162, 247, 0.35);
+}
+
+.tag--king_safety {
+  background: rgba(224, 175, 104, 0.15);
+  color: #e0af68;
+  border-color: rgba(224, 175, 104, 0.35);
+}
+
+.tag--time_trouble {
+  background: rgba(187, 154, 247, 0.15);
+  color: #bb9af7;
+  border-color: rgba(187, 154, 247, 0.35);
+}
+
+.tag--unclassified,
+.tag--secondary {
+  background: transparent;
+  color: var(--muted);
+  border-color: var(--border);
+}
+
+.blunder__why {
+  margin: 0.5rem 0 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.4;
+}

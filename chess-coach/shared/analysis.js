@@ -5,6 +5,7 @@
 // more than `threshold` pawns of evaluation, that's a blunder.
 
 import { Chess } from 'chess.js';
+import { classifyBlunder, parseClocks, parseTimeControl } from './classify.js';
 
 export const DEFAULT_THRESHOLD_PAWNS = 2.5;
 export const DEFAULT_DEPTH = 12;
@@ -118,6 +119,12 @@ export async function analyseGame(pgn, {
     onProgress?.(index + 1, positions.length);
   }
 
+  // Context for categorising blunders. Both come out of the PGN itself —
+  // Chess.com writes a clock into every move comment, and the TimeControl
+  // header says what the clock started at.
+  const clocks = parseClocks(pgn);
+  const timeControl = parseTimeControl(parser.getHeaders()?.TimeControl);
+
   const analysed = [];
   const blunders = [];
 
@@ -145,7 +152,18 @@ export async function analyseGame(pgn, {
     };
 
     analysed.push(record);
-    if (record.isBlunder) blunders.push(record);
+
+    if (record.isBlunder) {
+      // The engine's preferred move in the position the blunder was played
+      // from — already known, since that position was evaluated.
+      const { category, categories, details } = classifyBlunder(record, {
+        clocks,
+        timeControl,
+        bestMove: evalBefore.bestMove ?? null,
+      });
+      Object.assign(record, { category, categories, categoryDetails: details });
+      blunders.push(record);
+    }
   }
 
   return { moves: analysed, blunders, positionsEvaluated: positions.length };

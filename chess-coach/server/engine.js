@@ -138,7 +138,7 @@ export class Engine {
     this.#send(`go depth ${depth}`);
 
     let latest = null;
-    await this.#waitFor((line) => {
+    const finalLine = await this.#waitFor((line) => {
       if (line.startsWith('info ') && line.includes(' score ')) {
         // Bound-only lines are mid-search artefacts, not real evaluations.
         if (!/\b(lowerbound|upperbound)\b/.test(line)) {
@@ -149,19 +149,25 @@ export class Engine {
       return line.startsWith('bestmove');
     });
 
+    // "bestmove e2e4 ponder c7c5" — the move the engine would have played,
+    // which is what a blunder gets compared against. "(none)" in terminal
+    // positions.
+    const bestToken = finalLine.split(/\s+/)[1];
+    const bestMove = bestToken && bestToken !== '(none)' ? bestToken : null;
+
     if (!latest) {
       // No score at all means a terminal position (the engine has no move
       // to search). Callers detect those with chess.js before asking, so
       // reaching here means something unexpected happened.
-      return { cp: null, mate: null };
+      return { cp: null, mate: null, bestMove };
     }
 
     const whiteToMove = fen.split(' ')[1] === 'w';
     const signed = whiteToMove ? latest.value : -latest.value;
 
     return latest.kind === 'mate'
-      ? { cp: null, mate: signed }
-      : { cp: signed, mate: null };
+      ? { cp: null, mate: signed, bestMove }
+      : { cp: signed, mate: null, bestMove };
   }
 
   async quit() {

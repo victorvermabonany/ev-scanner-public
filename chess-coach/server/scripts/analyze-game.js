@@ -14,6 +14,7 @@ import {
   DEFAULT_DEPTH,
   DEFAULT_THRESHOLD_PAWNS,
 } from '../../shared/analysis.js';
+import { CATEGORY_LABELS } from '../../shared/classify.js';
 
 const args = process.argv.slice(2);
 const showAll = args.includes('--all');
@@ -44,6 +45,36 @@ if (!username) {
     'Usage: npm run analyze -- <username> [gameIndex] [--depth N] [--threshold N] [--all]'
   );
   process.exit(1);
+}
+
+const PIECE_NAMES = { p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen', k: 'king' };
+
+/** One human-readable line saying what the category actually found. */
+function explain(blunder) {
+  const parts = [];
+  const d = blunder.categoryDetails ?? {};
+
+  if (d.hanging_piece) {
+    const name = PIECE_NAMES[d.hanging_piece.pieceType] ?? 'material';
+    parts.push(
+      `${name} on ${d.hanging_piece.square} can be taken ` +
+        `(+${(d.hanging_piece.gain / 100).toFixed(1)})`
+    );
+  }
+  if (d.missed_tactic) {
+    const names = d.missed_tactic.patterns.map((p) => p.name).join(', ');
+    parts.push(`${d.missed_tactic.bestMove} was available — ${names}`);
+  }
+  if (d.king_safety) {
+    parts.push(
+      `${d.king_safety.reason} ${d.king_safety.when} (king ${d.king_safety.kingSquare}, ` +
+        `${d.king_safety.defenders} defender(s) adjacent)`
+    );
+  }
+  if (d.time_trouble) {
+    parts.push(`${d.time_trouble.secondsLeft}s left on the clock`);
+  }
+  return parts.length ? parts.join('; ') : 'no pattern matched';
 }
 
 const engine = new Engine({ depth });
@@ -115,6 +146,16 @@ try {
       `\nMove ${blunder.moveNumber}${blunder.color === 'w' ? '.' : '...'} ` +
         `${blunder.san}   (${player})`
     );
+    console.log(`  category    : ${CATEGORY_LABELS[blunder.category]}`);
+    if (blunder.categories.length > 1) {
+      console.log(
+        `  also        : ${blunder.categories
+          .filter((name) => name !== blunder.category)
+          .map((name) => CATEGORY_LABELS[name])
+          .join(', ')}`
+      );
+    }
+    console.log(`  why         : ${explain(blunder)}`);
     console.log(`  eval before : ${formatEval(blunder.evalBefore)}`);
     console.log(`  eval after  : ${formatEval(blunder.evalAfter)}`);
     console.log(`  swing       : ${(blunder.lossCp / 100).toFixed(2)} pawns`);

@@ -15,7 +15,8 @@ deploy, pay for, or keep awake, which is why it can live on GitHub Pages.
 chess-coach/
 ├── shared/               used by BOTH the browser and Node
 │   ├── chesscom.js       Chess.com API client
-│   └── analysis.js       blunder detection (engine-agnostic)
+│   ├── analysis.js       blunder detection (engine-agnostic)
+│   └── classify.js       why a blunder happened
 ├── client/               the React app — this is what gets deployed
 │   ├── public/engine/    Stockfish WASM
 │   └── src/
@@ -129,6 +130,45 @@ directly rather than asked of the engine, which has no move to search there.
 
 Games that aren't standard chess (Chess960 and other variants) are listed but
 can't be analysed — Stockfish would score them under the wrong rules.
+
+### Categorising a blunder
+
+Each flagged blunder gets a `category`, plus `categories` (everything that
+matched) and `categoryDetails` (what each detector found). `shared/classify.js`
+does the work, using only the position, the engine's preferred move, and the
+clocks in the PGN.
+
+- **Hanging piece** — after the move, the opponent can win material. Decided by
+  a static exchange evaluation that plays the capture sequence out with the
+  least valuable attacker first, so a defended piece isn't mistaken for a free
+  one. Uses legal moves, which means pinned defenders are correctly treated as
+  unable to recapture.
+- **Missed tactic** — the engine's preferred move was a recognisable tactic:
+  a fork (two or more worthwhile targets, where "worthwhile" means undefended
+  or worth more than the attacker), a pin or skewer (two enemy pieces on one
+  ray), a discovered attack (moving away unveils another piece's attack), or a
+  capture that plainly wins material.
+- **King safety** — the king is still on d/e near its home rank past move 15,
+  or it's short of defenders with enemy pressure on the squares around it.
+  Checked in the position *after* the move as well as before, since a move can
+  be what walks the king into the open. Requires the opponent to still have a
+  queen or two pieces, so endgames with naturally bare kings don't trip it.
+- **Time trouble** — the clock was under 10% of the starting time (floor 10s)
+  when the move was played. Correspondence games never qualify.
+
+When several match, `category` picks by priority: hanging piece, missed
+tactic, king safety, time trouble — most concrete explanation first. The one
+exception is severe time trouble (under 10 seconds), which takes precedence,
+because at that point the clock explains the move better than the board does.
+Blunders that match nothing are `unclassified` rather than forced into a
+category that doesn't fit.
+
+**How much to trust each one.** Hanging piece is the most reliable — it's a
+concrete material calculation. Missed tactic is reliable when it fires, since
+it names a specific pattern in a specific move. King safety is the softest: it
+describes the situation rather than proving causation, so when it's the *only*
+category that matched, read it as context rather than a diagnosis. Time
+trouble is factual about the clock but says nothing about the position.
 
 ### A caveat on repeatability
 
