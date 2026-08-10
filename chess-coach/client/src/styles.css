@@ -350,3 +350,116 @@ body {
   font-size: 0.68rem;
   color: var(--border);
 }
+
+/* ------------------------------------------------------- report screen */
+
+/* Unlike home, this one is allowed to scroll — it's a report. */
+.report-screen {
+  gap: 1.15rem;
+}
+
+.rep__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.rep__period {
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.rep__coach {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.rep__coachname {
+  margin: 0;
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+
+.rep__meta {
+  margin: 0.1rem 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.rep__text {
+  margin: 0;
+  padding: 1rem 1.1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.rep__h2 {
+  margin: 0 0 0.75rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.rep__empty,
+.rep__worst {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.rep__worst a {
+  color: var(--accent);
+}
+
+/* category breakdown */
+.bars {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.bar__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.35rem;
+}
+
+.bar__label {
+  font-size: 0.9rem;
+}
+
+.bar__count {
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.bar__track {
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.bar__fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--muted);
+}
+
+.bar__fill--hanging_piece  { background: #f2777a; }
+.bar__fill--missed_tactic  { background: #7aa2f7; }
+.bar__fill--king_safety    { background: #e0af68; }
+.bar__fill--time_trouble   { background: #bb9af7; }
+.bar__fill--unclassified   { background: #4b515a; }
