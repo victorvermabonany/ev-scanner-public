@@ -16,7 +16,9 @@ export default function Onboarding({ onDone, initialUsername = '' }) {
   const [checking, setChecking] = useState(false);
   const [error, setError] = useState(null);
 
-  const step = coach ? 'username' : 'coach';
+  // Someone who already has a username is only here to change coach, so the
+  // introduction would be noise — send them straight to the choice.
+  const [step, setStep] = useState(initialUsername ? 'coach' : 'welcome');
 
   async function submit(event) {
     event.preventDefault();
@@ -49,6 +51,31 @@ export default function Onboarding({ onDone, initialUsername = '' }) {
     }
   }
 
+  if (step === 'welcome') {
+    return (
+      <main className="screen screen--center welcome">
+        <h1 className="title">Chess Coach</h1>
+
+        <p className="welcome__body">
+          Chess Coach replays your recent Chess.com games through Stockfish, right here
+          on your phone. It finds the moves that cost you the most, works out what went
+          wrong in each one, and picks the single habit worth fixing this week.
+        </p>
+        <p className="welcome__body">
+          Pick a coach, and you'll hear it in their voice.
+        </p>
+
+        <button className="btn" onClick={() => setStep('coach')}>
+          Get started
+        </button>
+
+        <p className="welcome__note">
+          No account needed. Your games are analysed on your device.
+        </p>
+      </main>
+    );
+  }
+
   return (
     <main className="screen screen--center">
       <header className="onboard__head">
@@ -62,7 +89,13 @@ export default function Onboarding({ onDone, initialUsername = '' }) {
         <ul className="coaches">
           {Object.entries(COACHES).map(([key, name]) => (
             <li key={key}>
-              <button className="coachcard" onClick={() => setCoach(key)}>
+              <button
+                className="coachcard"
+                onClick={() => {
+                  setCoach(key);
+                  setStep('username');
+                }}
+              >
                 <CoachMark coach={key} size={44} />
                 <span className="coachcard__text">
                   <span className="coachcard__name">{name}</span>
@@ -83,6 +116,7 @@ export default function Onboarding({ onDone, initialUsername = '' }) {
               onClick={() => {
                 setCoach(null);
                 setError(null);
+                setStep('coach');
               }}
             >
               change

@@ -1303,3 +1303,39 @@ button.home__user {
   line-height: 1.5;
   text-align: left;
 }
+
+/* ------------------------------------------------------ welcome screen */
+
+.welcome {
+  gap: 0.9rem;
+  text-align: left;
+  align-items: stretch;
+  justify-content: center;
+}
+
+.welcome .title {
+  text-align: left;
+  margin-bottom: 0.4rem;
+}
+
+.welcome__body {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--ink-70);
+}
+
+/* The button shouldn't stretch the full width like a form field. */
+.welcome .btn {
+  align-self: flex-start;
+  margin-top: 0.6rem;
+}
+
+.welcome__note {
+  margin: 0.2rem 0 0;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  line-height: 1.6;
+  color: var(--ink-45);
+}
