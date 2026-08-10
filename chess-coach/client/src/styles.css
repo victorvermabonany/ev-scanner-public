@@ -37,6 +37,13 @@
   --rule: rgba(255, 255, 255, 0.13);
   --rule-strong: rgba(255, 255, 255, 0.26);
 
+  /* Coach avatar colours. These were dropped in an earlier palette change,
+     which left every CoachMark filled with an undefined variable — i.e.
+     invisible. Mapped onto the existing accents rather than new hues. */
+  --mentor: #64c07a;
+  --drill: #e05c46;
+  --analyst: #6a9bd8;
+
   /* Two extra hues the eight labels need beyond the red/amber/green scale. */
   --brilliant: #35b6a0;
   --great: #6a9bd8;
@@ -1338,4 +1345,25 @@ button.home__user {
   letter-spacing: 0.06em;
   line-height: 1.6;
   color: var(--ink-45);
+}
+
+
+/* Indeterminate progress: a travelling segment, for steps whose length we
+   can't know (network fetch, engine download). */
+.progress__bar--idle {
+  width: 35%;
+  animation: progress-slide 1.4s ease-in-out infinite;
+}
+
+@keyframes progress-slide {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(285%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress__bar--idle {
+    animation: none;
+    width: 100%;
+    opacity: 0.4;
+  }
 }

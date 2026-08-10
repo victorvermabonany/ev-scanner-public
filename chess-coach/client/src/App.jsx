@@ -10,22 +10,25 @@ import { useWeeklySummary } from './lib/useWeeklySummary.js';
 import { clearAll, loadCoach, loadUsername, saveCoach, saveUsername } from './lib/storage.js';
 
 function Loading({ coach, progress }) {
+  const percent = progress.fraction == null ? null : Math.round(progress.fraction * 100);
+
   return (
     <main className="screen screen--center">
       <CoachMark coach={coach} size={56} />
       <p className="loading__stage">{progress.stage}</p>
-      {progress.total > 0 && (
-        <p className="loading__count">
-          {progress.done} of {progress.total}
-        </p>
-      )}
+      {progress.detail && <p className="loading__count">{progress.detail}</p>}
+
       <div className="progress__track">
+        {/* An unknown-length step gets a moving bar rather than a frozen one. */}
         <div
-          className="progress__bar"
-          style={{ width: progress.total ? `${(progress.done / progress.total) * 100}%` : '20%' }}
+          className={`progress__bar ${percent == null ? 'progress__bar--idle' : ''}`}
+          style={percent == null ? undefined : { width: `${percent}%` }}
         />
       </div>
-      <p className="loading__note">Running Stockfish on your device.</p>
+
+      <p className="loading__note">
+        {percent == null ? 'Running Stockfish on your device.' : `${percent}% complete`}
+      </p>
     </main>
   );
 }
@@ -64,7 +67,11 @@ export default function App() {
     );
   }
 
-  if (!summary) return <main className="screen" />;
+  // Before the first effect runs there is no summary and no progress yet.
+  // Showing a bare <main> here meant a flash of empty black.
+  if (!summary) {
+    return <Loading coach={coach} progress={{ stage: 'Getting ready', detail: null, fraction: null }} />;
+  }
 
   if (view === 'report') {
     return (

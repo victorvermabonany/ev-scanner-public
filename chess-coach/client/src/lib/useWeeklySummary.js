@@ -22,7 +22,7 @@ export function useWeeklySummary(username) {
 
   const run = useCallback(async () => {
     setError(null);
-    setProgress({ stage: 'Fetching your games', done: 0, total: 0 });
+    setProgress({ stage: 'Fetching your games', detail: null, fraction: null });
 
     try {
       const games = (await fetchRecentGames(username, GAMES_TO_ANALYSE)).filter(
@@ -35,17 +35,34 @@ export function useWeeklySummary(username) {
       }
 
       if (!engineRef.current) {
-        setProgress({ stage: 'Starting engine', done: 0, total: 0 });
+        setProgress({
+          stage: 'Loading the engine',
+          // Worth naming: it's a big download and it only happens once.
+          detail: 'About 7 MB, first time only',
+          fraction: null,
+        });
         engineRef.current = new BrowserEngine({ depth: DEPTH });
         await engineRef.current.start();
       }
 
       const entries = [];
       for (const [index, game] of games.entries()) {
-        setProgress({ stage: 'Analysing games', done: index, total: games.length });
         entries.push({
           game,
-          analysis: await analyseGame(game.pgn, { engine: engineRef.current, depth: DEPTH }),
+          analysis: await analyseGame(game.pgn, {
+            engine: engineRef.current,
+            depth: DEPTH,
+            // Report every position, not every game. A game can take half a
+            // minute on a phone, and a bar that sits still that long reads
+            // as broken.
+            onProgress: (done, total) => {
+              setProgress({
+                stage: 'Analysing your games',
+                detail: `Game ${index + 1} of ${games.length}`,
+                fraction: (index + done / total) / games.length,
+              });
+            },
+          }),
         });
       }
 
