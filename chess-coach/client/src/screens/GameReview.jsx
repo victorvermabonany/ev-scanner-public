@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Chess } from 'chess.js';
 import { LABEL_TEXT } from '../../../shared/labels.js';
 import { Board } from '../components/Board.jsx';
@@ -27,6 +27,43 @@ export default function GameReview({ game, onBack }) {
   // Open on the first thing worth looking at, not move one.
   const firstProblem = game.moves.findIndex((m) => COSTLY.includes(m.label));
   const [selected, setSelected] = useState(firstProblem === -1 ? 0 : firstProblem);
+  const [playing, setPlaying] = useState(false);
+  const listRef = useRef(null);
+
+  const lastIndex = game.moves.length - 1;
+  const atStart = selected <= 0;
+  const atEnd = selected >= lastIndex;
+
+  const step = (delta) =>
+    setSelected((i) => Math.max(0, Math.min(lastIndex, i + delta)));
+
+  // Auto-advance. Slow enough to read the board between moves, and it stops
+  // itself at the end rather than sitting on the last move still "playing".
+  useEffect(() => {
+    if (!playing) return undefined;
+    if (atEnd) {
+      setPlaying(false);
+      return undefined;
+    }
+    const timer = setTimeout(() => setSelected((i) => Math.min(lastIndex, i + 1)), 1750);
+    return () => clearTimeout(timer);
+  }, [playing, selected, atEnd, lastIndex]);
+
+  // Keep the highlighted move visible while stepping, otherwise it walks off
+  // the bottom of the list and you're navigating blind.
+  useEffect(() => {
+    const list = listRef.current;
+    const active = list?.querySelector('.moverow__cell--on');
+    if (!list || !active) return;
+
+    // Scroll the list itself rather than calling scrollIntoView, which also
+    // scrolls the page — that dragged the board and the buttons off the top
+    // of the screen while stepping through a game.
+    const item = active.getBoundingClientRect();
+    const box = list.getBoundingClientRect();
+    if (item.top < box.top) list.scrollTop -= box.top - item.top;
+    else if (item.bottom > box.bottom) list.scrollTop += item.bottom - box.bottom;
+  }, [selected]);
 
   const move = game.moves[selected];
   const position = positions[selected + 1] ?? positions[0];
@@ -96,6 +133,39 @@ export default function GameReview({ game, onBack }) {
         />
       </div>
 
+      {/* Big targets: stepping a whole game happens on a phone, one thumb. */}
+      <div className="controls">
+        <button
+          className="controls__btn"
+          onClick={() => {
+            setPlaying(false);
+            step(-1);
+          }}
+          disabled={atStart}
+          aria-label="Previous move"
+        >
+          ‹
+        </button>
+        <button
+          className="controls__btn controls__btn--play"
+          onClick={() => setPlaying((v) => !v)}
+          disabled={atEnd && !playing}
+        >
+          {playing ? 'Pause' : 'Play'}
+        </button>
+        <button
+          className="controls__btn"
+          onClick={() => {
+            setPlaying(false);
+            step(1);
+          }}
+          disabled={atEnd}
+          aria-label="Next move"
+        >
+          ›
+        </button>
+      </div>
+
       {move && (
         <div className={`movecard movecard--${move.label}`}>
           <p className="movecard__head">
@@ -112,7 +182,7 @@ export default function GameReview({ game, onBack }) {
         </div>
       )}
 
-      <ol className="movelist">
+      <ol className="movelist" ref={listRef}>
         {rows.map((row, rowIndex) => (
           <li key={`${row.number}-${rowIndex}`} className="moverow">
             <span className="moverow__no">{row.number}.</span>
@@ -125,7 +195,12 @@ export default function GameReview({ game, onBack }) {
                   className={`moverow__cell moverow__cell--${m.label} ${
                     m.index === selected ? 'moverow__cell--on' : ''
                   }`}
-                  onClick={() => setSelected(m.index)}
+                  onClick={() => {
+                    // Tapping the list is a deliberate jump, so stop playback
+                    // rather than have it yank you somewhere else a second later.
+                    setPlaying(false);
+                    setSelected(m.index);
+                  }}
                 >
                   {m.san}
                 </button>

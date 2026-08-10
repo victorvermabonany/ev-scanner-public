@@ -1515,3 +1515,93 @@ button.home__user {
   font-size: 0.58rem;
   color: var(--ink-28);
 }
+
+
+/* ---------------------------------------------------- playback controls */
+
+.controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.controls__btn {
+  flex: 1;
+  /* Comfortably past the 44px minimum touch target. */
+  min-height: 52px;
+  background: none;
+  border: 1px solid var(--rule-strong);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Stops a fast double-tap on the arrows zooming the page instead. */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.controls__btn--play {
+  flex: 2;
+  font-size: 0.78rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.controls__btn:active:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.controls__btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+
+/* The review is a fixed frame: board and controls stay put, and only the
+   move list scrolls inside it. Otherwise stepping through a game pushes the
+   buttons off the top of the screen. */
+.review {
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.review .movelist {
+  /* min-height:0 lets a flex child actually shrink so its own scrollbar
+     engages instead of the page growing. */
+  min-height: 0;
+}
+
+/* Size the board from the height it can spare, so the move list still has
+   usable room on a short phone. */
+.review .boardwrap {
+  min-height: 0;
+  justify-content: center;
+}
+
+.review .board {
+  flex: 0 1 auto;
+  width: auto;
+  height: 100%;
+  max-height: 42vh;
+  max-width: calc(100% - 30px);
+  aspect-ratio: 1;
+}
+
+.review .evalbar {
+  max-height: 42vh;
+}
+
+@media (max-height: 720px) {
+  .review .board,
+  .review .evalbar {
+    max-height: 36vh;
+  }
+
+  .review .controls__btn {
+    min-height: 46px;
+  }
+}
