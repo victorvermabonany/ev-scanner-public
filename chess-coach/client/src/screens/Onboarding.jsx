@@ -2,6 +2,10 @@ import { useState } from 'react';
 import { COACHES } from '../../../shared/coach.js';
 import { verifyPlayer, ChessComError } from '../../../shared/chesscom.js';
 import { CoachMark } from '../components/CoachMark.jsx';
+import { loadCoach } from '../lib/storage.js';
+
+/** A remembered profile keeps its coach, so the avatar matches. */
+const loadCoachFor = (name) => loadCoach(name) ?? 'analyst';
 
 // One line each, so the choice is obvious without reading a paragraph.
 const PITCH = {
@@ -10,15 +14,25 @@ const PITCH = {
   analyst: 'Dry and factual. Numbers first, no commentary.',
 };
 
-export default function Onboarding({ onDone, initialUsername = '' }) {
+export default function Onboarding({
+  onDone,
+  initialUsername = '',
+  knownProfiles = [],
+  onResume,
+}) {
   const [coach, setCoach] = useState(null);
   const [username, setUsername] = useState(initialUsername);
   const [checking, setChecking] = useState(false);
   const [error, setError] = useState(null);
 
-  // Someone who already has a username is only here to change coach, so the
-  // introduction would be noise — send them straight to the choice.
-  const [step, setStep] = useState(initialUsername ? 'coach' : 'welcome');
+  // Three ways in. Changing coach skips the introduction. Someone who has
+  // signed out on this device gets their accounts offered back rather than
+  // being made to set up again. Only a genuinely new visitor sees the pitch.
+  const [step, setStep] = useState(() => {
+    if (initialUsername) return 'coach';
+    if (knownProfiles.length > 0) return 'accounts';
+    return 'welcome';
+  });
 
   async function submit(event) {
     event.preventDefault();
@@ -49,6 +63,35 @@ export default function Onboarding({ onDone, initialUsername = '' }) {
     } finally {
       setChecking(false);
     }
+  }
+
+  if (step === 'accounts') {
+    return (
+      <main className="screen screen--center">
+        <header className="onboard__head">
+          <h1 className="title">Chess Coach</h1>
+          <p className="subtitle">Welcome back.</p>
+        </header>
+
+        <ul className="coaches">
+          {knownProfiles.map((name) => (
+            <li key={name}>
+              <button className="coachcard" onClick={() => onResume?.(name)}>
+                <CoachMark coach={loadCoachFor(name)} size={40} />
+                <span className="coachcard__text">
+                  <span className="coachcard__name">{name}</span>
+                  <span className="coachcard__pitch">Pick up where you left off</span>
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+
+        <button className="linkbtn" onClick={() => setStep('coach')}>
+          Use another account
+        </button>
+      </main>
+    );
   }
 
   if (step === 'welcome') {

@@ -155,7 +155,8 @@ function Drill({ drill, index, total, onDone, onBack }) {
 }
 
 export default function Drills({ summary, onBack }) {
-  const [completed, setCompleted] = useState(() => loadCompleted());
+  // Drill progress belongs to this profile, not to the device.
+  const [completed, setCompleted] = useState(() => loadCompleted(summary.username));
   const [active, setActive] = useState(null);
 
   // This week's focus area, which is the whole point of drilling.
@@ -163,7 +164,7 @@ export default function Drills({ summary, onBack }) {
   const drills = (summary.drills ?? []).filter((drill) => drill.category === focus);
 
   function complete(id) {
-    markCompleted(id);
+    markCompleted(summary.username, id);
     setCompleted((prev) => (prev.includes(id) ? prev : [...prev, id]));
   }
 

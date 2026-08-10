@@ -7,7 +7,15 @@ import Games from './screens/Games.jsx';
 import GameReview from './screens/GameReview.jsx';
 import { CoachMark } from './components/CoachMark.jsx';
 import { useWeeklySummary } from './lib/useWeeklySummary.js';
-import { clearAll, loadCoach, loadUsername, saveCoach, saveUsername } from './lib/storage.js';
+import {
+  listProfiles,
+  loadActiveUser,
+  loadCoach,
+  migrateLegacyProfile,
+  saveCoach,
+  signIn,
+  signOut,
+} from './lib/storage.js';
 
 function Loading({ coach, progress }) {
   const percent = progress.fraction == null ? null : Math.round(progress.fraction * 100);
@@ -33,25 +41,53 @@ function Loading({ coach, progress }) {
   );
 }
 
+// Runs once, before the first render reads any storage.
+migrateLegacyProfile();
+
 export default function App() {
-  // Returning players skip straight past onboarding.
-  const [coach, setCoach] = useState(loadCoach);
-  const [username, setUsername] = useState(loadUsername);
+  // Returning players skip straight past onboarding; a brand-new visitor has
+  // no active profile and lands on the welcome screen.
+  const [username, setUsername] = useState(loadActiveUser);
+  const [coach, setCoach] = useState(() => loadCoach(loadActiveUser()));
   const [view, setView] = useState('home');
   const [openGame, setOpenGame] = useState(null);
 
   const { summary, progress, error, refresh } = useWeeklySummary(username ?? '');
 
   function finishOnboarding({ coach: pickedCoach, username: pickedName }) {
-    saveCoach(pickedCoach);
-    saveUsername(pickedName);
+    signIn(pickedName);
+    saveCoach(pickedName, pickedCoach);
     setCoach(pickedCoach);
     setUsername(pickedName);
+    setView('home');
+  }
+
+  // Signing out keeps this profile's games and drill progress, so coming
+  // back to it later is instant rather than a fresh analysis.
+  function switchPlayer() {
+    signOut();
+    setCoach(null);
+    setUsername(null);
+    setView('home');
   }
 
   // Changing coach later shouldn't make you retype your username.
   if (!coach || !username) {
-    return <Onboarding onDone={finishOnboarding} initialUsername={username ?? ''} />;
+    return (
+      <Onboarding
+        onDone={finishOnboarding}
+        initialUsername={username ?? ''}
+        // Accounts already set up on this device, offered as one tap rather
+        // than a retyped username.
+        knownProfiles={listProfiles()}
+        onResume={(name) => {
+          signIn(name);
+          setUsername(name);
+          setCoach(loadCoach(name));
+          setView('home');
+        }}
+      />
+    );
   }
 
   if (progress) return <Loading coach={coach} progress={progress} />;
@@ -70,12 +106,7 @@ export default function App() {
           {error.switchPlayer && (
             <button
               className="linkbtn"
-              onClick={() => {
-                clearAll();
-                setCoach(null);
-                setUsername(null);
-                setView('home');
-              }}
+              onClick={switchPlayer}
             >
               Switch player
             </button>
@@ -146,13 +177,7 @@ export default function App() {
         setView('review');
       }}
       onRefresh={refresh}
-      onSwitchPlayer={() => {
-        // The cached summary belongs to the old player, so it goes too.
-        clearAll();
-        setCoach(null);
-        setUsername(null);
-        setView('home');
-      }}
+      onSwitchPlayer={switchPlayer}
     />
   );
 }

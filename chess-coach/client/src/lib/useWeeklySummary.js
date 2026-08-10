@@ -21,7 +21,15 @@ export function useWeeklySummary(username) {
   const [error, setError] = useState(null);
   const engineRef = useRef(null);
 
+  // Identifies the current run. An analysis started for one account must not
+  // write its result into another's screen if the user switches mid-way.
+  const runIdRef = useRef(0);
+
   const run = useCallback(async () => {
+    const runId = ++runIdRef.current;
+    const forUser = username;
+    const isCurrent = () => runIdRef.current === runId;
+
     setError(null);
     setProgress({ stage: 'Fetching your games', detail: null, fraction: null });
 
@@ -32,11 +40,13 @@ export function useWeeklySummary(username) {
       if (games.length === 0) {
         // Deliberately not cached: the moment they play a game it should show
         // up, without them having to know a Refresh button exists.
-        setSummary({
-          ...summariseWeek([], { username }),
-          emptyReason: fetched.length > 0 ? 'variants-only' : 'no-games',
-          variantCount: fetched.length,
-        });
+        if (isCurrent()) {
+          setSummary({
+            ...summariseWeek([], { username: forUser }),
+            emptyReason: fetched.length > 0 ? 'variants-only' : 'no-games',
+            variantCount: fetched.length,
+          });
+        }
         return;
       }
 
@@ -104,8 +114,10 @@ export function useWeeklySummary(username) {
       }
 
       next = { ...next, skippedGames: skipped };
-      setSummary(next);
-      saveSummary(username, next);
+      // Always persist under the account it was computed for, even if the
+      // user has since switched away.
+      saveSummary(forUser, next);
+      if (isCurrent()) setSummary(next);
     } catch (err) {
       // A half-started engine will keep failing, so drop it and let a retry
       // build a fresh one.
@@ -113,17 +125,31 @@ export function useWeeklySummary(username) {
         engineRef.current?.quit?.();
         engineRef.current = null;
       }
-      setError(describeFailure(err, { username }));
+      if (isCurrent()) setError(describeFailure(err, { username: forUser }));
     } finally {
-      setProgress(null);
+      if (isCurrent()) setProgress(null);
     }
   }, [username]);
 
+  // Switching account has to reset this state. Leaving it alone meant the
+  // previous account's summary stayed on screen — and because it was still
+  // truthy, no fresh analysis was ever kicked off for the new one.
   useEffect(() => {
-    if (!summary) run();
-    return () => engineRef.current?.quit();
+    runIdRef.current += 1; // abandon anything in flight for the old account
+    const cached = loadSummary(username);
+    setSummary(cached);
+    setError(null);
+    setProgress(null);
+    if (!cached && username) run();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [username]);
+
+  // The engine is shared across accounts and only torn down on unmount;
+  // killing it on every switch would strand any in-flight evaluation.
+  useEffect(() => () => {
+    engineRef.current?.quit();
+    engineRef.current = null;
+  }, []);
 
   return { summary, progress, error, refresh: run };
 }

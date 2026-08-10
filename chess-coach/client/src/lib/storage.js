@@ -1,16 +1,28 @@
-// Everything the app remembers between visits, in one place.
+// Everything the app remembers between visits.
 //
-// localStorage only — there's no backend, and none of this is worth more
-// than the device it's on.
+// localStorage only — there's no backend, so a person's data never leaves
+// their own browser and no visitor can ever see another's. What localStorage
+// does NOT give you for free is more than one account on a single device:
+// one set of keys means two people sharing a browser overwrite each other.
+//
+// So every piece of user data is namespaced by username, and the device
+// separately remembers which profile is signed in. Signing out leaves that
+// profile's data intact, so switching back doesn't mean re-onboarding and
+// re-analysing from scratch.
 
-const KEYS = {
-  coach: 'chesscoach.coach',
-  username: 'chesscoach.username',
-  // Bumped when the summary's shape changes, so an older cached copy is
-  // ignored rather than read with fields that aren't there. v2 added drills, v3 added per-game rows, v4 added full move reviews, v5 added labels, evals and arrows.
-  summary: 'chesscoach.summary.v5',
-  completed: 'chesscoach.completedDrills',
+const DEVICE = {
+  activeUser: 'chesscoach.activeUser',
+  profiles: 'chesscoach.profiles',
 };
+
+// Bumped when the summary's shape changes, so an older cached copy is
+// ignored rather than read with fields that aren't there. v2 added drills,
+// v3 per-game rows, v4 full move reviews, v5 labels/evals/arrows.
+const SUMMARY_VERSION = 'v5';
+
+/** Usernames are case-insensitive on Chess.com, so keys are lowercased. */
+const profileKey = (username, name) =>
+  `chesscoach.u.${String(username).toLowerCase()}.${name}`;
 
 // Analysing a week of games takes real time on a phone, so the result is
 // cached and only recomputed when it's stale or the player asks.
@@ -33,45 +45,123 @@ function write(key, value) {
   }
 }
 
-export const loadCoach = () => read(KEYS.coach);
-export const saveCoach = (coach) => write(KEYS.coach, coach);
-
-export const loadUsername = () => read(KEYS.username);
-export const saveUsername = (name) => write(KEYS.username, name);
-
-/** Cached weekly summary, if it's for this player and still fresh. */
-export function loadSummary(username) {
-  const raw = read(KEYS.summary);
-  if (!raw) return null;
+function readJson(key, fallback) {
+  const raw = read(key);
+  if (!raw) return fallback;
   try {
-    const { username: cachedFor, savedAt, summary } = JSON.parse(raw);
-    if (cachedFor?.toLowerCase() !== username.toLowerCase()) return null;
-    if (Date.now() - savedAt > CACHE_MAX_AGE_MS) return null;
-    return summary;
+    return JSON.parse(raw);
   } catch {
-    return null;
+    return fallback;
   }
+}
+
+// ------------------------------------------------------------- profiles
+
+/** Every account set up on this device, most recently used first. */
+export function listProfiles() {
+  const list = readJson(DEVICE.profiles, []);
+  return Array.isArray(list) ? list : [];
+}
+
+function rememberProfile(username) {
+  const others = listProfiles().filter(
+    (name) => name.toLowerCase() !== username.toLowerCase()
+  );
+  write(DEVICE.profiles, JSON.stringify([username, ...others]));
+}
+
+/** Who is signed in on this device right now. */
+export const loadActiveUser = () => read(DEVICE.activeUser);
+
+export function signIn(username) {
+  write(DEVICE.activeUser, username);
+  rememberProfile(username);
+}
+
+/** Signs out but keeps the profile, so switching back is instant. */
+export function signOut() {
+  write(DEVICE.activeUser, null);
+}
+
+/** Removes a profile and everything belonging to it. */
+export function forgetProfile(username) {
+  for (const name of ['coach', `summary.${SUMMARY_VERSION}`, 'completedDrills']) {
+    write(profileKey(username, name), null);
+  }
+  write(
+    DEVICE.profiles,
+    JSON.stringify(
+      listProfiles().filter((name) => name.toLowerCase() !== username.toLowerCase())
+    )
+  );
+  if (loadActiveUser()?.toLowerCase() === username.toLowerCase()) signOut();
+}
+
+// --------------------------------------------------------- per-profile
+
+export const loadCoach = (username) =>
+  username ? read(profileKey(username, 'coach')) : null;
+
+export const saveCoach = (username, coach) =>
+  write(profileKey(username, 'coach'), coach);
+
+/** Cached weekly summary for this profile, if it's still fresh. */
+export function loadSummary(username) {
+  if (!username) return null;
+  const stored = readJson(profileKey(username, `summary.${SUMMARY_VERSION}`), null);
+  if (!stored) return null;
+  if (Date.now() - stored.savedAt > CACHE_MAX_AGE_MS) return null;
+  return stored.summary;
 }
 
 export function saveSummary(username, summary) {
-  write(KEYS.summary, JSON.stringify({ username, savedAt: Date.now(), summary }));
+  write(
+    profileKey(username, `summary.${SUMMARY_VERSION}`),
+    JSON.stringify({ savedAt: Date.now(), summary })
+  );
 }
 
-/** Drill ids the player has attempted. Survives re-analysis. */
-export function loadCompleted() {
-  try {
-    const parsed = JSON.parse(read(KEYS.completed) ?? '[]');
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
+/** Drill ids this profile has attempted. */
+export function loadCompleted(username) {
+  if (!username) return [];
+  const list = readJson(profileKey(username, 'completedDrills'), []);
+  return Array.isArray(list) ? list : [];
+}
+
+export function markCompleted(username, id) {
+  const all = loadCompleted(username);
+  if (!all.includes(id)) {
+    write(profileKey(username, 'completedDrills'), JSON.stringify([...all, id]));
   }
 }
 
-export function markCompleted(id) {
-  const all = loadCompleted();
-  if (!all.includes(id)) write(KEYS.completed, JSON.stringify([...all, id]));
-}
+// --------------------------------------------------------------- legacy
 
-export function clearAll() {
-  for (const key of Object.values(KEYS)) write(key, null);
+/**
+ * Move a pre-namespacing setup into its own profile, so an existing user
+ * stays signed in rather than being dumped back at onboarding by an upgrade.
+ */
+export function migrateLegacyProfile() {
+  const username = read('chesscoach.username');
+  if (!username) return;
+
+  const coach = read('chesscoach.coach');
+  if (coach) saveCoach(username, coach);
+
+  const summary = read(`chesscoach.summary.${SUMMARY_VERSION}`);
+  if (summary) write(profileKey(username, `summary.${SUMMARY_VERSION}`), summary);
+
+  const completed = read('chesscoach.completedDrills');
+  if (completed) write(profileKey(username, 'completedDrills'), completed);
+
+  signIn(username);
+
+  for (const key of [
+    'chesscoach.username',
+    'chesscoach.coach',
+    `chesscoach.summary.${SUMMARY_VERSION}`,
+    'chesscoach.completedDrills',
+  ]) {
+    write(key, null);
+  }
 }
