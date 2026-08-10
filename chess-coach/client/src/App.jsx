@@ -244,6 +244,8 @@ export default function App() {
           </ul>
         </section>
       )}
+
+      <footer className="footer">build {__BUILD_TIME__}</footer>
     </main>
   );
 }

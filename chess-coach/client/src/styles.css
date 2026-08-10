@@ -308,3 +308,10 @@ body {
   color: var(--muted);
   line-height: 1.4;
 }
+
+.footer {
+  margin-top: 3rem;
+  text-align: center;
+  font-size: 0.7rem;
+  color: var(--border);
+}

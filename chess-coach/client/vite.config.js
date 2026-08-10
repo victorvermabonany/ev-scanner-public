@@ -6,6 +6,14 @@ export default defineConfig({
   // Relative asset paths, so the built app works wherever it's served from —
   // the domain root, or a subfolder like /ev-scanner-public/chess/.
   base: './',
+  define: {
+    // Shown in the footer. A stale page in a phone's cache looks identical to
+    // a fresh one, so having the build time on screen makes it obvious which
+    // version is actually running.
+    __BUILD_TIME__: JSON.stringify(
+      new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC'
+    ),
+  },
   server: {
     port: 5173,
     host: true,
