@@ -9,6 +9,7 @@
     "dev:client": "npm --prefix client run dev",
     "dev:server": "npm --prefix server run dev",
     "games": "npm --prefix server run games --",
+    "analyze": "npm --prefix server run analyze --",
     "build": "npm --prefix client run build",
     "preview": "npm --prefix client run preview",
     "install:all": "npm install && npm --prefix client install && npm --prefix server install"

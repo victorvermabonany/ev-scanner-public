@@ -60,6 +60,61 @@ the full PGN). Chess.com only exposes games one month at a time, so
 `fetchRecentGames` walks monthly archives backwards from the current month
 until it has enough.
 
+## Blunder detection (Stockfish)
+
+```bash
+npm run analyze -- hikaru                 # most recent game
+npm run analyze -- hikaru 3               # 4th most recent (0-indexed)
+npm run analyze -- hikaru 0 --depth 16    # slower, more accurate
+npm run analyze -- hikaru 0 --threshold 1.5
+npm run analyze -- hikaru 0 --all         # print every move, not just blunders
+```
+
+### How the engine is found
+
+`server/engine.js` tries, in order:
+
+1. `STOCKFISH_PATH`, if set.
+2. A native binary at `/usr/games/stockfish`, `/usr/local/bin/stockfish`, or
+   `/usr/bin/stockfish` (`apt install stockfish` puts it in the first).
+3. The `stockfish` npm package — a WebAssembly build, roughly 2x slower but
+   it installs with npm and runs anywhere Node does, including on hosts where
+   you can't install system packages.
+
+Nothing needs configuring; native is just faster if it's there.
+
+### How a blunder is decided
+
+Every position in the game is evaluated once (a game of N moves is N+1
+positions — the position after move *i* is the position before move *i+1*,
+so nothing is evaluated twice).
+
+UCI reports scores from the perspective of whoever is to move, which makes
+raw evals impossible to compare across plies. `engine.js` normalises every
+score to **White's perspective**, then `analysis.js` flips the sign for
+Black's moves, so "loss" always means *the player who moved made their own
+position worse*. A loss of 2.5 pawns or more is flagged.
+
+Two details that stop false positives:
+
+- **Evals are clamped to ±10 pawns before measuring a swing.** Otherwise
+  going from +9 to +30 in a completely won position — or mate-in-5 to
+  mate-in-3 — would register as a huge swing and every move in a won endgame
+  would look like a blunder.
+- **Mate scores are compared by sign, not distance**, so "I'm mating" ->
+  "I'm getting mated" is correctly a blunder, while mate-in-6 -> mate-in-4
+  is not.
+
+Positions where the game has already ended (checkmate, stalemate) are scored
+directly rather than asked of the engine, which has no move to search there.
+
+### A caveat on repeatability
+
+Stockfish's evaluation of the same position can shift slightly between runs,
+because its hash table carries state from the positions analysed before it.
+Moves that land very close to the threshold may flag on one run and not the
+next. Raising `--depth` makes results steadier.
+
 ## Build
 
 ```bash
@@ -107,8 +162,11 @@ chess-coach/
 └── server/
     ├── index.js          Express app and routes
     ├── chesscom.js       Chess.com API client
+    ├── engine.js         Stockfish UCI wrapper
+    ├── analysis.js       move-by-move blunder detection
     └── scripts/
-        └── fetch-games.js  CLI for `npm run games`
+        ├── fetch-games.js   CLI for `npm run games`
+        └── analyze-game.js  CLI for `npm run analyze`
 ```
 
 Add new UI as components under `client/src/`, and new endpoints as routes in

@@ -6,9 +6,12 @@
   "scripts": {
     "dev": "node --watch index.js",
     "start": "node index.js",
-    "games": "node scripts/fetch-games.js"
+    "games": "node scripts/fetch-games.js",
+    "analyze": "node scripts/analyze-game.js"
   },
   "dependencies": {
-    "express": "^4.21.2"
+    "chess.js": "^1.4.0",
+    "express": "^4.21.2",
+    "stockfish": "^18.0.8"
   }
 }
