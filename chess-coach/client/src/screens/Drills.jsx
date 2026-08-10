@@ -4,6 +4,7 @@ import { CATEGORY_LABELS } from '../../../shared/classify.js';
 import { formatEval } from '../../../shared/analysis.js';
 import { Board } from '../components/Board.jsx';
 import { loadCompleted, markCompleted } from '../lib/storage.js';
+import { track } from '../lib/analytics.js';
 
 const PIECE_NAMES = { p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen', k: 'king' };
 
@@ -99,7 +100,7 @@ function Drill({ drill, index, total, onDone, onBack }) {
     const correct = move.from === bestParsed.from && move.to === bestParsed.to;
 
     setAttempt({ san: move.san, correct, from, to });
-    onDone(drill.id); // "completed" means attempted, right or wrong
+    onDone(drill.id, correct); // "completed" means attempted, right or wrong
   }
 
   const youAre = drill.color === 'w' ? 'White' : 'Black';
@@ -163,7 +164,8 @@ export default function Drills({ summary, onBack }) {
   const focus = summary.topCategory;
   const drills = (summary.drills ?? []).filter((drill) => drill.category === focus);
 
-  function complete(id) {
+  function complete(id, correct) {
+    track('Drill completed', { result: correct ? 'correct' : 'incorrect' });
     markCompleted(summary.username, id);
     setCompleted((prev) => (prev.includes(id) ? prev : [...prev, id]));
   }

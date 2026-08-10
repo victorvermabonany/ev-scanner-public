@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Onboarding from './screens/Onboarding.jsx';
 import Home from './screens/Home.jsx';
 import Report from './screens/Report.jsx';
@@ -7,6 +7,7 @@ import Games from './screens/Games.jsx';
 import GameReview from './screens/GameReview.jsx';
 import { CoachMark } from './components/CoachMark.jsx';
 import { useWeeklySummary } from './lib/useWeeklySummary.js';
+import { trackVisit } from './lib/analytics.js';
 import {
   listProfiles,
   loadActiveUser,
@@ -65,6 +66,11 @@ export default function App() {
   const [view, setView] = useState('home');
   const [openGame, setOpenGame] = useState(null);
   const [gameCount, setGameCount] = useState(() => loadGameCount(loadActiveUser()));
+
+  // Page visit, and a return event if this browser was here on an earlier day.
+  useEffect(() => {
+    trackVisit();
+  }, []);
 
   const { summary, progress, error, refresh, msPerGame } = useWeeklySummary(
     username ?? '',

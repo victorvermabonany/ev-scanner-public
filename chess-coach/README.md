@@ -67,6 +67,38 @@ git add ../chess && git commit -m "Update site" && git push
 Committing build output isn't ideal practice, but it's what lets Pages serve
 this straight off `main` with no CI workflow and no settings to change.
 
+## Analytics
+
+Off by default. Nothing is loaded and nothing is sent until a domain is set,
+so the app makes no third-party requests out of the box.
+
+To switch it on, build with your Plausible domain:
+
+```bash
+VITE_ANALYTICS_DOMAIN=yourdomain.com npm run build:pages
+```
+
+Events, chosen to answer "where do people drop off, and do they come back":
+
+| Event | When |
+|---|---|
+| pageview | automatic, from the script |
+| `Username entered` | a username passed validation |
+| `Analysis started` | with the game count chosen |
+| `Analysis completed` | with the count, and whether any game was skipped |
+| `Analysis failed` | with the failure headline |
+| `Drill completed` | with correct / incorrect |
+| `Returning visit` | this browser was here on an earlier day |
+
+The Chess.com username, game URLs and error details are deliberately never
+sent — only event names and coarse buckets. Return visits work off a single
+locally stored date rather than a cookie or an ID, so they can tell "this
+browser was here before" and nothing more.
+
+`client/src/lib/analytics.js` is the only file that knows the provider;
+swapping to GoatCounter or Simple Analytics means changing the script URL
+and the send call.
+
 ## Blunder detection
 
 In the browser: type a Chess.com username, pick a game, tap Analyse.

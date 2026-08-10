@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { fetchRecentGames } from '../../../shared/chesscom.js';
 import { describeFailure } from './describeFailure.js';
+import { track } from './analytics.js';
 import { analyseGame } from '../../../shared/analysis.js';
 import { summariseWeek } from '../../../shared/weekly.js';
 import { BrowserEngine } from './engine.js';
@@ -36,6 +37,7 @@ export function useWeeklySummary(username, gameCount = DEFAULT_GAME_COUNT) {
     const isCurrent = () => runIdRef.current === runId;
 
     setError(null);
+    track('Analysis started', { games: String(count) });
     setProgress({ stage: 'Fetching your games', detail: null, fraction: null });
 
     try {
@@ -133,6 +135,11 @@ export function useWeeklySummary(username, gameCount = DEFAULT_GAME_COUNT) {
         saveMsPerGame((Date.now() - startedAt) / entries.length);
       }
 
+      track('Analysis completed', {
+        games: String(entries.length),
+        skipped: skipped > 0 ? 'yes' : 'no',
+      });
+
       next = { ...next, skippedGames: skipped, analysedCount: count };
       // Always persist under the account it was computed for, even if the
       // user has since switched away.
@@ -145,7 +152,10 @@ export function useWeeklySummary(username, gameCount = DEFAULT_GAME_COUNT) {
         engineRef.current?.quit?.();
         engineRef.current = null;
       }
-      if (isCurrent()) setError(describeFailure(err, { username: forUser }));
+      const failure = describeFailure(err, { username: forUser });
+      // The headline only — never the raw message, which can carry a URL.
+      track('Analysis failed', { reason: failure.title });
+      if (isCurrent()) setError(failure);
     } finally {
       if (isCurrent()) setProgress(null);
     }

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { COACHES } from '../../../shared/coach.js';
 import { verifyPlayer, ChessComError } from '../../../shared/chesscom.js';
 import { CoachMark } from '../components/CoachMark.jsx';
+import { track } from '../lib/analytics.js';
 import { loadCoach } from '../lib/storage.js';
 
 /** A remembered profile keeps its coach, so the avatar matches. */
@@ -53,6 +54,8 @@ export default function Onboarding({
         return;
       }
 
+      // The username itself is never sent — only that this step succeeded.
+      track('Username entered', { coach });
       onDone({ coach, username: player.username });
     } catch (err) {
       setError(
