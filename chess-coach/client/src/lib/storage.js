@@ -7,8 +7,8 @@ const KEYS = {
   coach: 'chesscoach.coach',
   username: 'chesscoach.username',
   // Bumped when the summary's shape changes, so an older cached copy is
-  // ignored rather than read with fields that aren't there. v2 added drills.
-  summary: 'chesscoach.summary.v2',
+  // ignored rather than read with fields that aren't there. v2 added drills, v3 added per-game rows.
+  summary: 'chesscoach.summary.v3',
   completed: 'chesscoach.completedDrills',
 };
 

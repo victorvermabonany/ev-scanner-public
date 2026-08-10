@@ -1,5 +1,6 @@
 import { COACHES, writeReport } from '../../../shared/coach.js';
 import { CATEGORY_LABELS } from '../../../shared/classify.js';
+import { categoryBand } from '../../../shared/score.js';
 import { CoachMark } from '../components/CoachMark.jsx';
 
 export default function Report({ coach, summary, onBack, onOpenDrills }) {
@@ -40,20 +41,30 @@ export default function Report({ coach, summary, onBack, onOpenDrills }) {
           <p className="rep__empty">No blunders to break down.</p>
         ) : (
           <ul className="bars">
-            {rows.map(([category, count]) => (
-              <li key={category} className="bar">
-                <div className="bar__top">
-                  <span className="bar__label">{CATEGORY_LABELS[category]}</span>
-                  <span className="bar__count">{count}</span>
-                </div>
-                <div className="bar__track">
-                  <div
-                    className={`bar__fill bar__fill--${category}`}
-                    style={{ width: `${largest ? (count / largest) * 100 : 0}%` }}
-                  />
-                </div>
-              </li>
-            ))}
+            {rows.map(([category, count]) => {
+              // Same red/amber/green scale as the ring: a category that
+              // dominates the week reads urgent, a minor one recedes.
+              const band = categoryBand(count, summary.blunders);
+              return (
+                <li key={category} className={`bar bar--${band}`}>
+                  <div className="bar__top">
+                    <span className="bar__label">{CATEGORY_LABELS[category]}</span>
+                    <span className="bar__count">
+                      {count}
+                      <span className="bar__share">
+                        {Math.round((count / summary.blunders) * 100)}%
+                      </span>
+                    </span>
+                  </div>
+                  <div className="bar__track">
+                    <div
+                      className="bar__fill"
+                      style={{ width: `${largest ? (count / largest) * 100 : 0}%` }}
+                    />
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>

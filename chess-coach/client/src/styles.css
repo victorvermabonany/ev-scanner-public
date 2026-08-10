@@ -1,19 +1,50 @@
-:root {
-  --bg: #0f1012;
-  --surface: #16181c;
-  --border: #23262b;
-  --text: #ededed;
-  --muted: #878c94;
-  --accent: #7aa2f7;
-  --bad: #f2777a;
+/* Vendored latin subsets — see src/fonts/README.md. No external requests. */
+@font-face {
+  font-family: 'Newsreader';
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url('./fonts/newsreader-latin.woff2') format('woff2-variations');
+}
 
-  --mentor: #7ec9a5;
-  --drill: #f2777a;
-  --analyst: #7aa2f7;
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+  src: url('./fonts/jetbrains-mono-latin.woff2') format('woff2-variations');
+}
+
+:root {
+  --bg: #000000;
+  --ink: #ffffff;
+
+  /* Three-tier scale. Green and brick are the originals; amber is the new
+     middle. The -lift variants are the readable-on-black versions used for
+     strokes and text, since the base tones are too dark against true black. */
+  --green: #3d5a40;
+  --green-lift: #64c07a;
+  --amber: #b5893d;
+  --amber-lift: #e0a83c;
+  --brick: #a34a3d;
+  --brick-lift: #e05c46;
+
+  --ink-70: rgba(255, 255, 255, 0.68);
+  --ink-45: rgba(255, 255, 255, 0.45);
+  --ink-28: rgba(255, 255, 255, 0.26);
+
+  /* Hairlines instead of cards — the whole layout leans on these. */
+  --rule: rgba(255, 255, 255, 0.13);
+  --rule-strong: rgba(255, 255, 255, 0.26);
+
+  --ring-track: rgba(255, 255, 255, 0.09);
+  --panel: #0b0b0b;
+
+  --serif: 'Newsreader', Georgia, 'Times New Roman', serif;
+  --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
   color-scheme: dark;
-  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
-    Helvetica, Arial, sans-serif;
+  font-family: var(--serif);
 }
 
 * {
@@ -29,17 +60,42 @@ body,
 body {
   margin: 0;
   background: var(--bg);
-  color: var(--text);
+  color: var(--ink);
   -webkit-font-smoothing: antialiased;
+  font-synthesis-weight: none;
 }
 
-/* One screen, no scrolling: dvh so mobile browser chrome doesn't push
-   content out of view the way vh does. */
+/* Numbers, notation, labels — anything that should read as a scoresheet. */
+.score__value,
+.score__row dd,
+.score__row dt,
+.rep__period,
+.rep__meta,
+.bar__count,
+.tick,
+.drillrow__meta,
+.drillrow__go,
+.home__user,
+.footer,
+.strip,
+.eyebrow,
+.input,
+.btn,
+.linkbtn,
+.insight__kicker,
+.rep__h2,
+.verdict__head,
+.loading__count,
+.loading__note {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
 .screen {
   min-height: 100dvh;
   max-width: 30rem;
   margin: 0 auto;
-  padding: 1.25rem 1.25rem 0.5rem;
+  padding: 1.5rem 1.5rem 0.75rem;
   display: flex;
   flex-direction: column;
 }
@@ -47,27 +103,39 @@ body {
 .screen--center {
   justify-content: center;
   align-items: center;
-  gap: 1rem;
+  gap: 1.25rem;
   text-align: center;
+}
+
+/* Small uppercase mono label — the scoresheet's column heading. */
+.eyebrow {
+  font-size: 0.66rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-45);
+  font-weight: 500;
 }
 
 .title {
   margin: 0;
-  font-size: clamp(1.9rem, 7vw, 2.6rem);
-  font-weight: 600;
-  letter-spacing: -0.02em;
+  font-family: var(--serif);
+  font-size: clamp(2.1rem, 8vw, 3rem);
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  line-height: 1.05;
 }
 
 .subtitle {
-  margin: 0.35rem 0 0;
-  color: var(--muted);
-  font-size: 0.92rem;
+  margin: 0.5rem 0 0;
+  color: var(--ink-45);
+  font-size: 1rem;
+  font-style: italic;
 }
 
 /* ---------------------------------------------------------- onboarding */
 
 .onboard__head {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
 }
 
 .coaches {
@@ -75,113 +143,129 @@ body {
   margin: 0;
   padding: 0;
   width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
+  border-top: 1px solid var(--rule);
 }
 
 .coachcard {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 0.85rem;
-  padding: 0.9rem 1rem;
+  gap: 1rem;
+  padding: 1.1rem 0.25rem;
   text-align: left;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
   color: inherit;
   font: inherit;
   cursor: pointer;
 }
 
-.coachcard:hover,
-.coachcard:focus-visible {
-  border-color: var(--accent);
-  outline: none;
+.coachcard:hover .coachcard__name,
+.coachcard:focus-visible .coachcard__name {
+  color: var(--green-lift);
 }
 
 .coachcard__text {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: 0.25rem;
   min-width: 0;
 }
 
 .coachcard__name {
-  font-weight: 600;
-  font-size: 0.98rem;
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 1.2rem;
+  transition: color 0.15s;
 }
 
 .coachcard__pitch {
-  font-size: 0.8rem;
-  color: var(--muted);
-  line-height: 1.35;
+  font-size: 0.85rem;
+  color: var(--ink-45);
+  line-height: 1.45;
 }
 
 .onboard__form {
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 1rem;
 }
 
 .onboard__chosen {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
   justify-content: center;
-  font-size: 0.9rem;
-  color: var(--muted);
-  margin-bottom: 0.25rem;
+  font-size: 0.95rem;
+  color: var(--ink-45);
 }
 
+/* Underline, not a box. */
 .input {
   width: 100%;
-  padding: 0.75rem 0.9rem;
-  font-size: 1rem;
-  color: var(--text);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
+  padding: 0.6rem 0.2rem;
+  font-size: 1.05rem;
+  color: var(--ink);
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--rule-strong);
+  border-radius: 0;
   text-align: center;
+  letter-spacing: 0.02em;
+}
+
+.input::placeholder {
+  color: var(--ink-28);
 }
 
 .input:focus {
   outline: none;
-  border-color: var(--accent);
+  border-bottom-color: var(--green-lift);
 }
 
 .btn {
-  padding: 0.75rem 1.1rem;
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: #10131a;
-  background: var(--accent);
-  border: none;
-  border-radius: 10px;
+  padding: 0.7rem 1.2rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: none;
+  border: 1px solid var(--rule-strong);
+  border-radius: 0;
   cursor: pointer;
 }
 
+.btn:hover:not(:disabled) {
+  border-color: var(--green-lift);
+  color: var(--green-lift);
+}
+
 .btn:disabled {
-  opacity: 0.4;
+  opacity: 0.35;
   cursor: default;
 }
 
 .linkbtn {
   background: none;
-  border: none;
+  border: 0;
   padding: 0;
-  color: var(--accent);
-  font: inherit;
-  font-size: 0.85rem;
+  color: var(--ink-70);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   cursor: pointer;
+}
+
+.linkbtn:hover {
+  color: var(--ink);
 }
 
 /* --------------------------------------------------------------- home */
 
 .home {
-  gap: 1rem;
+  gap: 0;
 }
 
 .home__head {
@@ -189,172 +273,245 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--rule);
 }
 
 .home__coach {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.7rem;
   background: none;
-  border: none;
+  border: 0;
   padding: 0;
   color: inherit;
-  font: inherit;
   cursor: pointer;
 }
 
 .home__coachname {
-  font-weight: 600;
-  font-size: 1rem;
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 1.15rem;
 }
 
 .home__user {
-  font-size: 0.82rem;
-  color: var(--muted);
+  font-size: 0.7rem;
+  color: var(--ink-45);
+  letter-spacing: 0.04em;
 }
 
-/* score block — the one thing the eye should land on first. It takes the
-   slack in the column so the screen stays balanced instead of piling
-   everything at the top with a gap underneath. */
+/* The score, set as a scoresheet entry rather than a meter. */
 .score {
   flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  text-align: center;
-  padding: 0.5rem 0;
+  padding: 0.5rem 0 1rem;
 }
 
-.score__label {
-  margin: 0;
-  font-size: 0.78rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted);
+.score__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
 }
 
-.score__value {
-  margin: 0.2rem 0 0;
-  font-size: clamp(4rem, 22vw, 6rem);
-  font-weight: 700;
+/* ring hero */
+.score__ring {
+  display: flex;
+  justify-content: center;
+  padding: 1.1rem 0 0.4rem;
+}
+
+.ring {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: clamp(122px, 44vmin, 190px);
+  aspect-ratio: 1;
+}
+
+.ring svg {
+  display: block;
+}
+
+.ring__fill {
+  transition: stroke-dasharray 0.5s ease;
+}
+
+.ring__fill--high { stroke: var(--green-lift); }
+.ring__fill--mid  { stroke: var(--amber-lift); }
+.ring__fill--low  { stroke: var(--brick-lift); }
+
+.ring__inner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+}
+
+.ring__value {
+  font-family: var(--mono);
+  font-size: clamp(2.1rem, 11vmin, 3.4rem);
+  font-weight: 600;
   line-height: 1;
   letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
 }
 
-.score__unit {
-  margin: 0.25rem 0 0;
-  color: var(--muted);
-  font-size: 0.9rem;
-}
+.ring__value--high { color: var(--green-lift); }
+.ring__value--mid  { color: var(--amber-lift); }
+.ring__value--low  { color: var(--brick-lift); }
 
-.score__row {
-  display: flex;
-  justify-content: center;
-  gap: 1.75rem;
-  margin: 1rem 0 0;
-}
-
-.score__row dt {
-  font-size: 0.7rem;
-  letter-spacing: 0.06em;
+.ring__caption {
+  font-family: var(--mono);
+  font-size: clamp(0.5rem, 2.4vmin, 0.6rem);
+  letter-spacing: 0.09em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--ink-45);
 }
 
-.score__row dd {
-  margin: 0.15rem 0 0;
-  font-size: 1.05rem;
-  font-weight: 600;
+/* The notation strip: one ruled column per game, like a scoresheet. */
+.strip {
+  margin-top: 0.9rem;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  display: flex;
+}
+
+.strip__cell {
+  flex: 1;
+  padding: 0.55rem 0.15rem 0.6rem;
+  text-align: center;
+  border-right: 1px solid var(--rule);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  align-items: center;
+  color: inherit;
+  text-decoration: none;
+}
+
+.strip__cell:last-child {
+  border-right: 0;
+}
+
+.strip__no {
+  font-size: 0.58rem;
+  color: var(--ink-28);
+  letter-spacing: 0.06em;
+}
+
+.strip__result {
+  font-size: 0.7rem;
+  color: var(--ink-45);
+  letter-spacing: -0.02em;
+}
+
+.strip__result--win {
+  color: var(--green-lift);
+}
+
+.strip__marks {
+  display: flex;
+  gap: 2px;
+  justify-content: center;
+  min-height: 5px;
+  align-items: center;
+}
+
+.mark {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--brick);
+}
+
+.mark--clean {
+  width: 8px;
+  height: 1px;
+  border-radius: 0;
+  background: var(--green-lift);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin: 0.9rem 0 0;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+}
+
+.stats__cell {
+  padding: 0.55rem 0.5rem 0.6rem;
+  text-align: center;
+  border-right: 1px solid var(--rule);
+}
+
+.stats__cell:last-child {
+  border-right: 0;
+}
+
+.stats dt {
+  font-family: var(--mono);
+  font-size: 0.53rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ink-45);
+}
+
+.stats dd {
+  margin: 0.2rem 0 0;
+  font-family: var(--mono);
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
 }
 
-/* headline insight */
+.stats__of {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--ink-45);
+}
+
+/* Headline insight — a rule and text, no card. */
 .insight {
-  padding: 1rem 1.1rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  padding: 1.1rem 0 1.2rem;
+  border-top: 1px solid var(--rule);
 }
 
 .insight__kicker {
-  margin: 0;
-  font-size: 0.78rem;
-  letter-spacing: 0.06em;
+  margin: 0 0 0.5rem;
+  font-size: 0.64rem;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--accent);
-  font-weight: 600;
+  color: var(--brick-lift);
+  font-weight: 500;
 }
 
 .insight__line {
-  margin: 0.45rem 0 0;
-  font-size: 0.95rem;
-  line-height: 1.5;
+  margin: 0;
+  font-size: 1.02rem;
+  line-height: 1.55;
 }
 
 .home__actions {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.75rem;
+  padding: 0.9rem 0;
+  border-top: 1px solid var(--rule);
 }
 
-.report {
-  margin: 0;
-  font-size: 0.88rem;
-  line-height: 1.55;
-  color: var(--muted);
-}
+/* ------------------------------------------------------------- report */
 
-/* ------------------------------------------------------------ states */
-
-.loading__stage {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-.loading__count,
-.loading__note {
-  margin: 0;
-  font-size: 0.82rem;
-  color: var(--muted);
-}
-
-.progress__track {
-  width: min(16rem, 80%);
-  height: 4px;
-  background: var(--border);
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.progress__bar {
-  height: 100%;
-  background: var(--accent);
-  transition: width 0.2s linear;
-}
-
-.error {
-  padding: 0.8rem 1rem;
-  background: rgba(242, 119, 122, 0.1);
-  border: 1px solid rgba(242, 119, 122, 0.3);
-  border-radius: 10px;
-  color: var(--bad);
-  font-size: 0.9rem;
-}
-
-.footer {
-  margin-top: auto;
-  padding-top: 0.75rem;
-  text-align: center;
-  font-size: 0.68rem;
-  color: var(--border);
-}
-
-/* ------------------------------------------------------- report screen */
-
-/* Unlike home, this one is allowed to scroll — it's a report. */
-.report-screen {
+.report-screen,
+.drills,
+.drill {
   gap: 1.15rem;
 }
 
@@ -362,195 +519,202 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid var(--rule);
 }
 
 .rep__period {
-  font-size: 0.78rem;
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
+  font-size: 0.68rem;
+  color: var(--ink-45);
+  letter-spacing: 0.04em;
 }
 
 .rep__coach {
   display: flex;
   align-items: center;
-  gap: 0.7rem;
+  gap: 0.8rem;
 }
 
 .rep__coachname {
   margin: 0;
-  font-weight: 600;
-  font-size: 1.05rem;
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 1.35rem;
 }
 
 .rep__meta {
-  margin: 0.1rem 0 0;
-  font-size: 0.8rem;
-  color: var(--muted);
+  margin: 0.2rem 0 0;
+  font-size: 0.68rem;
+  color: var(--ink-45);
+  letter-spacing: 0.04em;
 }
 
 .rep__text {
   margin: 0;
-  padding: 1rem 1.1rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  font-size: 0.95rem;
-  line-height: 1.6;
+  padding: 0;
+  font-size: 1.05rem;
+  line-height: 1.65;
 }
 
 .rep__h2 {
-  margin: 0 0 0.75rem;
-  font-size: 0.78rem;
-  letter-spacing: 0.08em;
+  margin: 0 0 0.9rem;
+  font-size: 0.64rem;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--muted);
-  font-weight: 600;
+  color: var(--ink-45);
+  font-weight: 500;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--rule);
 }
 
 .rep__empty,
 .rep__worst {
   margin: 0;
-  font-size: 0.85rem;
-  color: var(--muted);
+  font-size: 0.9rem;
+  color: var(--ink-45);
+  font-style: italic;
 }
 
 .rep__worst a {
-  color: var(--accent);
+  color: var(--ink-70);
 }
 
-/* category breakdown */
+/* Category breakdown as ruled rows, not bars in boxes. */
 .bars {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
+}
+
+.bar {
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.bar:first-child {
+  border-top: 1px solid var(--rule);
 }
 
 .bar__top {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.45rem;
 }
 
 .bar__label {
-  font-size: 0.9rem;
+  font-size: 1rem;
 }
 
 .bar__count {
-  font-size: 0.9rem;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--ink-70);
 }
 
 .bar__track {
-  height: 6px;
-  background: var(--border);
-  border-radius: 3px;
-  overflow: hidden;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .bar__fill {
   height: 100%;
-  border-radius: 3px;
-  background: var(--muted);
+  background: var(--ink-28);
+  transition: width 0.4s ease;
 }
 
-.bar__fill--hanging_piece  { background: #f2777a; }
-.bar__fill--missed_tactic  { background: #7aa2f7; }
-.bar__fill--king_safety    { background: #e0af68; }
-.bar__fill--time_trouble   { background: #bb9af7; }
-.bar__fill--unclassified   { background: #4b515a; }
+/* Same scale as the ring: dominant category urgent, minor ones recede. */
+.bar--low  .bar__fill { background: var(--brick-lift); }
+.bar--mid  .bar__fill { background: var(--amber-lift); }
+.bar--high .bar__fill { background: var(--green-lift); }
 
-/* --------------------------------------------------------- drill screens */
+.bar--low  .bar__count { color: var(--brick-lift); }
+.bar--mid  .bar__count { color: var(--amber-lift); }
+.bar--high .bar__count { color: var(--green-lift); }
 
-.drills,
-.drill {
-  gap: 1.1rem;
+.bar__share {
+  margin-left: 0.5rem;
+  font-size: 0.7rem;
+  color: var(--ink-45);
 }
+
+/* -------------------------------------------------------------- drills */
 
 .drills__title {
   margin: 0;
-  font-size: 1.6rem;
-  font-weight: 600;
-  letter-spacing: -0.02em;
+  font-family: var(--serif);
+  font-size: 2rem;
+  font-weight: 400;
+  letter-spacing: -0.015em;
 }
 
 .drills__sub {
-  margin: 0.2rem 0 0;
-  font-size: 0.88rem;
-  color: var(--muted);
+  margin: 0.3rem 0 0;
+  font-size: 0.95rem;
+  color: var(--ink-45);
+  font-style: italic;
 }
 
 .drilllist {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
+  border-top: 1px solid var(--rule);
 }
 
 .drillrow {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 0.8rem;
-  padding: 0.75rem 0.9rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
+  gap: 0.9rem;
+  padding: 0.9rem 0.15rem;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
   color: inherit;
   font: inherit;
   text-align: left;
   cursor: pointer;
 }
 
-.drillrow:hover {
-  border-color: var(--accent);
+.drillrow:hover .drillrow__title {
+  color: var(--green-lift);
 }
 
 .tick {
   flex: none;
-  width: 1.6rem;
-  height: 1.6rem;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  border: 1px solid var(--border);
-  font-size: 0.78rem;
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
+  width: 1.5rem;
+  font-size: 0.7rem;
+  color: var(--ink-28);
+  letter-spacing: 0.04em;
 }
 
 .tick--on {
-  background: rgba(126, 201, 165, 0.15);
-  border-color: rgba(126, 201, 165, 0.5);
-  color: var(--mentor);
+  color: var(--green-lift);
 }
 
 .drillrow__text {
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
+  gap: 0.15rem;
   min-width: 0;
   flex: 1;
 }
 
 .drillrow__title {
-  font-size: 0.92rem;
-  font-weight: 500;
+  font-size: 1rem;
+  transition: color 0.15s;
 }
 
 .drillrow__meta {
-  font-size: 0.76rem;
-  color: var(--muted);
+  font-size: 0.66rem;
+  color: var(--ink-45);
+  letter-spacing: 0.04em;
 }
 
 .drillrow__go {
-  color: var(--muted);
+  color: var(--ink-28);
+  font-size: 0.8rem;
 }
 
 /* board */
@@ -559,9 +723,7 @@ body {
   grid-template-columns: repeat(8, 1fr);
   width: 100%;
   aspect-ratio: 1;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid var(--border);
+  border: 1px solid var(--rule-strong);
 }
 
 .sq {
@@ -571,88 +733,88 @@ body {
   padding: 0;
   border: none;
   cursor: pointer;
-  font-size: clamp(1.4rem, 7vw, 2.1rem);
+  font-size: clamp(1.4rem, 7.2vw, 2.2rem);
   line-height: 1;
 }
 
-.sq--light { background: #4a515b; }
-.sq--dark  { background: #343a42; }
-.sq--last  { background: #4d5340; }
-.sq--from  { background: #5b6470; box-shadow: inset 0 0 0 2px var(--accent); }
+.sq--light { background: #262626; }
+.sq--dark  { background: #161616; }
+.sq--last  { background: #2c2a22; }
+.sq--from  { box-shadow: inset 0 0 0 2px var(--green-lift); }
 
 .sq--target::after {
   content: '';
   position: absolute;
   inset: 0;
-  box-shadow: inset 0 0 0 2px rgba(122, 162, 247, 0.7);
-  border-radius: 2px;
+  box-shadow: inset 0 0 0 1px rgba(100, 192, 122, 0.75);
 }
 
 .sq:disabled {
   cursor: default;
 }
 
-/* One glyph set, recoloured — consistent shapes on every platform. */
 .piece {
   pointer-events: none;
   user-select: none;
 }
 
 .piece--w {
-  color: #f5f7fa;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
 }
 
 .piece--b {
-  color: #15181d;
-  text-shadow: 0 0 2px rgba(255, 255, 255, 0.3);
+  color: #0a0a0a;
+  text-shadow: 0 0 1px rgba(255, 255, 255, 0.4);
 }
 
 .dot {
-  width: 26%;
-  height: 26%;
+  width: 22%;
+  height: 22%;
   border-radius: 50%;
-  background: rgba(122, 162, 247, 0.55);
+  background: rgba(100, 192, 122, 0.6);
 }
 
 .drill__prompt {
   margin: 0;
-  font-size: 1rem;
-  font-weight: 600;
+  font-family: var(--serif);
+  font-size: 1.2rem;
+  font-weight: 400;
   text-align: center;
 }
 
 .drill__hint {
   margin: 0;
-  font-size: 0.8rem;
-  color: var(--muted);
+  font-size: 0.85rem;
+  color: var(--ink-28);
   text-align: center;
+  font-style: italic;
 }
 
+/* Verdict: a coloured rule and text, not a tinted box. */
 .verdict {
-  padding: 0.85rem 1rem;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: var(--surface);
+  padding: 0.9rem 0 0;
+  border-top: 2px solid var(--rule);
 }
 
-.verdict--good { border-color: rgba(126, 201, 165, 0.45); }
-.verdict--bad  { border-color: rgba(242, 119, 122, 0.4); }
+.verdict--good { border-top-color: var(--green); }
+.verdict--bad  { border-top-color: var(--brick); }
 
 .verdict__head {
   margin: 0;
-  font-size: 0.92rem;
-  font-weight: 600;
+  font-size: 0.76rem;
+  letter-spacing: 0.03em;
+  line-height: 1.55;
 }
 
-.verdict--good .verdict__head { color: var(--mentor); }
-.verdict--bad  .verdict__head { color: var(--bad); }
+.verdict--good .verdict__head { color: var(--green-lift); }
+.verdict--bad  .verdict__head { color: var(--brick-lift); }
 
 .verdict__why {
-  margin: 0.4rem 0 0;
-  font-size: 0.84rem;
-  line-height: 1.5;
-  color: var(--muted);
+  margin: 0.55rem 0 0;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--ink-70);
 }
 
 .drill__actions {
@@ -660,11 +822,109 @@ body {
   justify-content: space-between;
   align-items: center;
   margin-top: auto;
-  padding-bottom: 0.5rem;
+  padding: 0.9rem 0;
+  border-top: 1px solid var(--rule);
 }
 
-.btn--quiet {
-  background: transparent;
-  color: var(--accent);
-  border: 1px solid var(--border);
+/* ------------------------------------------------------------- states */
+
+.loading__stage {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 1.25rem;
+  font-weight: 400;
+}
+
+.loading__count,
+.loading__note {
+  margin: 0;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  color: var(--ink-45);
+}
+
+.progress__track {
+  width: min(16rem, 80%);
+  height: 1px;
+  background: var(--ink-28);
+}
+
+.progress__bar {
+  height: 3px;
+  margin-top: -1px;
+  background: var(--green-lift);
+  transition: width 0.2s linear;
+}
+
+.error {
+  padding: 0.9rem 0;
+  border-top: 2px solid var(--brick);
+  border-bottom: 1px solid var(--rule);
+  color: var(--brick-lift);
+  font-size: 0.95rem;
+}
+
+.footer {
+  margin-top: auto;
+  padding-top: 0.75rem;
+  text-align: center;
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  color: var(--ink-28);
+}
+
+
+/* Short screens (small phones in particular): the home screen must still fit
+   without scrolling, so the vertical rhythm compresses rather than the
+   content being cut. */
+@media (max-height: 720px) {
+  .screen {
+    padding: 1rem 1.25rem 0.5rem;
+  }
+
+  .home__head {
+    padding-bottom: 0.6rem;
+  }
+
+  .score {
+    padding: 0.25rem 0 0.5rem;
+  }
+
+  .score__ring {
+    padding: 0.5rem 0 0.25rem;
+  }
+
+  .stats {
+    margin-top: 0.6rem;
+  }
+
+  .stats__cell {
+    padding: 0.4rem 0.35rem 0.45rem;
+  }
+
+  .strip {
+    margin-top: 0.6rem;
+  }
+
+  .strip__cell {
+    padding: 0.4rem 0.1rem 0.45rem;
+    gap: 0.25rem;
+  }
+
+  .insight {
+    padding: 0.7rem 0 0.8rem;
+  }
+
+  .insight__line {
+    font-size: 0.92rem;
+    line-height: 1.45;
+  }
+
+  .home__actions {
+    padding: 0.6rem 0;
+  }
+
+  .footer {
+    padding-top: 0.4rem;
+  }
 }

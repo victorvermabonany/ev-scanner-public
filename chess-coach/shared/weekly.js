@@ -52,6 +52,9 @@ export function summariseWeek(entries, { username, now = new Date(), days = 7 } 
   const byTimeClass = {};
   const record = { win: 0, loss: 0, draw: 0 };
   const drills = [];
+  // One row per game, oldest first — the raw material for a scoresheet-style
+  // strip, which needs each game individually rather than a total.
+  const perGame = [];
 
   let moves = 0;
   let blunders = 0;
@@ -96,7 +99,18 @@ export function summariseWeek(entries, { username, now = new Date(), days = 7 } 
     byTimeClass[timeClass].games += 1;
     byTimeClass[timeClass].blunders += own.length;
 
-    if (side) record[outcomeFor(game, side)] += 1;
+    const outcome = side ? outcomeFor(game, side) : null;
+    if (outcome) record[outcome] += 1;
+
+    perGame.push({
+      blunders: own.length,
+      outcome, // 'win' | 'loss' | 'draw' | null
+      color: side, // 'w' | 'b'
+      opponent: side === 'w' ? game.black?.username : game.white?.username,
+      timeClass,
+      url: game.url,
+      playedAt: new Date(game.end_time * 1000).toISOString().slice(0, 10),
+    });
 
     if (!worstGame || own.length > worstGame.blunders) {
       worstGame = {
@@ -131,6 +145,8 @@ export function summariseWeek(entries, { username, now = new Date(), days = 7 } 
     byTimeClass,
     record,
     worstGame,
+    // Chess.com returns newest first; a scoresheet reads oldest first.
+    perGame: [...perGame].reverse(),
     // Only drills the engine actually gave a move for — a position with no
     // best move can't be practised.
     drills: drills.filter((drill) => drill.bestMove),
