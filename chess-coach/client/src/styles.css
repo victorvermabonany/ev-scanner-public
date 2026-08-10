@@ -22,10 +22,10 @@
   /* Three-tier scale. Green and brick are the originals; amber is the new
      middle. The -lift variants are the readable-on-black versions used for
      strokes and text, since the base tones are too dark against true black. */
-  --green: #3d5a40;
   --green-lift: #64c07a;
-  --amber: #b5893d;
   --amber-lift: #e0a83c;
+  /* Deep brick is kept for the error rule; the -lift variants carry
+     everything that has to read clearly against pure black. */
   --brick: #a34a3d;
   --brick-lift: #e05c46;
 
@@ -62,6 +62,13 @@
 
 * {
   box-sizing: border-box;
+}
+
+/* Buttons do not inherit font-family from their parent — they fall back to
+   the browser default. Without this, any button we forget to style lands on
+   Arial, which is how the notation strip and board ended up off-system. */
+button {
+  font-family: inherit;
 }
 
 html,
@@ -398,7 +405,12 @@ body {
   flex: 1;
   padding: 0.55rem 0.15rem 0.6rem;
   text-align: center;
+  /* These became buttons when they started opening a game review, which
+     brought the browser's default face and 3d border with them. */
+  background: none;
+  border: 0;
   border-right: 1px solid var(--rule);
+  cursor: pointer;
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
@@ -746,6 +758,10 @@ body {
   padding: 0;
   border: none;
   cursor: pointer;
+  /* Chess glyphs live in symbol fonts, not in the two text faces, so this
+     is deliberate rather than inherited. */
+  font-family: 'Segoe UI Symbol', 'Apple Symbols', 'Noto Sans Symbols 2',
+    'DejaVu Sans', sans-serif;
   font-size: clamp(1.4rem, 7.2vw, 2.2rem);
   line-height: 1;
 }
@@ -810,8 +826,8 @@ body {
   border-top: 2px solid var(--rule);
 }
 
-.verdict--good { border-top-color: var(--green); }
-.verdict--bad  { border-top-color: var(--brick); }
+.verdict--good { border-top-color: var(--green-lift); }
+.verdict--bad  { border-top-color: var(--brick-lift); }
 
 .verdict__head {
   margin: 0;
@@ -1041,12 +1057,12 @@ body {
 
 .movecard--brilliant  { border-top-color: var(--brilliant); }
 .movecard--great      { border-top-color: var(--great); }
-.movecard--best       { border-top-color: var(--green); }
+.movecard--best       { border-top-color: var(--green-lift); }
 .movecard--good       { border-top-color: var(--rule-strong); }
 .movecard--book       { border-top-color: var(--rule); }
 .movecard--inaccuracy { border-top-color: var(--inaccuracy); }
 .movecard--mistake    { border-top-color: var(--mistake); }
-.movecard--blunder    { border-top-color: var(--brick); }
+.movecard--blunder    { border-top-color: var(--brick-lift); }
 
 .movecard__head {
   margin: 0;
@@ -1129,6 +1145,9 @@ body {
 
 /* Only moves that cost something are coloured; "good" stays quiet so the
    warnings are what the eye catches. */
+/* Stated explicitly rather than inherited, so the audit covers all eight
+   and a change to the base rule can't silently recolour "good". */
+.moverow__cell--good       { color: var(--ink-70); }
 .moverow__cell--brilliant  { color: var(--brilliant); }
 .moverow__cell--great      { color: var(--great); }
 .moverow__cell--best       { color: var(--green-lift); }
