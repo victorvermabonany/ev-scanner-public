@@ -11,10 +11,14 @@
     "games": "npm --prefix server run games --",
     "analyze": "npm --prefix server run analyze --",
     "build": "npm --prefix client run build",
+    "build:pages": "npm run build && rm -rf ../chess && cp -r client/dist ../chess",
     "preview": "npm --prefix client run preview",
     "install:all": "npm install && npm --prefix client install && npm --prefix server install"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
+  },
+  "dependencies": {
+    "chess.js": "^1.4.0"
   }
 }

@@ -6,14 +6,14 @@
 //   npm run analyze -- hikaru 0 --threshold 1.5
 //   npm run analyze -- hikaru 0 --all      # every move, not just blunders
 
-import { fetchRecentGames, ChessComError } from '../chesscom.js';
+import { fetchRecentGames, ChessComError } from '../../shared/chesscom.js';
 import { Engine } from '../engine.js';
 import {
   analyseGame,
   formatEval,
   DEFAULT_DEPTH,
   DEFAULT_THRESHOLD_PAWNS,
-} from '../analysis.js';
+} from '../../shared/analysis.js';
 
 const args = process.argv.slice(2);
 const showAll = args.includes('--all');

@@ -1,7 +1,7 @@
 import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { fetchRecentGames, ChessComError } from './chesscom.js';
+import { fetchRecentGames, ChessComError } from '../shared/chesscom.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const clientDist = path.join(__dirname, '..', 'client', 'dist');

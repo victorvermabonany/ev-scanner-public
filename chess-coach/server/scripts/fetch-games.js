@@ -6,7 +6,7 @@
 //
 // --summary prints one line per game instead of the full objects.
 
-import { fetchRecentGames, ChessComError } from '../chesscom.js';
+import { fetchRecentGames, ChessComError } from '../../shared/chesscom.js';
 
 const args = process.argv.slice(2);
 const summaryOnly = args.includes('--summary');
