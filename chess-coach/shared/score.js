@@ -22,6 +22,20 @@ export function bandFor(value) {
   return BANDS.low;
 }
 
+/**
+ * Where a game accuracy sits on the same red/amber/green scale.
+ *
+ * Separate thresholds from bandFor: accuracy is not a 0-100 spread in
+ * practice — almost every real game lands between 60 and 95 — so splitting it
+ * into thirds would paint everything green.
+ */
+export function accuracyBand(accuracy) {
+  if (accuracy == null) return BANDS.mid;
+  if (accuracy >= 85) return BANDS.high;
+  if (accuracy >= 70) return BANDS.mid;
+  return BANDS.low;
+}
+
 export function weeklyScore(summary) {
   // No games means no score rather than a perfect one.
   if (!summary || summary.games === 0) {

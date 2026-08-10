@@ -1036,23 +1036,92 @@ body {
 
 /* review */
 .review {
-  gap: 0.85rem;
+  gap: 0.4rem;
+  /* Narrower gutters than the rest of the app: every pixel here goes into
+     the board, which is what this screen exists to show. */
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
 }
 
-.review__players {
+/* The counts, as one quiet line. This was a row of bordered boxes with a
+   28px accuracy figure, which took 72px of height and pulled the eye away
+   from the board for numbers you glance at once. */
+.reviewbar {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.1rem 0.55rem;
   margin: 0;
-  text-align: center;
-  font-size: 1.05rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--rule);
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
 }
 
-.review__vs {
-  color: var(--ink-45);
-  font-style: italic;
-  margin: 0 0.35rem;
+.reviewbar__label {
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--ink-28);
 }
+
+.rbc--blunder    { color: var(--brick-lift); }
+.rbc--mistake    { color: var(--mistake); }
+.rbc--inaccuracy { color: var(--inaccuracy); }
+
+/* Name plates, flush against the board they belong to. */
+.seat {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.02em;
+  color: var(--ink-70);
+  min-width: 0;
+}
+
+/* A filled/hollow disc says which colour without a word for it. */
+.seat__disc {
+  width: 0.6rem;
+  height: 0.6rem;
+  flex: none;
+  border: 1px solid var(--ink-45);
+}
+
+.seat__disc--w { background: var(--ink); }
+.seat__disc--b { background: #000; }
+
+.seat__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.seat__tag {
+  flex: none;
+  font-size: 0.52rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-28);
+}
+
+/* Accuracy sits with the player it describes, so the two are read together. */
+.seat__acc {
+  margin-left: auto;
+  flex: none;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.seat__acc--high { color: var(--green-lift); }
+.seat__acc--mid  { color: var(--amber-lift); }
+.seat__acc--low  { color: var(--brick-lift); }
 
 .movecard {
-  padding: 0.75rem 0 0;
+  padding: 0.6rem 0 0;
   border-top: 2px solid var(--rule);
 }
 
@@ -1069,15 +1138,25 @@ body {
   margin: 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
 .movecard__san {
   font-family: var(--mono);
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+}
+
+/* Whose move this was. The sentence below says "your" or "their", and this
+   is what makes that unambiguous when you're stepping through both sides. */
+.movecard__who {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 0.52rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-28);
 }
 
 .chip {
@@ -1098,11 +1177,15 @@ body {
 .chip--mistake    { color: var(--mistake); border-color: rgba(224, 138, 60, 0.45); }
 .chip--blunder    { color: var(--brick-lift); border-color: rgba(224, 92, 70, 0.45); }
 
+/* The differentiator. Set at reading size in the serif rather than as a
+   caption, and given a floor so stepping through a game doesn't shuffle
+   everything below it up and down a line at a time. */
 .movecard__why {
-  margin: 0.5rem 0 0;
-  font-size: 0.95rem;
-  line-height: 1.5;
-  color: var(--ink-70);
+  margin: 0.35rem 0 0;
+  font-size: 1rem;
+  line-height: 1.4;
+  color: var(--ink);
+  min-height: 2.8em;
 }
 
 /* scoresheet-style move list, scrolls independently of the board */
@@ -1202,8 +1285,9 @@ body {
   left: 0;
   right: 0;
   font-family: var(--mono);
-  font-size: 0.5rem;
-  letter-spacing: -0.04em;
+  font-size: 0.46rem;
+  font-weight: 600;
+  letter-spacing: -0.07em;
   text-align: center;
   padding: 2px 0;
 }
@@ -1222,75 +1306,6 @@ body {
   height: 100%;
   pointer-events: none;
 }
-
-/* ----------------------------------------------- review summary head */
-
-.reviewtop {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.75rem 0;
-  border-bottom: 1px solid var(--rule);
-}
-
-.reviewtop__acc {
-  display: flex;
-  flex-direction: column;
-  line-height: 1;
-}
-
-.reviewtop__accvalue {
-  font-family: var(--mono);
-  font-size: 1.75rem;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  font-variant-numeric: tabular-nums;
-}
-
-.reviewtop__acclabel {
-  font-family: var(--mono);
-  font-size: 0.52rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--ink-45);
-  margin-top: 0.3rem;
-}
-
-.reviewtop__counts {
-  display: flex;
-  gap: 0.4rem;
-  margin: 0;
-  flex: 1;
-  justify-content: flex-end;
-}
-
-.rtc {
-  min-width: 3.4rem;
-  padding: 0.35rem 0.3rem;
-  border: 1px solid var(--rule);
-  text-align: center;
-}
-
-.rtc dt {
-  font-family: var(--mono);
-  font-size: 0.47rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--ink-45);
-}
-
-.rtc dd {
-  margin: 0.15rem 0 0;
-  font-family: var(--mono);
-  font-size: 1rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-.rtc--blunder dd    { color: var(--brick-lift); }
-.rtc--mistake dd    { color: var(--mistake); }
-.rtc--inaccuracy dd { color: var(--inaccuracy); }
-
 
 /* --------------------------------------------------- identity + errors */
 
@@ -1567,41 +1582,80 @@ button.home__user {
 .review {
   height: 100dvh;
   overflow: hidden;
+  /* The board is measured against this, so it has to be a number the CSS
+     knows: everything on this screen that isn't the board, added up. */
+  --review-chrome: 400px;
+  /* Wide enough for "+0.5" to fit inside it — at 14px the number was clipped
+     mid-digit, which is worse than no number. */
+  --evalbar-w: 18px;
+  --board-gap: 5px;
+  /* Whichever runs out first — the width between the gutters, or the height
+     left over once the rest of the screen has had its share. */
+  --board: min(
+    min(100vw, 30rem) - 1.5rem - var(--evalbar-w) - var(--board-gap),
+    100dvh - var(--review-chrome)
+  );
 }
 
 .review .movelist {
   /* min-height:0 lets a flex child actually shrink so its own scrollbar
-     engages instead of the page growing. */
-  min-height: 0;
+     engages instead of the page growing. Everything else on the screen is a
+     fixed height, so this is the one part that gives. */
+  min-height: 3.2rem;
+  flex: 1 1 0;
 }
 
-/* Size the board from the height it can spare, so the move list still has
-   usable room on a short phone. */
+/* The board never shrinks to make room for anything else — that is what left
+   it at 52% of the screen width, squeezed by the list below it. */
 .review .boardwrap {
-  min-height: 0;
+  flex: none;
   justify-content: center;
+  gap: var(--board-gap);
 }
 
 .review .board {
-  flex: 0 1 auto;
-  width: auto;
-  height: 100%;
-  max-height: 42vh;
-  max-width: calc(100% - 30px);
-  aspect-ratio: 1;
+  flex: none;
+  width: var(--board);
+  height: var(--board);
 }
 
 .review .evalbar {
-  max-height: 42vh;
+  width: var(--evalbar-w);
+  height: var(--board);
 }
 
+/* Narrow screens: keep the counts on one line, since a second line costs the
+   board 15px of height it can't spare. */
+@media (max-width: 360px) {
+  .review .reviewbar {
+    font-size: 0.55rem;
+    gap: 0.1rem 0.4rem;
+  }
+}
+
+/* Short screens: trim the surround rather than the board. */
 @media (max-height: 720px) {
-  .review .board,
-  .review .evalbar {
-    max-height: 36vh;
+  .review {
+    --review-chrome: 326px;
+    padding-top: 0.75rem;
   }
 
   .review .controls__btn {
-    min-height: 46px;
+    min-height: 44px;
+  }
+
+  .review .movecard__why {
+    font-size: 0.92rem;
+    min-height: 2.6em;
+  }
+
+  /* A long sentence runs to three lines at this width. The list gives up the
+     row rather than the frame overflowing and clipping its bottom edge. */
+  .review .movelist {
+    min-height: 2.2rem;
+  }
+
+  .review .footer {
+    display: none;
   }
 }

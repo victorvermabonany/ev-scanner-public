@@ -1,11 +1,41 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Chess } from 'chess.js';
 import { LABEL_TEXT } from '../../../shared/labels.js';
+import { noteForMove, personalise } from '../../../shared/explain.js';
+import { accuracyBand } from '../../../shared/score.js';
 import { Board } from '../components/Board.jsx';
 import { EvalBar } from '../components/EvalBar.jsx';
 
 /** Labels worth counting in the header — the ones that cost something. */
 const COSTLY = ['blunder', 'mistake', 'inaccuracy'];
+
+/** "1 blunder", "3 blunders" — the counts read as a sentence, not a table. */
+const PLURALS = { blunder: 'blunders', mistake: 'mistakes', inaccuracy: 'inaccuracies' };
+const plural = (count, key) =>
+  `${count} ${count === 1 ? LABEL_TEXT[key].toLowerCase() : PLURALS[key]}`;
+
+/**
+ * A name plate above or below the board.
+ *
+ * Replaces the centred "white vs black" line, which named both players but
+ * said nothing about which was which, which colour either had, or how well
+ * they played. Sitting flush against the board, each plate belongs to the
+ * side it faces.
+ */
+function Seat({ color, name, accuracy, you = false }) {
+  return (
+    <p className={`seat ${you ? 'seat--you' : ''}`}>
+      <span className={`seat__disc seat__disc--${color}`} aria-hidden="true" />
+      <span className="seat__name">{name}</span>
+      {you && <span className="seat__tag">you</span>}
+      {accuracy != null && (
+        <span className={`seat__acc seat__acc--${accuracyBand(accuracy)}`}>
+          {accuracy}%
+        </span>
+      )}
+    </p>
+  );
+}
 
 export default function GameReview({ game, onBack }) {
   // Replay once to get the position after each ply. Storing a FEN per move
@@ -68,7 +98,42 @@ export default function GameReview({ game, onBack }) {
   const move = game.moves[selected];
   const position = positions[selected + 1] ?? positions[0];
   const orientation = game.color ?? 'w';
-  const accuracy = game.accuracy?.[orientation];
+  const opponentColor = orientation === 'w' ? 'b' : 'w';
+
+  // The board is drawn from the player's side, so the seat above it is always
+  // the opponent and the seat below is always the player — the way a board
+  // reads across the table, and the way Chess.com lays a review out.
+  const seats = {
+    top: { color: opponentColor, name: opponentColor === 'w' ? game.white : game.black },
+    bottom: { color: orientation, name: orientation === 'w' ? game.white : game.black },
+  };
+
+  // The engine's move in notation, for the moves where it differs from what
+  // was played. Read from the position this move was played *from*, which is
+  // the entry before it in the replay.
+  const bestSan = useMemo(() => {
+    if (!move?.bestFrom || !move?.bestTo) return null;
+    const before = positions[selected];
+    if (!before) return null;
+    try {
+      const san = new Chess(before.fen).move({
+        from: move.bestFrom,
+        to: move.bestTo,
+        promotion: 'q',
+      })?.san;
+      return san && san !== move.san ? san : null;
+    } catch {
+      return null;
+    }
+  }, [move, positions, selected]);
+
+  // Every move gets a sentence, not just the costly ones. A review that goes
+  // blank on two moves out of three isn't a review.
+  const note = !move
+    ? null
+    : move.explanation
+      ? personalise(move.explanation, { mine: move.color === orientation })
+      : noteForMove(move.label, { bestSan, lossCp: move.lossCp });
 
   // Pair the moves the way a scoresheet does: one row per move number.
   const rows = [];
@@ -96,27 +161,21 @@ export default function GameReview({ game, onBack }) {
         </span>
       </header>
 
-      {/* At-a-glance read before anyone scrolls the move list. */}
-      {/* These figures count the player's own moves; the move list below
-          grades both sides. */}
-      <section className="reviewtop">
-        <div className="reviewtop__acc">
-          <span className="reviewtop__accvalue">{accuracy ?? '—'}%</span>
-          <span className="reviewtop__acclabel">Your accuracy</span>
-        </div>
-        <dl className="reviewtop__counts">
-          {COSTLY.map((key) => (
-            <div key={key} className={`rtc rtc--${key}`}>
-              <dt>{LABEL_TEXT[key]}</dt>
-              <dd>{game.tally?.[key] ?? 0}</dd>
-            </div>
-          ))}
-        </dl>
-      </section>
-
-      <p className="review__players">
-        {game.white} <span className="review__vs">vs</span> {game.black}
+      {/* One line rather than a row of boxes: the board is what this screen
+          is for, and these counts are context, not the headline. They cover
+          the player's own moves; the move list below grades both sides. */}
+      <p className="reviewbar">
+        <span className="reviewbar__label">Your moves</span>
+        {COSTLY.map((key) => (
+          <span key={key} className={`rbc rbc--${key}`}>
+            {plural(game.tally?.[key] ?? 0, key)}
+          </span>
+        ))}
       </p>
+
+      {/* Board block: seat, board, seat — the arrangement you'd see across a
+          table, and the one Chess.com's review uses. */}
+      <Seat {...seats.top} accuracy={game.accuracy?.[seats.top.color]} />
 
       <div className="boardwrap">
         <EvalBar
@@ -132,6 +191,8 @@ export default function GameReview({ game, onBack }) {
           arrow={move && COSTLY.includes(move.label) ? { from: move.bestFrom, to: move.bestTo } : null}
         />
       </div>
+
+      <Seat {...seats.bottom} accuracy={game.accuracy?.[seats.bottom.color]} you />
 
       {/* Big targets: stepping a whole game happens on a phone, one thumb. */}
       <div className="controls">
@@ -166,19 +227,22 @@ export default function GameReview({ game, onBack }) {
         </button>
       </div>
 
+      {/* The plain-language read. This is the reason to use the app rather
+          than any engine output, so it sits directly under the controls at
+          full width, and it never collapses to nothing. */}
       {move && (
         <div className={`movecard movecard--${move.label}`}>
           <p className="movecard__head">
+            <span className={`chip chip--${move.label}`}>{LABEL_TEXT[move.label]}</span>
             <span className="movecard__san">
               {move.moveNumber}
               {move.color === 'w' ? '.' : '…'} {move.san}
             </span>
-            <span className={`chip chip--${move.label}`}>{LABEL_TEXT[move.label]}</span>
+            <span className="movecard__who">
+              {move.color === orientation ? 'you' : 'opponent'}
+            </span>
           </p>
-          {/* Good, Best, Great, Brilliant and Book need no explanation. */}
-          {COSTLY.includes(move.label) && move.explanation && (
-            <p className="movecard__why">{move.explanation}</p>
-          )}
+          {note && <p className="movecard__why">{note}</p>}
         </div>
       )}
 

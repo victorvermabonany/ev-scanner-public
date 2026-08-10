@@ -138,8 +138,11 @@ export function summariseWeek(entries, { username, now = new Date(), days = 7 } 
         cp: move.evalAfter?.cp ?? null,
         mate: move.evalAfter?.mate ?? null,
         terminal: move.evalAfter?.terminal ?? null,
-        bestFrom: move.classification === 'good' ? null : move.bestFrom,
-        bestTo: move.classification === 'good' ? null : move.bestTo,
+        // Kept for every move, not just the costly ones: the review names the
+        // engine's choice on quiet moves too, and two squares per ply is a
+        // couple of kilobytes across a whole week.
+        bestFrom: move.bestFrom ?? null,
+        bestTo: move.bestTo ?? null,
       })),
     });
 
