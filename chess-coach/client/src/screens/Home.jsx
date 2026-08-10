@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { COACHES, writeHeadline } from '../../../shared/coach.js';
 import { weeklyScore } from '../../../shared/score.js';
+import { GAME_COUNT_OPTIONS } from '../lib/useWeeklySummary.js';
 import { CoachMark } from '../components/CoachMark.jsx';
 import { Ring } from '../components/Ring.jsx';
 
@@ -22,12 +23,28 @@ export default function Home({
   onOpenGame,
   onRefresh,
   onSwitchPlayer,
+  gameCount,
+  msPerGame,
+  onChangeGameCount,
 }) {
   const [showSwitch, setShowSwitch] = useState(false);
+  const [showDepth, setShowDepth] = useState(false);
+
+  // Only once a run has been timed on this device can an estimate be honest.
+  const estimate = (count) => {
+    if (!msPerGame) return null;
+    const seconds = Math.round((msPerGame * count) / 1000);
+    return seconds < 60 ? `${seconds}s` : `${Math.round(seconds / 60)} min`;
+  };
   const headline = writeHeadline(coach, summary);
   const score = weeklyScore(summary);
   const periodLabel = summary.widened ? `Last ${summary.games} games` : 'This week';
-  const games = summary.perGame ?? [];
+  // The strip is a glanceable scoresheet, not a full log — past about eight
+  // columns the cells squeeze until the results wrap and the last ones run
+  // off the screen. Everything analysed is still on the Games screen.
+  const STRIP_MAX = 8;
+  const allGames = summary.perGame ?? [];
+  const games = allGames.slice(-STRIP_MAX);
 
   // Nothing to show yet. A ring reading "—" over 0/0 stats looks broken;
   // this says what's missing and what to do about it.
@@ -146,7 +163,7 @@ export default function Home({
                 className="strip__cell"
                 onClick={() => onOpenGame(index)}
               >
-                <span className="strip__no">{index + 1}</span>
+                <span className="strip__no">{allGames.length - games.length + index + 1}</span>
                 <span
                   className={`strip__result ${
                     game.outcome === 'win' ? 'strip__result--win' : ''
@@ -186,10 +203,29 @@ export default function Home({
         <button className="linkbtn" onClick={onOpenDrills}>
           Drills
         </button>
-        <button className="linkbtn" onClick={onRefresh}>
+        <button className="linkbtn" onClick={() => setShowDepth((v) => !v)}>
           Refresh
         </button>
       </div>
+
+      {showDepth && (
+        <div className="depth">
+          <span className="depth__label">Analyse</span>
+          {GAME_COUNT_OPTIONS.map((count) => (
+            <button
+              key={count}
+              className={`depth__option ${count === gameCount ? 'depth__option--on' : ''}`}
+              onClick={() => {
+                setShowDepth(false);
+                onChangeGameCount(count);
+              }}
+            >
+              {count} games
+              {estimate(count) && <span className="depth__eta">{estimate(count)}</span>}
+            </button>
+          ))}
+        </div>
+      )}
 
       <footer className="footer">build {__BUILD_TIME__}</footer>
     </main>

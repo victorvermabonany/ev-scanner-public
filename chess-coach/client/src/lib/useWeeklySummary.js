@@ -10,12 +10,15 @@ import { describeFailure } from './describeFailure.js';
 import { analyseGame } from '../../../shared/analysis.js';
 import { summariseWeek } from '../../../shared/weekly.js';
 import { BrowserEngine } from './engine.js';
-import { loadSummary, saveSummary } from './storage.js';
+import { loadMsPerGame, loadSummary, saveMsPerGame, saveSummary } from './storage.js';
 
-const GAMES_TO_ANALYSE = 5;
+// Deliberately the smallest option: the default run should be fast, and
+// deeper history is something a user opts into.
+export const GAME_COUNT_OPTIONS = [5, 10, 20];
+export const DEFAULT_GAME_COUNT = 5;
 const DEPTH = 10;
 
-export function useWeeklySummary(username) {
+export function useWeeklySummary(username, gameCount = DEFAULT_GAME_COUNT) {
   const [summary, setSummary] = useState(() => loadSummary(username));
   const [progress, setProgress] = useState(null);
   const [error, setError] = useState(null);
@@ -25,7 +28,9 @@ export function useWeeklySummary(username) {
   // write its result into another's screen if the user switches mid-way.
   const runIdRef = useRef(0);
 
-  const run = useCallback(async () => {
+  const run = useCallback(async (overrideCount) => {
+    // Guard against being wired straight to onClick, which would pass an event.
+    const count = typeof overrideCount === 'number' ? overrideCount : gameCount;
     const runId = ++runIdRef.current;
     const forUser = username;
     const isCurrent = () => runIdRef.current === runId;
@@ -34,7 +39,8 @@ export function useWeeklySummary(username) {
     setProgress({ stage: 'Fetching your games', detail: null, fraction: null });
 
     try {
-      const fetched = await fetchRecentGames(username, GAMES_TO_ANALYSE);
+      const startedAt = Date.now();
+      const fetched = await fetchRecentGames(username, count);
       const games = fetched.filter((game) => game.rules === 'chess');
 
       if (games.length === 0) {
@@ -77,11 +83,20 @@ export function useWeeklySummary(username) {
             // minute on a phone, and a bar that sits still that long reads
             // as broken.
             onProgress: (done, total) => {
-              setProgress({
-                stage: 'Analysing your games',
-                detail: `Game ${index + 1} of ${games.length}`,
-                fraction: (index + done / total) / games.length,
-              });
+                const fraction = (index + done / total) / games.length;
+                const elapsed = Date.now() - startedAt;
+                setProgress({
+                  stage: 'Analysing your games',
+                  detail: `Game ${index + 1} of ${games.length}`,
+                  fraction,
+                  // Extrapolated from this run's own pace, so it reflects
+                  // the device rather than a guess. Withheld until there's
+                  // enough of a sample to not be wildly wrong.
+                  etaSeconds:
+                    fraction > 0.05
+                      ? Math.max(1, Math.round((elapsed * (1 - fraction)) / fraction / 1000))
+                      : null,
+                });
               },
             }),
           });
@@ -113,7 +128,12 @@ export function useWeeklySummary(username) {
         next = { ...summariseWeek(entries, { username, now: latest, days: span }), widened: true };
       }
 
-      next = { ...next, skippedGames: skipped };
+      // Remember the pace so the next run can be estimated before it starts.
+      if (entries.length > 0) {
+        saveMsPerGame((Date.now() - startedAt) / entries.length);
+      }
+
+      next = { ...next, skippedGames: skipped, analysedCount: count };
       // Always persist under the account it was computed for, even if the
       // user has since switched away.
       saveSummary(forUser, next);
@@ -129,7 +149,7 @@ export function useWeeklySummary(username) {
     } finally {
       if (isCurrent()) setProgress(null);
     }
-  }, [username]);
+  }, [username, gameCount]);
 
   // Switching account has to reset this state. Leaving it alone meant the
   // previous account's summary stayed on screen — and because it was still
@@ -151,5 +171,5 @@ export function useWeeklySummary(username) {
     engineRef.current = null;
   }, []);
 
-  return { summary, progress, error, refresh: run };
+  return { summary, progress, error, refresh: run, msPerGame: loadMsPerGame() };
 }

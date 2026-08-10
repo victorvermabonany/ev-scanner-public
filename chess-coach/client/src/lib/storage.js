@@ -135,6 +135,29 @@ export function markCompleted(username, id) {
   }
 }
 
+/** How many recent games this profile wants analysed. */
+export function loadGameCount(username) {
+  const raw = username ? read(profileKey(username, 'gameCount')) : null;
+  const n = Number(raw);
+  // Small by default: a first run should be quick, not thorough.
+  return [5, 10, 20].includes(n) ? n : 5;
+}
+
+export const saveGameCount = (username, count) =>
+  write(profileKey(username, 'gameCount'), String(count));
+
+/**
+ * How long a game took to analyse last time, in milliseconds. Device-wide
+ * rather than per profile — it measures the hardware, not the player — and
+ * it's what turns "this might take a while" into a real estimate.
+ */
+export function loadMsPerGame() {
+  const n = Number(read('chesscoach.msPerGame'));
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+export const saveMsPerGame = (ms) => write('chesscoach.msPerGame', String(Math.round(ms)));
+
 // --------------------------------------------------------------- legacy
 
 /**

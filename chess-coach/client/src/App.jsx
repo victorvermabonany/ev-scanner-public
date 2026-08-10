@@ -11,11 +11,20 @@ import {
   listProfiles,
   loadActiveUser,
   loadCoach,
+  loadGameCount,
   migrateLegacyProfile,
   saveCoach,
+  saveGameCount,
   signIn,
   signOut,
 } from './lib/storage.js';
+
+/** Seconds to something readable at a glance. */
+function formatEta(seconds) {
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.round(seconds / 60);
+  return `${minutes} min`;
+}
 
 function Loading({ coach, progress }) {
   const percent = progress.fraction == null ? null : Math.round(progress.fraction * 100);
@@ -35,7 +44,11 @@ function Loading({ coach, progress }) {
       </div>
 
       <p className="loading__note">
-        {percent == null ? 'Running Stockfish on your device.' : `${percent}% complete`}
+        {percent == null
+          ? 'Running Stockfish on your device.'
+          : progress.etaSeconds
+            ? `${percent}% · about ${formatEta(progress.etaSeconds)} left`
+            : `${percent}% complete`}
       </p>
     </main>
   );
@@ -51,14 +64,19 @@ export default function App() {
   const [coach, setCoach] = useState(() => loadCoach(loadActiveUser()));
   const [view, setView] = useState('home');
   const [openGame, setOpenGame] = useState(null);
+  const [gameCount, setGameCount] = useState(() => loadGameCount(loadActiveUser()));
 
-  const { summary, progress, error, refresh } = useWeeklySummary(username ?? '');
+  const { summary, progress, error, refresh, msPerGame } = useWeeklySummary(
+    username ?? '',
+    gameCount
+  );
 
   function finishOnboarding({ coach: pickedCoach, username: pickedName }) {
     signIn(pickedName);
     saveCoach(pickedName, pickedCoach);
     setCoach(pickedCoach);
     setUsername(pickedName);
+    setGameCount(loadGameCount(pickedName));
     setView('home');
   }
 
@@ -84,6 +102,7 @@ export default function App() {
           signIn(name);
           setUsername(name);
           setCoach(loadCoach(name));
+          setGameCount(loadGameCount(name));
           setView('home');
         }}
       />
@@ -177,6 +196,16 @@ export default function App() {
         setView('review');
       }}
       onRefresh={refresh}
+      gameCount={gameCount}
+      msPerGame={msPerGame}
+      onChangeGameCount={(n) => {
+        saveGameCount(username, n);
+        setGameCount(n);
+        // Picking a count is a request to analyse that many right now. The
+        // count is passed explicitly because the state update hasn't landed
+        // yet at this point.
+        refresh(n);
+      }}
       onSwitchPlayer={switchPlayer}
     />
   );
