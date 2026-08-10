@@ -6,9 +6,29 @@
 
 import { Chess } from 'chess.js';
 import { classifyBlunder, parseClocks, parseTimeControl } from './classify.js';
+import { explainMove } from './explain.js';
 
 export const DEFAULT_THRESHOLD_PAWNS = 2.5;
 export const DEFAULT_DEPTH = 12;
+
+/**
+ * Every move gets a grade from how much evaluation it gave away, in pawns.
+ * These bounds are fixed, unlike the configurable blunder `threshold` used
+ * for the weekly summary — a review reads the same whatever that is set to.
+ */
+export const MOVE_CLASSES = {
+  blunder: 2.5,
+  mistake: 1.0,
+  inaccuracy: 0.5,
+};
+
+export function classifyMove(lossCp) {
+  const pawns = lossCp / 100;
+  if (pawns >= MOVE_CLASSES.blunder) return 'blunder';
+  if (pawns >= MOVE_CLASSES.mistake) return 'mistake';
+  if (pawns >= MOVE_CLASSES.inaccuracy) return 'inaccuracy';
+  return 'good';
+}
 
 // Mate gets a sentinel score far outside normal centipawn range.
 const MATE_CP = 100_000;
@@ -101,6 +121,8 @@ export async function analyseGame(pgn, {
   const played = moves.map((move) => ({
     san: move.san,
     color: move.color, // 'w' | 'b'
+    from: move.from,
+    to: move.to,
     // The FEN's fullmove counter before the move is the move number this
     // move belongs to, for both colours.
     moveNumber: Number(move.before.split(' ')[5]),
@@ -138,6 +160,10 @@ export async function analyseGame(pgn, {
     const afterCp = clamp(toComparableCp(evalAfter));
     const lossCp = move.color === 'w' ? beforeCp - afterCp : afterCp - beforeCp;
 
+    const playedEnginesMove =
+      Boolean(evalBefore.bestMove) &&
+      evalBefore.bestMove.slice(0, 4) === `${move.from}${move.to}`;
+
     const record = {
       ply: index + 1,
       moveNumber: move.moveNumber,
@@ -148,22 +174,32 @@ export async function analyseGame(pgn, {
       evalBefore,
       evalAfter,
       lossCp,
-      isBlunder: lossCp >= threshold * 100,
+      // Playing the engine's own top choice can still measure a small loss,
+      // because the two positions were evaluated by separate searches. Grading
+      // the engine's move an inaccuracy would be nonsense, so it's good by
+      // definition.
+      classification: playedEnginesMove ? 'good' : classifyMove(lossCp),
+      matchedEngine: playedEnginesMove,
+      isBlunder: !playedEnginesMove && lossCp >= threshold * 100,
     };
 
     analysed.push(record);
 
-    if (record.isBlunder) {
-      // The engine's preferred move in the position the blunder was played
-      // from — already known, since that position was evaluated.
+    // Anything short of "good" gets a cause and a sentence. Good moves need
+    // neither, and skipping them keeps the per-move work down.
+    if (record.classification !== 'good') {
+      // The engine's preferred move in the position this was played from —
+      // already known, since that position was evaluated.
       const { category, categories, details } = classifyBlunder(record, {
         clocks,
         timeControl,
         bestMove: evalBefore.bestMove ?? null,
       });
       Object.assign(record, { category, categories, categoryDetails: details });
-      blunders.push(record);
+      record.explanation = explainMove(record);
     }
+
+    if (record.isBlunder) blunders.push(record);
   }
 
   return { moves: analysed, blunders, positionsEvaluated: positions.length };

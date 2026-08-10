@@ -3,6 +3,8 @@ import Onboarding from './screens/Onboarding.jsx';
 import Home from './screens/Home.jsx';
 import Report from './screens/Report.jsx';
 import Drills from './screens/Drills.jsx';
+import Games from './screens/Games.jsx';
+import GameReview from './screens/GameReview.jsx';
 import { CoachMark } from './components/CoachMark.jsx';
 import { useWeeklySummary } from './lib/useWeeklySummary.js';
 import { loadCoach, loadUsername, saveCoach, saveUsername } from './lib/storage.js';
@@ -33,6 +35,7 @@ export default function App() {
   const [coach, setCoach] = useState(loadCoach);
   const [username, setUsername] = useState(loadUsername);
   const [view, setView] = useState('home');
+  const [openGame, setOpenGame] = useState(null);
 
   const { summary, progress, error, refresh } = useWeeklySummary(username ?? '');
 
@@ -70,12 +73,39 @@ export default function App() {
         summary={summary}
         onBack={() => setView('home')}
         onOpenDrills={() => setView('drills')}
+      onOpenGames={() => setView('games')}
+      onOpenGame={(index) => {
+        setOpenGame(index);
+        setView('review');
+      }}
       />
     );
   }
 
   if (view === 'drills') {
     return <Drills summary={summary} onBack={() => setView('home')} />;
+  }
+
+  if (view === 'review' && summary.gameLog?.[openGame]) {
+    return (
+      <GameReview
+        game={summary.gameLog[openGame]}
+        onBack={() => setView('games')}
+      />
+    );
+  }
+
+  if (view === 'games') {
+    return (
+      <Games
+        summary={summary}
+        onBack={() => setView('home')}
+        onOpen={(index) => {
+          setOpenGame(index);
+          setView('review');
+        }}
+      />
+    );
   }
 
   return (
@@ -85,6 +115,11 @@ export default function App() {
       onChangeCoach={() => setCoach(null)}
       onOpenReport={() => setView('report')}
       onOpenDrills={() => setView('drills')}
+      onOpenGames={() => setView('games')}
+      onOpenGame={(index) => {
+        setOpenGame(index);
+        setView('review');
+      }}
       onRefresh={refresh}
     />
   );

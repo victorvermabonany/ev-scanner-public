@@ -55,6 +55,10 @@ export function summariseWeek(entries, { username, now = new Date(), days = 7 } 
   // One row per game, oldest first — the raw material for a scoresheet-style
   // strip, which needs each game individually rather than a total.
   const perGame = [];
+  // Full move-by-move reviews. Positions are NOT stored: a FEN per ply would
+  // be tens of kilobytes a game, so the review replays the moves from the
+  // starting position instead.
+  const gameLog = [];
 
   let moves = 0;
   let blunders = 0;
@@ -102,6 +106,33 @@ export function summariseWeek(entries, { username, now = new Date(), days = 7 } 
     const outcome = side ? outcomeFor(game, side) : null;
     if (outcome) record[outcome] += 1;
 
+    const tally = { blunder: 0, mistake: 0, inaccuracy: 0, good: 0 };
+    for (const move of analysis.moves) {
+      if (move.color === side) tally[move.classification] += 1;
+    }
+
+    gameLog.push({
+      url: game.url,
+      opponent: side === 'w' ? game.black?.username : game.white?.username,
+      white: game.white?.username,
+      black: game.black?.username,
+      color: side,
+      outcome: side ? outcomeFor(game, side) : null,
+      timeClass,
+      playedAt: new Date(game.end_time * 1000).toISOString().slice(0, 10),
+      startFen: analysis.moves[0]?.fenBefore ?? null,
+      tally,
+      moves: analysis.moves.map((move) => ({
+        ply: move.ply,
+        moveNumber: move.moveNumber,
+        color: move.color,
+        san: move.san,
+        lossCp: move.lossCp,
+        classification: move.classification,
+        explanation: move.explanation ?? null,
+      })),
+    });
+
     perGame.push({
       blunders: own.length,
       outcome, // 'win' | 'loss' | 'draw' | null
@@ -147,6 +178,7 @@ export function summariseWeek(entries, { username, now = new Date(), days = 7 } 
     worstGame,
     // Chess.com returns newest first; a scoresheet reads oldest first.
     perGame: [...perGame].reverse(),
+    gameLog: [...gameLog].reverse(),
     // Only drills the engine actually gave a move for — a position with no
     // best move can't be practised.
     drills: drills.filter((drill) => drill.bestMove),

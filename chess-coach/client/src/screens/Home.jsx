@@ -17,6 +17,8 @@ export default function Home({
   onChangeCoach,
   onOpenReport,
   onOpenDrills,
+  onOpenGames,
+  onOpenGame,
   onRefresh,
 }) {
   const headline = writeHeadline(coach, summary);
@@ -74,12 +76,10 @@ export default function Home({
         {games.length > 0 && (
           <div className="strip">
             {games.map((game, index) => (
-              <a
+              <button
                 key={game.url ?? index}
                 className="strip__cell"
-                href={game.url}
-                target="_blank"
-                rel="noreferrer"
+                onClick={() => onOpenGame(index)}
               >
                 <span className="strip__no">{index + 1}</span>
                 <span
@@ -98,7 +98,7 @@ export default function Home({
                     ))
                   )}
                 </span>
-              </a>
+              </button>
             ))}
           </div>
         )}
@@ -114,6 +114,9 @@ export default function Home({
       <div className="home__actions">
         <button className="linkbtn" onClick={onOpenReport}>
           Report
+        </button>
+        <button className="linkbtn" onClick={onOpenGames}>
+          Games
         </button>
         <button className="linkbtn" onClick={onOpenDrills}>
           Drills
