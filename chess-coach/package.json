@@ -13,7 +13,8 @@
     "build": "npm --prefix client run build",
     "build:pages": "npm run build && rm -rf ../chess && cp -r client/dist ../chess",
     "preview": "npm --prefix client run preview",
-    "install:all": "npm install && npm --prefix client install && npm --prefix server install"
+    "install:all": "npm install && npm --prefix client install && npm --prefix server install",
+    "report": "npm --prefix server run report --"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

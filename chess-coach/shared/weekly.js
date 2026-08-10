@@ -1,0 +1,115 @@
+// Rolls a set of analysed games up into one week's worth of numbers.
+//
+// This is the input the coach personas read from. It's deliberately plain
+// data — no prose, no judgement — so the writing layer stays swappable.
+
+import { CATEGORY_LABELS } from './classify.js';
+
+const DRAW_RESULTS = new Set([
+  'agreed',
+  'repetition',
+  'stalemate',
+  'insufficient',
+  '50move',
+  'timevsinsufficient',
+]);
+
+/** Which colour the player had, comparing names case-insensitively. */
+function sideOf(game, username) {
+  const target = username.toLowerCase();
+  if (game.white?.username?.toLowerCase() === target) return 'w';
+  if (game.black?.username?.toLowerCase() === target) return 'b';
+  return null;
+}
+
+function outcomeFor(game, side) {
+  const result = (side === 'w' ? game.white : game.black)?.result;
+  if (result === 'win') return 'win';
+  if (DRAW_RESULTS.has(result)) return 'draw';
+  return 'loss';
+}
+
+/**
+ * @param {Array<{game: object, analysis: object}>} entries
+ *        each `analysis` is what analyseGame() returned for that game
+ * @param {object} options
+ * @param {string} options.username   whose week this is
+ * @param {Date}   [options.now]      end of the window
+ * @param {number} [options.days]     window length, default 7
+ */
+export function summariseWeek(entries, { username, now = new Date(), days = 7 } = {}) {
+  if (!username) throw new Error('summariseWeek needs a username');
+
+  const to = now;
+  const from = new Date(to.getTime() - days * 24 * 60 * 60 * 1000);
+
+  const inWindow = entries.filter(({ game }) => {
+    const played = new Date(game.end_time * 1000);
+    return played >= from && played <= to;
+  });
+
+  const byCategory = {};
+  const byTimeClass = {};
+  const record = { win: 0, loss: 0, draw: 0 };
+
+  let moves = 0;
+  let blunders = 0;
+  let cleanGames = 0;
+  let worstGame = null;
+
+  for (const { game, analysis } of inWindow) {
+    const side = sideOf(game, username);
+
+    // Only the player's own blunders — not the opponent's.
+    const own = analysis.blunders.filter((b) => b.color === side);
+
+    moves += analysis.moves.filter((m) => m.color === side).length;
+    blunders += own.length;
+    if (own.length === 0) cleanGames += 1;
+
+    for (const blunder of own) {
+      byCategory[blunder.category] = (byCategory[blunder.category] ?? 0) + 1;
+    }
+
+    const timeClass = game.time_class ?? 'unknown';
+    byTimeClass[timeClass] ??= { games: 0, blunders: 0 };
+    byTimeClass[timeClass].games += 1;
+    byTimeClass[timeClass].blunders += own.length;
+
+    if (side) record[outcomeFor(game, side)] += 1;
+
+    if (!worstGame || own.length > worstGame.blunders) {
+      worstGame = {
+        url: game.url,
+        blunders: own.length,
+        opponent:
+          side === 'w' ? game.black?.username : game.white?.username,
+        timeClass,
+      };
+    }
+  }
+
+  // The category the player lost the most points to — what to work on.
+  const ranked = Object.entries(byCategory).sort((a, b) => b[1] - a[1]);
+  const [topCategory, topCategoryCount] = ranked[0] ?? [null, 0];
+
+  return {
+    username,
+    from: from.toISOString().slice(0, 10),
+    to: to.toISOString().slice(0, 10),
+    days,
+    games: inWindow.length,
+    moves,
+    blunders,
+    blundersPerGame: inWindow.length ? Number((blunders / inWindow.length).toFixed(2)) : 0,
+    cleanGames,
+    byCategory,
+    topCategory,
+    topCategoryCount,
+    topCategoryLabel: topCategory ? CATEGORY_LABELS[topCategory] : null,
+    topCategoryShare: blunders ? Number((topCategoryCount / blunders).toFixed(2)) : 0,
+    byTimeClass,
+    record,
+    worstGame,
+  };
+}
