@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { COACHES, writeHeadline } from '../../../shared/coach.js';
 import { weeklyScore } from '../../../shared/score.js';
 import { CoachMark } from '../components/CoachMark.jsx';
@@ -20,7 +21,9 @@ export default function Home({
   onOpenGames,
   onOpenGame,
   onRefresh,
+  onSwitchPlayer,
 }) {
+  const [showSwitch, setShowSwitch] = useState(false);
   const headline = writeHeadline(coach, summary);
   const score = weeklyScore(summary);
   const periodLabel = summary.widened ? `Last ${summary.games} games` : 'This week';
@@ -33,8 +36,20 @@ export default function Home({
           <CoachMark coach={coach} size={34} />
           <span className="home__coachname">{COACHES[coach]}</span>
         </button>
-        <span className="home__user">{summary.username}</span>
+        {/* The only route back out to a different account. */}
+        <button className="home__user" onClick={() => setShowSwitch((v) => !v)}>
+          {summary.username}
+        </button>
       </header>
+
+      {showSwitch && (
+        <div className="switcher">
+          <span className="switcher__text">Signed in as {summary.username}</span>
+          <button className="linkbtn" onClick={onSwitchPlayer}>
+            Switch player
+          </button>
+        </div>
+      )}
 
       <section className="score">
         <p className="eyebrow score__label">{periodLabel}</p>

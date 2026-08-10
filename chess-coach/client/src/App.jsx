@@ -7,7 +7,7 @@ import Games from './screens/Games.jsx';
 import GameReview from './screens/GameReview.jsx';
 import { CoachMark } from './components/CoachMark.jsx';
 import { useWeeklySummary } from './lib/useWeeklySummary.js';
-import { loadCoach, loadUsername, saveCoach, saveUsername } from './lib/storage.js';
+import { clearAll, loadCoach, loadUsername, saveCoach, saveUsername } from './lib/storage.js';
 
 function Loading({ coach, progress }) {
   return (
@@ -121,6 +121,13 @@ export default function App() {
         setView('review');
       }}
       onRefresh={refresh}
+      onSwitchPlayer={() => {
+        // The cached summary belongs to the old player, so it goes too.
+        clearAll();
+        setCoach(null);
+        setUsername(null);
+        setView('home');
+      }}
     />
   );
 }

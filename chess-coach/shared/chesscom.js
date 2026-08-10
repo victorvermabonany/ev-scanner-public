@@ -70,6 +70,26 @@ async function fetchArchiveUrls(username) {
 }
 
 /**
+ * Check a username before the app commits to it.
+ *
+ * Worth doing at the point the name is typed: otherwise a typo surfaces
+ * minutes later as a failed analysis, with nothing pointing at the cause.
+ *
+ * @returns {Promise<{username: string, hasGames: boolean}>}
+ * @throws {ChessComError} 404 when there's no such player
+ */
+export async function verifyPlayer(username) {
+  const name = (username ?? '').trim();
+  if (!name) throw new ChessComError('Enter a username to continue', 400);
+
+  // 404s for an unknown player, which getJson turns into a readable message.
+  await getJson(`${BASE_URL}/player/${encodeURIComponent(name)}`);
+
+  const archives = await fetchArchiveUrls(name);
+  return { username: name, hasGames: archives.length > 0 };
+}
+
+/**
  * Fetch a player's most recent games, newest first.
  *
  * Chess.com only exposes games one month at a time, and a month can hold
