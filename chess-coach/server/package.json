@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "node --watch index.js",
-    "start": "node index.js"
+    "start": "node index.js",
+    "games": "node scripts/fetch-games.js"
   },
   "dependencies": {
     "express": "^4.21.2"
