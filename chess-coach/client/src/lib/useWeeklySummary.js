@@ -26,12 +26,17 @@ export function useWeeklySummary(username) {
     setProgress({ stage: 'Fetching your games', detail: null, fraction: null });
 
     try {
-      const games = (await fetchRecentGames(username, GAMES_TO_ANALYSE)).filter(
-        (game) => game.rules === 'chess'
-      );
+      const fetched = await fetchRecentGames(username, GAMES_TO_ANALYSE);
+      const games = fetched.filter((game) => game.rules === 'chess');
 
       if (games.length === 0) {
-        setSummary(summariseWeek([], { username }));
+        // Deliberately not cached: the moment they play a game it should show
+        // up, without them having to know a Refresh button exists.
+        setSummary({
+          ...summariseWeek([], { username }),
+          emptyReason: fetched.length > 0 ? 'variants-only' : 'no-games',
+          variantCount: fetched.length,
+        });
         return;
       }
 
