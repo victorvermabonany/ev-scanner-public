@@ -195,6 +195,39 @@ export function writeReport(coach, summary) {
   return WRITERS[coach](summary);
 }
 
+/**
+ * One sentence for the home screen — the full report is too long to sit
+ * above the fold on a phone, but the headline still has to be in voice.
+ */
+export function writeHeadline(coach, summary) {
+  if (!WRITERS[coach]) throw new Error(`Unknown coach "${coach}"`);
+
+  if (summary.games === 0) {
+    return {
+      mentor: 'No games yet in this stretch — play a few and I’ll have something for you.',
+      drill_sergeant: 'No games logged. Nothing to work on until you play.',
+      analyst: 'No games recorded for this period.',
+    }[coach];
+  }
+
+  if (summary.blunders === 0) {
+    return {
+      mentor: 'Not a single blunder this time — that is genuinely hard to do.',
+      drill_sergeant: 'Zero blunders. Good. Now find harder opponents.',
+      analyst: 'Blunders: 0. No category exceeded threshold.',
+    }[coach];
+  }
+
+  const label = summary.topCategoryLabel.toLowerCase();
+  const pct = Math.round(summary.topCategoryShare * 100);
+
+  return {
+    mentor: `${summary.topCategoryCount} of your ${summary.blunders} blunders came from ${label} — that’s the one worth your attention.`,
+    drill_sergeant: `${summary.topCategoryCount} of ${summary.blunders} were ${label}, so fix that before anything else.`,
+    analyst: `${summary.topCategoryLabel} accounts for ${pct}% of blunders, the largest single category.`,
+  }[coach];
+}
+
 /** All three voices for the same week, for side-by-side comparison. */
 export function writeAllReports(summary) {
   return Object.fromEntries(
