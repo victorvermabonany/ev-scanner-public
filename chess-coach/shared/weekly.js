@@ -51,6 +51,7 @@ export function summariseWeek(entries, { username, now = new Date(), days = 7 } 
   const byCategory = {};
   const byTimeClass = {};
   const record = { win: 0, loss: 0, draw: 0 };
+  const drills = [];
 
   let moves = 0;
   let blunders = 0;
@@ -69,6 +70,25 @@ export function summariseWeek(entries, { username, now = new Date(), days = 7 } 
 
     for (const blunder of own) {
       byCategory[blunder.category] = (byCategory[blunder.category] ?? 0) + 1;
+
+      // Enough to replay the position as a drill without re-running the
+      // engine: the position, what was played, and what the engine wanted.
+      // Kept deliberately narrow because this ends up in localStorage.
+      drills.push({
+        id: `${game.uuid ?? game.url}#${blunder.ply}`,
+        fen: blunder.fenBefore,
+        played: blunder.san,
+        bestMove: blunder.evalBefore?.bestMove ?? null, // UCI, e.g. "g1f3"
+        category: blunder.category,
+        moveNumber: blunder.moveNumber,
+        color: blunder.color,
+        evalBefore: blunder.evalBefore,
+        evalAfter: blunder.evalAfter,
+        lossCp: blunder.lossCp,
+        details: blunder.categoryDetails ?? {},
+        gameUrl: game.url,
+        opponent: side === 'w' ? game.black?.username : game.white?.username,
+      });
     }
 
     const timeClass = game.time_class ?? 'unknown';
@@ -111,5 +131,8 @@ export function summariseWeek(entries, { username, now = new Date(), days = 7 } 
     byTimeClass,
     record,
     worstGame,
+    // Only drills the engine actually gave a move for — a position with no
+    // best move can't be practised.
+    drills: drills.filter((drill) => drill.bestMove),
   };
 }

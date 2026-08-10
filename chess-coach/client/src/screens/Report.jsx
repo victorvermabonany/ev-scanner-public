@@ -2,7 +2,7 @@ import { COACHES, writeReport } from '../../../shared/coach.js';
 import { CATEGORY_LABELS } from '../../../shared/classify.js';
 import { CoachMark } from '../components/CoachMark.jsx';
 
-export default function Report({ coach, summary, onBack }) {
+export default function Report({ coach, summary, onBack, onOpenDrills }) {
   const report = writeReport(coach, summary);
 
   // Biggest problem first — the ordering is the point of the breakdown.
@@ -67,6 +67,12 @@ export default function Report({ coach, summary, onBack }) {
           — {summary.worstGame.blunders}{' '}
           {summary.worstGame.blunders === 1 ? 'blunder' : 'blunders'}
         </p>
+      )}
+
+      {summary.topCategory && (
+        <button className="btn btn--quiet" onClick={onOpenDrills}>
+          Drill {CATEGORY_LABELS[summary.topCategory].toLowerCase()} positions
+        </button>
       )}
 
       <footer className="footer">build {__BUILD_TIME__}</footer>

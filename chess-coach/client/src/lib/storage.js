@@ -6,7 +6,10 @@
 const KEYS = {
   coach: 'chesscoach.coach',
   username: 'chesscoach.username',
-  summary: 'chesscoach.summary',
+  // Bumped when the summary's shape changes, so an older cached copy is
+  // ignored rather than read with fields that aren't there. v2 added drills.
+  summary: 'chesscoach.summary.v2',
+  completed: 'chesscoach.completedDrills',
 };
 
 // Analysing a week of games takes real time on a phone, so the result is
@@ -52,6 +55,21 @@ export function loadSummary(username) {
 
 export function saveSummary(username, summary) {
   write(KEYS.summary, JSON.stringify({ username, savedAt: Date.now(), summary }));
+}
+
+/** Drill ids the player has attempted. Survives re-analysis. */
+export function loadCompleted() {
+  try {
+    const parsed = JSON.parse(read(KEYS.completed) ?? '[]');
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export function markCompleted(id) {
+  const all = loadCompleted();
+  if (!all.includes(id)) write(KEYS.completed, JSON.stringify([...all, id]));
 }
 
 export function clearAll() {

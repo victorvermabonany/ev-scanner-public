@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Onboarding from './screens/Onboarding.jsx';
 import Home from './screens/Home.jsx';
 import Report from './screens/Report.jsx';
+import Drills from './screens/Drills.jsx';
 import { CoachMark } from './components/CoachMark.jsx';
 import { useWeeklySummary } from './lib/useWeeklySummary.js';
 import { loadCoach, loadUsername, saveCoach, saveUsername } from './lib/storage.js';
@@ -63,7 +64,18 @@ export default function App() {
   if (!summary) return <main className="screen" />;
 
   if (view === 'report') {
-    return <Report coach={coach} summary={summary} onBack={() => setView('home')} />;
+    return (
+      <Report
+        coach={coach}
+        summary={summary}
+        onBack={() => setView('home')}
+        onOpenDrills={() => setView('drills')}
+      />
+    );
+  }
+
+  if (view === 'drills') {
+    return <Drills summary={summary} onBack={() => setView('home')} />;
   }
 
   return (
@@ -72,6 +84,7 @@ export default function App() {
       summary={summary}
       onChangeCoach={() => setCoach(null)}
       onOpenReport={() => setView('report')}
+      onOpenDrills={() => setView('drills')}
       onRefresh={refresh}
     />
   );

@@ -1,7 +1,7 @@
 import { COACHES, writeHeadline } from '../../../shared/coach.js';
 import { CoachMark } from '../components/CoachMark.jsx';
 
-export default function Home({ coach, summary, onChangeCoach, onOpenReport, onRefresh }) {
+export default function Home({ coach, summary, onChangeCoach, onOpenReport, onOpenDrills, onRefresh }) {
   const headline = writeHeadline(coach, summary);
   const periodLabel = summary.widened ? `Last ${summary.games} games` : 'This week';
 
@@ -51,7 +51,10 @@ export default function Home({ coach, summary, onChangeCoach, onOpenReport, onRe
 
       <div className="home__actions">
         <button className="linkbtn" onClick={onOpenReport}>
-          Full report →
+          Full report
+        </button>
+        <button className="linkbtn" onClick={onOpenDrills}>
+          Drills →
         </button>
         <button className="linkbtn" onClick={onRefresh}>
           Refresh
