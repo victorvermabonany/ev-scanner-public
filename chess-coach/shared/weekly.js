@@ -106,9 +106,10 @@ export function summariseWeek(entries, { username, now = new Date(), days = 7 } 
     const outcome = side ? outcomeFor(game, side) : null;
     if (outcome) record[outcome] += 1;
 
-    const tally = { blunder: 0, mistake: 0, inaccuracy: 0, good: 0 };
+    // Counts by the eight review labels, for the player's own moves.
+    const tally = {};
     for (const move of analysis.moves) {
-      if (move.color === side) tally[move.classification] += 1;
+      if (move.color === side) tally[move.label] = (tally[move.label] ?? 0) + 1;
     }
 
     gameLog.push({
@@ -122,6 +123,7 @@ export function summariseWeek(entries, { username, now = new Date(), days = 7 } 
       playedAt: new Date(game.end_time * 1000).toISOString().slice(0, 10),
       startFen: analysis.moves[0]?.fenBefore ?? null,
       tally,
+      accuracy: analysis.accuracy,
       moves: analysis.moves.map((move) => ({
         ply: move.ply,
         moveNumber: move.moveNumber,
@@ -129,7 +131,15 @@ export function summariseWeek(entries, { username, now = new Date(), days = 7 } 
         san: move.san,
         lossCp: move.lossCp,
         classification: move.classification,
+        label: move.label,
         explanation: move.explanation ?? null,
+        // Enough to drive the eval bar and the best-move arrow without
+        // storing a position per ply.
+        cp: move.evalAfter?.cp ?? null,
+        mate: move.evalAfter?.mate ?? null,
+        terminal: move.evalAfter?.terminal ?? null,
+        bestFrom: move.classification === 'good' ? null : move.bestFrom,
+        bestTo: move.classification === 'good' ? null : move.bestTo,
       })),
     });
 

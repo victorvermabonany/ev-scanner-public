@@ -12,7 +12,14 @@ const GLYPH = { k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟' };
 const FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
 const RANKS = [8, 7, 6, 5, 4, 3, 2, 1];
 
-export function Board({ fen, orientation = 'w', onMove, disabled = false, lastMove = null }) {
+export function Board({
+  fen,
+  orientation = 'w',
+  onMove,
+  disabled = false,
+  lastMove = null,
+  arrow = null,
+}) {
   const [from, setFrom] = useState(null);
 
   const chess = useMemo(() => new Chess(fen), [fen]);
@@ -39,6 +46,13 @@ export function Board({ fen, orientation = 'w', onMove, disabled = false, lastMo
     const piece = chess.get(square);
     // Only the side to move can be picked up.
     setFrom(piece && piece.color === chess.turn() ? square : null);
+  }
+
+  // Centre of a square in 0-8 board units, honouring orientation.
+  function centre(square) {
+    const fileIndex = files.indexOf(square[0]);
+    const rankIndex = ranks.indexOf(Number(square[1]));
+    return { x: fileIndex + 0.5, y: rankIndex + 0.5 };
   }
 
   return (
@@ -74,6 +88,34 @@ export function Board({ fen, orientation = 'w', onMove, disabled = false, lastMo
             </button>
           );
         })
+      )}
+
+      {arrow?.from && arrow?.to && (
+        <svg className="board__arrow" viewBox="0 0 8 8" aria-hidden="true">
+          <defs>
+            <marker
+              id="arrowhead"
+              markerWidth="3"
+              markerHeight="3"
+              refX="2.2"
+              refY="1.5"
+              orient="auto"
+            >
+              <path d="M0,0 L3,1.5 L0,3 Z" fill="var(--green-lift)" />
+            </marker>
+          </defs>
+          <line
+            x1={centre(arrow.from).x}
+            y1={centre(arrow.from).y}
+            x2={centre(arrow.to).x}
+            y2={centre(arrow.to).y}
+            stroke="var(--green-lift)"
+            strokeWidth="0.16"
+            strokeLinecap="round"
+            markerEnd="url(#arrowhead)"
+            opacity="0.9"
+          />
+        </svg>
       )}
     </div>
   );

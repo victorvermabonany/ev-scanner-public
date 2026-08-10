@@ -36,7 +36,7 @@ export class BrowserEngine {
 
     this.#send('uci');
     await this.#waitFor((line) => line === 'uciok', 120_000);
-    this.#send('setoption name MultiPV value 1');
+    this.#send('setoption name MultiPV value 2');
     await this.#ready();
     return this;
   }
@@ -95,30 +95,39 @@ export class BrowserEngine {
     this.#send(`position fen ${fen}`);
     this.#send(`go depth ${depth}`);
 
-    let latest = null;
+    // With MultiPV 2 the engine reports the best line and the runner-up, which
+    // is what tells an "only move" apart from one of several good options.
+    const best = { 1: null, 2: null };
     const finalLine = await this.#waitFor((line) => {
       if (line.startsWith('info ') && line.includes(' score ')) {
         if (!/\b(lowerbound|upperbound)\b/.test(line)) {
-          const match = line.match(/ score (cp|mate) (-?\d+)/);
-          if (match) latest = { kind: match[1], value: Number(match[2]) };
+          const rank = Number(line.match(/ multipv (\d+)/)?.[1] ?? 1);
+          const score = line.match(/ score (cp|mate) (-?\d+)/);
+          if (score && best[rank] !== undefined) {
+            best[rank] = { kind: score[1], value: Number(score[2]) };
+          }
         }
       }
       return line.startsWith('bestmove');
     });
 
-    // The move the engine would have played instead — what a blunder gets
-    // compared against during categorisation.
     const bestToken = finalLine.split(/\s+/)[1];
     const bestMove = bestToken && bestToken !== '(none)' ? bestToken : null;
+    const latest = best[1];
 
-    if (!latest) return { cp: null, mate: null, bestMove };
+    if (!latest) return { cp: null, mate: null, bestMove, gapCp: null };
+
+    // Both raw scores are relative to the side to move, so the gap between
+    // them is meaningful without normalising first.
+    const asCp = (s) => (s.kind === 'mate' ? (s.value > 0 ? 10000 : -10000) : s.value);
+    const gapCp = best[2] ? Math.max(0, asCp(best[1]) - asCp(best[2])) : null;
 
     const whiteToMove = fen.split(' ')[1] === 'w';
     const signed = whiteToMove ? latest.value : -latest.value;
 
     return latest.kind === 'mate'
-      ? { cp: null, mate: signed, bestMove }
-      : { cp: signed, mate: null, bestMove };
+      ? { cp: null, mate: signed, bestMove, gapCp }
+      : { cp: signed, mate: null, bestMove, gapCp };
   }
 
   async quit() {

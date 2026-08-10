@@ -37,6 +37,12 @@
   --rule: rgba(255, 255, 255, 0.13);
   --rule-strong: rgba(255, 255, 255, 0.26);
 
+  /* Two extra hues the eight labels need beyond the red/amber/green scale. */
+  --brilliant: #35b6a0;
+  --great: #6a9bd8;
+  --inaccuracy: #e0c33c;
+  --mistake: #e08a3c;
+
   --ring-track: rgba(255, 255, 255, 0.09);
   --panel: #0b0b0b;
 
@@ -1026,10 +1032,14 @@ body {
   border-top: 2px solid var(--rule);
 }
 
+.movecard--brilliant  { border-top-color: var(--brilliant); }
+.movecard--great      { border-top-color: var(--great); }
+.movecard--best       { border-top-color: var(--green); }
+.movecard--good       { border-top-color: var(--rule-strong); }
+.movecard--book       { border-top-color: var(--rule); }
+.movecard--inaccuracy { border-top-color: var(--inaccuracy); }
+.movecard--mistake    { border-top-color: var(--mistake); }
 .movecard--blunder    { border-top-color: var(--brick); }
-.movecard--mistake    { border-top-color: var(--amber); }
-.movecard--inaccuracy { border-top-color: var(--rule-strong); }
-.movecard--good       { border-top-color: var(--green); }
 
 .movecard__head {
   margin: 0;
@@ -1055,10 +1065,14 @@ body {
   border: 1px solid;
 }
 
+.chip--brilliant  { color: var(--brilliant); border-color: rgba(53, 182, 160, 0.5); }
+.chip--great      { color: var(--great); border-color: rgba(106, 155, 216, 0.5); }
+.chip--best       { color: var(--green-lift); border-color: rgba(100, 192, 122, 0.45); }
+.chip--good       { color: var(--ink-70); border-color: var(--rule-strong); }
+.chip--book       { color: var(--ink-45); border-color: var(--rule); }
+.chip--inaccuracy { color: var(--inaccuracy); border-color: rgba(224, 195, 60, 0.45); }
+.chip--mistake    { color: var(--mistake); border-color: rgba(224, 138, 60, 0.45); }
 .chip--blunder    { color: var(--brick-lift); border-color: rgba(224, 92, 70, 0.45); }
-.chip--mistake    { color: var(--amber-lift); border-color: rgba(224, 168, 60, 0.45); }
-.chip--inaccuracy { color: var(--ink-70); border-color: var(--rule-strong); }
-.chip--good       { color: var(--green-lift); border-color: rgba(100, 192, 122, 0.4); }
 
 .movecard__why {
   margin: 0.5rem 0 0;
@@ -1108,9 +1122,13 @@ body {
 
 /* Only moves that cost something are coloured; "good" stays quiet so the
    warnings are what the eye catches. */
+.moverow__cell--brilliant  { color: var(--brilliant); }
+.moverow__cell--great      { color: var(--great); }
+.moverow__cell--best       { color: var(--green-lift); }
+.moverow__cell--book       { color: var(--ink-45); font-style: italic; }
+.moverow__cell--inaccuracy { color: var(--inaccuracy); }
+.moverow__cell--mistake    { color: var(--mistake); }
 .moverow__cell--blunder    { color: var(--brick-lift); }
-.moverow__cell--mistake    { color: var(--amber-lift); }
-.moverow__cell--inaccuracy { color: var(--ink); }
 
 /* Selection is shown with a background only — overriding the colour here
    would strip a blunder of its red exactly when you're looking at it. */
@@ -1118,3 +1136,130 @@ body {
   background: rgba(255, 255, 255, 0.1);
   font-weight: 700;
 }
+
+
+/* ------------------------------------------------ eval bar + arrows */
+
+.boardwrap {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.boardwrap .board {
+  flex: 1;
+  min-width: 0;
+}
+
+.evalbar {
+  position: relative;
+  width: 22px;
+  flex: none;
+  background: #101010;
+  border: 1px solid var(--rule);
+  overflow: hidden;
+}
+
+/* White fills from the bottom; whatever is left is black's. */
+.evalbar__white {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #e9e9e9;
+  transition: height 0.3s ease;
+}
+
+.evalbar__text {
+  position: absolute;
+  left: 0;
+  right: 0;
+  font-family: var(--mono);
+  font-size: 0.5rem;
+  letter-spacing: -0.04em;
+  text-align: center;
+  padding: 2px 0;
+}
+
+.evalbar__text--w { bottom: 0; color: #141414; }
+.evalbar__text--b { top: 0; color: #e9e9e9; }
+
+.board {
+  position: relative;
+}
+
+.board__arrow {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* ----------------------------------------------- review summary head */
+
+.reviewtop {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.reviewtop__acc {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+
+.reviewtop__accvalue {
+  font-family: var(--mono);
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.reviewtop__acclabel {
+  font-family: var(--mono);
+  font-size: 0.52rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-45);
+  margin-top: 0.3rem;
+}
+
+.reviewtop__counts {
+  display: flex;
+  gap: 0.4rem;
+  margin: 0;
+  flex: 1;
+  justify-content: flex-end;
+}
+
+.rtc {
+  min-width: 3.4rem;
+  padding: 0.35rem 0.3rem;
+  border: 1px solid var(--rule);
+  text-align: center;
+}
+
+.rtc dt {
+  font-family: var(--mono);
+  font-size: 0.47rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-45);
+}
+
+.rtc dd {
+  margin: 0.15rem 0 0;
+  font-family: var(--mono);
+  font-size: 1rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.rtc--blunder dd    { color: var(--brick-lift); }
+.rtc--mistake dd    { color: var(--mistake); }
+.rtc--inaccuracy dd { color: var(--inaccuracy); }

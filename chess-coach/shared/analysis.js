@@ -7,6 +7,8 @@
 import { Chess } from 'chess.js';
 import { classifyBlunder, parseClocks, parseTimeControl } from './classify.js';
 import { explainMove } from './explain.js';
+import { labelMove, bookPlies } from './labels.js';
+import { gameAccuracy } from './accuracy.js';
 
 export const DEFAULT_THRESHOLD_PAWNS = 2.5;
 export const DEFAULT_DEPTH = 12;
@@ -144,8 +146,10 @@ export async function analyseGame(pgn, {
   // Context for categorising blunders. Both come out of the PGN itself —
   // Chess.com writes a clock into every move comment, and the TimeControl
   // header says what the clock started at.
+  const headers = parser.getHeaders() ?? {};
   const clocks = parseClocks(pgn);
-  const timeControl = parseTimeControl(parser.getHeaders()?.TimeControl);
+  const timeControl = parseTimeControl(headers.TimeControl);
+  const book = bookPlies(headers);
 
   const analysed = [];
   const blunders = [];
@@ -180,8 +184,17 @@ export async function analyseGame(pgn, {
       // definition.
       classification: playedEnginesMove ? 'good' : classifyMove(lossCp),
       matchedEngine: playedEnginesMove,
+      // The engine's move, split out so the review can draw it as an arrow.
+      bestFrom: evalBefore.bestMove?.slice(0, 2) ?? null,
+      bestTo: evalBefore.bestMove?.slice(2, 4) ?? null,
       isBlunder: !playedEnginesMove && lossCp >= threshold * 100,
     };
+
+    record.label = labelMove(record, {
+      matchedEngine: playedEnginesMove,
+      bookPlies: book,
+      previousTo: played[index - 1]?.to ?? null,
+    });
 
     analysed.push(record);
 
@@ -202,5 +215,11 @@ export async function analyseGame(pgn, {
     if (record.isBlunder) blunders.push(record);
   }
 
-  return { moves: analysed, blunders, positionsEvaluated: positions.length };
+  return {
+    moves: analysed,
+    blunders,
+    positionsEvaluated: positions.length,
+    accuracy: gameAccuracy(analysed),
+    bookPlies: book,
+  };
 }
