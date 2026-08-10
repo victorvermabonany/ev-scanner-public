@@ -5,7 +5,8 @@
 // repeat per screen.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { fetchRecentGames, ChessComError } from '../../../shared/chesscom.js';
+import { fetchRecentGames } from '../../../shared/chesscom.js';
+import { describeFailure } from './describeFailure.js';
 import { analyseGame } from '../../../shared/analysis.js';
 import { summariseWeek } from '../../../shared/weekly.js';
 import { BrowserEngine } from './engine.js';
@@ -46,10 +47,15 @@ export function useWeeklySummary(username) {
       }
 
       const entries = [];
+      let skipped = 0;
+
       for (const [index, game] of games.entries()) {
-        entries.push({
-          game,
-          analysis: await analyseGame(game.pgn, {
+        // One unreadable game shouldn't cost the user the whole run, so each
+        // is isolated and a failure just drops that game.
+        try {
+          entries.push({
+            game,
+            analysis: await analyseGame(game.pgn, {
             engine: engineRef.current,
             depth: DEPTH,
             // Report every position, not every game. A game can take half a
@@ -61,9 +67,21 @@ export function useWeeklySummary(username) {
                 detail: `Game ${index + 1} of ${games.length}`,
                 fraction: (index + done / total) / games.length,
               });
-            },
-          }),
-        });
+              },
+            }),
+          });
+        } catch (gameError) {
+          skipped += 1;
+          console.warn('Skipped a game that could not be analysed:', game.url, gameError);
+        }
+      }
+
+      if (entries.length === 0) {
+        throw new Error(
+          skipped > 0
+            ? 'None of your recent games could be analysed.'
+            : 'No games were available to analyse.'
+        );
       }
 
       // Anchor to the most recent game: a strict "last 7 days from today"
@@ -80,12 +98,17 @@ export function useWeeklySummary(username) {
         next = { ...summariseWeek(entries, { username, now: latest, days: span }), widened: true };
       }
 
+      next = { ...next, skippedGames: skipped };
       setSummary(next);
       saveSummary(username, next);
     } catch (err) {
-      setError(
-        err instanceof ChessComError ? err.message : err.message ?? 'Something went wrong.'
-      );
+      // A half-started engine will keep failing, so drop it and let a retry
+      // build a fresh one.
+      if (/engine|stockfish|worker/i.test(String(err?.message ?? ''))) {
+        engineRef.current?.quit?.();
+        engineRef.current = null;
+      }
+      setError(describeFailure(err, { username }));
     } finally {
       setProgress(null);
     }

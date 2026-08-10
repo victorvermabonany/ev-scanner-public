@@ -58,11 +58,29 @@ export default function App() {
 
   if (error) {
     return (
-      <main className="screen screen--center">
-        <p className="error">{error}</p>
-        <button className="btn" onClick={refresh}>
-          Try again
-        </button>
+      <main className="screen screen--center failure">
+        <h1 className="failure__title">{error.title}</h1>
+        <p className="failure__message">{error.message}</p>
+        <div className="failure__actions">
+          {error.retry && (
+            <button className="btn" onClick={refresh}>
+              Try again
+            </button>
+          )}
+          {error.switchPlayer && (
+            <button
+              className="linkbtn"
+              onClick={() => {
+                clearAll();
+                setCoach(null);
+                setUsername(null);
+                setView('home');
+              }}
+            >
+              Switch player
+            </button>
+          )}
+        </div>
       </main>
     );
   }
