@@ -1,5 +1,10 @@
 import express from 'express';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { fetchRecentGames, ChessComError } from './chesscom.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const clientDist = path.join(__dirname, '..', 'client', 'dist');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -29,6 +34,15 @@ app.get('/api/games/:username', async (req, res) => {
     console.error(error);
     res.status(500).json({ error: 'Something went wrong fetching games' });
   }
+});
+
+// In dev, the React app is served by Vite (port 5173) and only /api/*
+// requests reach this server via its proxy. In production there's no Vite
+// process, so this server also serves the client's built files directly —
+// one process, one URL, nothing else to deploy or configure.
+app.use(express.static(clientDist));
+app.get(/^(?!\/api).*/, (req, res) => {
+  res.sendFile(path.join(clientDist, 'index.html'));
 });
 
 app.listen(PORT, () => {

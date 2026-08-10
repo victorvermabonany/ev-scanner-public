@@ -67,6 +67,31 @@ npm run build    # writes client/dist
 npm run preview  # serves the built files locally
 ```
 
+In production there's no Vite dev server — `server/index.js` serves the
+built `client/dist` files itself, plus the `/api/*` routes, all from one
+port. So a deployment only needs to run one process: build the client, then
+start the server.
+
+## Deploying (so you can open it from your phone)
+
+Any host that can build and run a Node web service works — for example,
+[Render](https://render.com):
+
+1. Push this repo to GitHub (already done if you're reading this from the repo).
+2. On render.com, sign in with GitHub → **New +** → **Web Service** → pick
+   this repo.
+3. Set:
+   - **Root Directory**: leave blank (repo root)
+   - **Build Command**: `cd chess-coach && npm run install:all && npm run build`
+   - **Start Command**: `cd chess-coach && npm --prefix server start`
+   - **Instance Type**: Free
+4. Deploy. Render gives you a `https://<name>.onrender.com` URL — open that
+   on your phone.
+
+No local machine or tunnel needed; the whole thing runs on Render's
+infrastructure. (Free-tier services sleep after inactivity and take ~30s to
+wake back up on the next request — normal for this tier, not a bug.)
+
 ## Layout
 
 ```
