@@ -17,8 +17,9 @@ const DEVICE = {
 
 // Bumped when the summary's shape changes, so an older cached copy is
 // ignored rather than read with fields that aren't there. v2 added drills,
-// v3 per-game rows, v4 full move reviews, v5 labels/evals/arrows.
-const SUMMARY_VERSION = 'v5';
+// v3 per-game rows, v4 full move reviews, v5 labels/evals/arrows, v6 the
+// player's rating, which the tier is measured against.
+const SUMMARY_VERSION = 'v6';
 
 /** Usernames are case-insensitive on Chess.com, so keys are lowercased. */
 const profileKey = (username, name) =>

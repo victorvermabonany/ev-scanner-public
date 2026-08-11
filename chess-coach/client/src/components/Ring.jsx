@@ -1,4 +1,8 @@
-// The weekly score as a filled ring.
+// Progress toward the next tier, as a filled ring.
+//
+// It used to hold a 0-100 weekly score. It now carries no number of its own:
+// the tier name sits inside it, and the fill only says how far through that
+// tier you are.
 //
 // Drawn as plain SVG rather than pulled from a chart library — it's two
 // circles and a dash offset, and a library would cost more than it saves.

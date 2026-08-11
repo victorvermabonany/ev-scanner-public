@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Chess } from 'chess.js';
 import { LABEL_TEXT } from '../../../shared/labels.js';
 import { noteForMove, personalise } from '../../../shared/explain.js';
-import { accuracyBand } from '../../../shared/score.js';
+import { accuracyBand } from '../../../shared/bands.js';
 import { Board } from '../components/Board.jsx';
 import { EvalBar } from '../components/EvalBar.jsx';
 

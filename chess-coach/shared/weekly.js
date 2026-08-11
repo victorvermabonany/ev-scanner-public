@@ -65,6 +65,12 @@ export function summariseWeek(entries, { username, now = new Date(), days = 7 } 
   let cleanGames = 0;
   let worstGame = null;
 
+  // The player's own rating, as Chess.com reported it on each game. Kept per
+  // time class because rapid, blitz and bullet are separate pools and a
+  // player is routinely a few hundred points apart across them — averaging
+  // them together would compare them against the wrong baseline.
+  const ratingsByClass = {};
+
   for (const { game, analysis } of inWindow) {
     const side = sideOf(game, username);
 
@@ -102,6 +108,11 @@ export function summariseWeek(entries, { username, now = new Date(), days = 7 } 
     byTimeClass[timeClass] ??= { games: 0, blunders: 0 };
     byTimeClass[timeClass].games += 1;
     byTimeClass[timeClass].blunders += own.length;
+
+    const rating = (side === 'w' ? game.white : game.black)?.rating;
+    if (Number.isFinite(rating) && rating > 0) {
+      (ratingsByClass[timeClass] ??= []).push({ rating, at: game.end_time ?? 0 });
+    }
 
     const outcome = side ? outcomeFor(game, side) : null;
     if (outcome) record[outcome] += 1;
@@ -171,8 +182,22 @@ export function summariseWeek(entries, { username, now = new Date(), days = 7 } 
   const ranked = Object.entries(byCategory).sort((a, b) => b[1] - a[1]);
   const [topCategory, topCategoryCount] = ranked[0] ?? [null, 0];
 
+  // One rating to compare against: the pool they played most of these games
+  // in, at its most recent value. Most recent rather than an average, because
+  // a rating that moved 80 points over the window should be read at where it
+  // ended up.
+  const mainPool = Object.entries(ratingsByClass).sort(
+    (a, b) => b[1].length - a[1].length
+  )[0];
+  const rating = mainPool
+    ? [...mainPool[1]].sort((a, b) => b.at - a.at)[0].rating
+    : null;
+
   return {
     username,
+    rating,
+    ratingPool: mainPool?.[0] ?? null,
+    ratingGames: mainPool?.[1].length ?? 0,
     from: from.toISOString().slice(0, 10),
     to: to.toISOString().slice(0, 10),
     days,

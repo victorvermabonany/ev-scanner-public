@@ -50,6 +50,15 @@
   --inaccuracy: #e0c33c;
   --mistake: #e08a3c;
 
+  /* The five rungs. Bronze and silver are the only genuinely new hues; gold,
+     platinum and diamond sit alongside the amber, blue and teal already in
+     the palette so the ladder doesn't read as a second colour system. */
+  --bronze: #c07a45;
+  --silver: #b7bec6;
+  --gold: #e5c04a;
+  --platinum: #9dc4e8;
+  --diamond: #4fd6c0;
+
   --ring-track: rgba(255, 255, 255, 0.09);
   --panel: #0b0b0b;
 
@@ -86,9 +95,9 @@ body {
 }
 
 /* Numbers, notation, labels — anything that should read as a scoresheet. */
-.score__value,
-.score__row dd,
-.score__row dt,
+.rank__figure,
+.tierwhy,
+.rank__label,
 .rep__period,
 .rep__meta,
 .bar__count,
@@ -320,8 +329,8 @@ body {
   letter-spacing: 0.04em;
 }
 
-/* The score, set as a scoresheet entry rather than a meter. */
-.score {
+/* The rank: the tier is the headline, the ring behind it shows movement. */
+.rank {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -329,14 +338,14 @@ body {
   padding: 0.5rem 0 1rem;
 }
 
-.score__head {
+.rank__head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
 }
 
 /* ring hero */
-.score__ring {
+.rank__ring {
   display: flex;
   justify-content: center;
   padding: 1.1rem 0 0.4rem;
@@ -358,9 +367,12 @@ body {
   transition: stroke-dasharray 0.5s ease;
 }
 
-.ring__fill--high { stroke: var(--green-lift); }
-.ring__fill--mid  { stroke: var(--amber-lift); }
-.ring__fill--low  { stroke: var(--brick-lift); }
+.ring__fill--bronze   { stroke: var(--bronze); }
+.ring__fill--silver   { stroke: var(--silver); }
+.ring__fill--gold     { stroke: var(--gold); }
+.ring__fill--platinum { stroke: var(--platinum); }
+.ring__fill--diamond  { stroke: var(--diamond); }
+.ring__fill--unranked { stroke: var(--ink-28); }
 
 .ring__inner {
   position: absolute;
@@ -372,18 +384,38 @@ body {
   gap: 0.3rem;
 }
 
-.ring__value {
-  font-family: var(--mono);
-  font-size: clamp(2.1rem, 11vmin, 3.4rem);
-  font-weight: 600;
+/* The tier name, not a number: set in the serif, because "Platinum" at the
+   size a headline needs would not fit the ring in a monospace face. */
+.tiername {
+  font-family: var(--serif);
+  font-size: clamp(1.5rem, 8.4vmin, 2.4rem);
+  font-weight: 500;
   line-height: 1;
-  letter-spacing: -0.04em;
-  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.015em;
 }
 
-.ring__value--high { color: var(--green-lift); }
-.ring__value--mid  { color: var(--amber-lift); }
-.ring__value--low  { color: var(--brick-lift); }
+.tiername--bronze   { color: var(--bronze); }
+.tiername--silver   { color: var(--silver); }
+.tiername--gold     { color: var(--gold); }
+.tiername--platinum { color: var(--platinum); }
+.tiername--diamond  { color: var(--diamond); }
+.tiername--unranked { color: var(--ink-45); }
+
+/* What the tier is measured against. A rank nobody can check is just a
+   badge, so the two numbers behind it are on screen. */
+.tierwhy {
+  margin: 0.6rem 0 0;
+  text-align: center;
+  font-size: 0.62rem;
+  letter-spacing: 0.05em;
+  line-height: 1.5;
+  color: var(--ink-45);
+}
+
+.tierwhy b {
+  color: var(--ink);
+  font-weight: 600;
+}
 
 .ring__caption {
   font-family: var(--mono);
@@ -916,12 +948,31 @@ body {
     padding-bottom: 0.6rem;
   }
 
-  .score {
+  .rank {
     padding: 0.25rem 0 0.5rem;
   }
 
-  .score__ring {
+  .rank__ring {
     padding: 0.5rem 0 0.25rem;
+  }
+
+  /* The rank line is new height on a screen that has to fit without
+     scrolling, so the ring and this line give a little rather than the
+     notation strip being pushed off the bottom. */
+  .tierwhy {
+    margin-top: 0.4rem;
+    font-size: 0.56rem;
+    line-height: 1.45;
+  }
+
+  .ring {
+    width: clamp(116px, 41vmin, 190px);
+  }
+
+  /* Held back a touch more than the ring, so "Platinum" — the longest of the
+     five — still sits clear of the stroke. */
+  .tiername {
+    font-size: clamp(1.3rem, 7.4vmin, 2.4rem);
   }
 
   .stats {

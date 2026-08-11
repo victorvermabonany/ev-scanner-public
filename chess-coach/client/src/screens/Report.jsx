@@ -1,6 +1,6 @@
 import { COACHES, writeReport } from '../../../shared/coach.js';
 import { CATEGORY_LABELS } from '../../../shared/classify.js';
-import { categoryBand } from '../../../shared/score.js';
+import { categoryBand } from '../../../shared/bands.js';
 import { CoachMark } from '../components/CoachMark.jsx';
 
 export default function Report({ coach, summary, onBack, onOpenDrills }) {
@@ -42,7 +42,7 @@ export default function Report({ coach, summary, onBack, onOpenDrills }) {
         ) : (
           <ul className="bars">
             {rows.map(([category, count]) => {
-              // Same red/amber/green scale as the ring: a category that
+              // Red/amber/green by share: a category that
               // dominates the week reads urgent, a minor one recedes.
               const band = categoryBand(count, summary.blunders);
               return (

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { COACHES, writeHeadline } from '../../../shared/coach.js';
-import { weeklyScore } from '../../../shared/score.js';
+import { MIN_GAMES, TIER_TEXT, tierFor } from '../../../shared/tier.js';
 import { GAME_COUNT_OPTIONS } from '../lib/useWeeklySummary.js';
 import { CoachMark } from '../components/CoachMark.jsx';
 import { Ring } from '../components/Ring.jsx';
@@ -37,7 +37,7 @@ export default function Home({
     return seconds < 60 ? `${seconds}s` : `${Math.round(seconds / 60)} min`;
   };
   const headline = writeHeadline(coach, summary);
-  const score = weeklyScore(summary);
+  const rank = tierFor(summary);
   const periodLabel = summary.widened ? `Last ${summary.games} games` : 'This week';
   // The strip is a glanceable scoresheet, not a full log — past about eight
   // columns the cells squeeze until the results wrap and the last ones run
@@ -46,7 +46,7 @@ export default function Home({
   const allGames = summary.perGame ?? [];
   const games = allGames.slice(-STRIP_MAX);
 
-  // Nothing to show yet. A ring reading "—" over 0/0 stats looks broken;
+  // Nothing to show yet. A tier over 0/0 stats looks broken;
   // this says what's missing and what to do about it.
   if (summary.games === 0) {
     return (
@@ -118,13 +118,16 @@ export default function Home({
         </div>
       )}
 
-      <section className="score">
-        <p className="eyebrow score__label">{periodLabel}</p>
+      <section className="rank">
+        <p className="eyebrow rank__label">{periodLabel}</p>
 
-        <div className="score__ring">
-          <Ring value={score.value} band={score.band}>
-            <span className={`ring__value ring__value--${score.band}`}>
-              {score.value ?? '—'}
+        {/* The tier is the headline. The ring behind it fills toward the next
+            rung, so it shows movement without being a number in its own
+            right — which is what the 0-100 weekly score used to be. */}
+        <div className="rank__ring">
+          <Ring value={rank.progress * 100} band={rank.tier ?? 'unranked'}>
+            <span className={`tiername tiername--${rank.tier ?? 'unranked'}`}>
+              {rank.label}
             </span>
             <span className="ring__caption">
               {summary.blunders} {summary.blunders === 1 ? 'blunder' : 'blunders'} ·{' '}
@@ -133,11 +136,46 @@ export default function Home({
           </Ring>
         </div>
 
+        {/* Say what the tier is measured against. A rank nobody can check is
+            just a badge. */}
+        <p className="tierwhy">
+          {rank.tier == null ? (
+            <>
+              Needs {MIN_GAMES} games to rank — {rank.games}{' '}
+              {rank.games === 1 ? 'game' : 'games'} so far.
+            </>
+          ) : (
+            <>
+              {/* Always one decimal: these are rates, so "1 blunders a game"
+                  is both wrong and harder to compare against "1.5". */}
+              <b>{rank.actual.toFixed(1)}</b> blunders a game against{' '}
+              <b>{rank.expected.toFixed(1)}</b> expected
+              {rank.ratingKnown ? (
+                <>
+                  {' '}
+                  at {rank.rating}
+                  {rank.pool ? ` ${rank.pool}` : ''}
+                </>
+              ) : (
+                ' at an unknown rating'
+              )}
+              {rank.nextTier && (
+                <>
+                  {' · '}
+                  {TIER_TEXT[rank.nextTier]} at {rank.toNextTier.toFixed(1)}
+                </>
+              )}
+            </>
+          )}
+        </p>
+
         {/* Dense stat block: small-caps labels, bold figures, tight rhythm. */}
         <dl className="stats">
           <div className="stats__cell">
             <dt>Per game</dt>
-            <dd>{summary.blundersPerGame}</dd>
+            {/* One decimal, matching the rank line above — the two are the
+                same number and shouldn't print differently. */}
+            <dd>{summary.blundersPerGame.toFixed(1)}</dd>
           </div>
           <div className="stats__cell">
             <dt>Clean</dt>

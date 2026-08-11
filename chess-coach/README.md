@@ -18,6 +18,7 @@ chess-coach/
 │   ├── analysis.js       blunder detection (engine-agnostic)
 │   ├── classify.js       why a blunder happened
 │   ├── weekly.js         rolls games up into one period's numbers
+│   ├── tier.js           Bronze..Diamond, against a measured baseline
 │   └── coach.js          writes that up in three voices
 ├── client/               the React app — this is what gets deployed
 │   ├── public/engine/    Stockfish WASM
@@ -203,6 +204,40 @@ it names a specific pattern in a specific move. King safety is the softest: it
 describes the situation rather than proving causation, so when it's the *only*
 category that matched, read it as context rather than a diagnosis. Time
 trouble is factual about the clock but says nothing about the position.
+
+## Tiers
+
+The home screen's headline is a rank — Bronze, Silver, Gold, Platinum,
+Diamond — not a score out of 100. A score out of 100 was there first and was
+removed: it measured everyone on one flat scale, so a 1900 and a 900 with the
+same blunder rate came out identical, which flatters one of them and insults
+the other.
+
+The tier is a ratio: your blunder rate over the rate players at your rating
+actually manage. The rating comes from the Chess.com game data the app already
+fetches — the rating reported for you in each game, taken from whichever time
+class you played most of, at its most recent value. (Chess.com only. There is
+no Lichess integration in this app yet, despite the API client's name being
+the only thing that would need to change.)
+
+| ratio to expected | tier |
+|---|---|
+| ≤ 0.55× | Diamond |
+| ≤ 0.75× | Platinum |
+| ≤ 1.05× | Gold |
+| ≤ 1.40× | Silver |
+| above | Bronze |
+
+Typical for your rating is Gold, the middle rung. Under three games in the
+window there is no tier at all — a rate off one or two games is noise.
+
+The expectation itself is measured, not invented: 399 real games from 81
+players across the rating range, run through this same pipeline. It is held
+**per 100 of your own moves** rather than per game, because stronger players
+play longer games and a per-game baseline charges you for that; the app
+multiplies it back out by your own game length so the number on screen is
+still per game. See [docs/baseline.md](docs/baseline.md) for the data, the
+fit, the tier distribution it produces, and what the sample does not support.
 
 ## Weekly report and coach voices
 
