@@ -1,0 +1,512 @@
+/* Vendored latin subsets — see src/fonts/README.md. No external requests. */
+@font-face {
+  font-family: 'Newsreader';
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url('./fonts/newsreader-latin.woff2') format('woff2-variations');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('./fonts/inter-latin.woff2') format('woff2-variations');
+}
+
+:root {
+  /* Warm neutrals. The page is a wash between the top and bottom of this
+     range rather than a flat fill — the light should feel like it comes from
+     somewhere. Nothing here is pure white or pure black. */
+  --paper-high: #fdf8f1;
+  --paper-mid: #f8efe3;
+  --paper-low: #f1e3d3;
+
+  --ink: #372f28;
+  --ink-soft: #6d635a;
+  --ink-faint: #9c9086;
+
+  /* Hairlines and surfaces carry a little of the paper's warmth, so nothing
+     reads as grey laid on top of beige. */
+  --line: rgba(94, 71, 48, 0.13);
+  --line-strong: rgba(94, 71, 48, 0.22);
+  --surface: rgba(255, 252, 247, 0.72);
+  --surface-solid: #fffcf7;
+
+  /* One muted tone per answer, each with a tint for fills. Desaturated on
+     purpose: three equally calm colours, so none of them looks like a verdict
+     next to the others. */
+  --strong: #7c9673;
+  --strong-tint: #e8eee2;
+  --struggling: #c39a5c;
+  --struggling-tint: #f6ebd8;
+  --slipped: #b57f72;
+  --slipped-tint: #f3e3dd;
+
+  --shadow-soft: 0 22px 50px -34px rgba(96, 66, 38, 0.55);
+  --shadow-lift: 0 26px 54px -30px rgba(96, 66, 38, 0.6);
+
+  --serif: 'Newsreader', Georgia, 'Times New Roman', serif;
+  --sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* Soft shapes throughout. Nothing in the app has a sharp corner. */
+  --radius-lg: 30px;
+  --radius-md: 22px;
+  --radius-sm: 16px;
+
+  color-scheme: light;
+  font-family: var(--sans);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: linear-gradient(176deg, var(--paper-high) 0%, var(--paper-mid) 52%, var(--paper-low) 100%);
+  background-attachment: fixed;
+}
+
+/* Two very wide, very soft washes of colour. They are what keeps the
+   background from reading as a flat swatch — the transition is the point. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(60% 42% at 18% 0%, rgba(255, 236, 208, 0.85), transparent 70%),
+    radial-gradient(52% 38% at 92% 96%, rgba(214, 194, 214, 0.28), transparent 72%);
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* ---------------------------------------------------------------- layout */
+
+.shell {
+  position: relative;
+  min-height: 100vh;
+  max-width: 30rem;
+  margin: 0 auto;
+  padding: clamp(2.5rem, 9vh, 5rem) clamp(1.5rem, 6vw, 2.25rem) 3.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Every screen arrives the same gentle way. */
+.screen {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  animation: rise 460ms cubic-bezier(0.22, 0.68, 0.24, 1) both;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+.kicker {
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 0;
+}
+
+/* Short blocks of type get even line lengths rather than a one-word last
+   line — the difference between a sentence that was set and one that just
+   wrapped. */
+.headline,
+.subhead,
+.count__note,
+.confirmation__line,
+.confirmation__note {
+  text-wrap: balance;
+}
+
+.headline {
+  font-family: var(--serif);
+  font-weight: 300;
+  font-size: clamp(1.9rem, 7vw, 2.5rem);
+  line-height: 1.18;
+  letter-spacing: -0.015em;
+  margin: 0.9rem 0 0;
+}
+
+.subhead {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--ink-soft);
+  margin: 0.85rem 0 0;
+  max-width: 26ch;
+}
+
+/* ------------------------------------------------------------------ home */
+
+.count {
+  margin: clamp(2.5rem, 9vh, 4.5rem) 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+/* The number sits in a soft-cornered well rather than on a card edge, so the
+   home screen has one clear object in the middle of a lot of quiet. */
+.count__well {
+  width: clamp(11rem, 46vw, 13.5rem);
+  aspect-ratio: 1;
+  border-radius: 42%;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(72% 72% at 50% 26%, rgba(255, 255, 255, 0.95), rgba(255, 249, 240, 0.5) 62%, rgba(246, 232, 214, 0.45)),
+    var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-soft), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.count__number {
+  font-family: var(--serif);
+  font-weight: 200;
+  font-size: clamp(4.2rem, 19vw, 5.6rem);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.count__label {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 300;
+  font-size: 1.35rem;
+  margin: 1.5rem 0 0;
+}
+
+.count__note {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--ink-soft);
+  margin: 0.5rem 0 0;
+  max-width: 28ch;
+}
+
+/* The last seven days, as continuity rather than a chart. */
+.week {
+  display: flex;
+  justify-content: center;
+  gap: 0.6rem;
+  margin: 2.5rem 0 0;
+}
+
+.week__day {
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 0.7rem;
+  background: rgba(255, 252, 247, 0.6);
+  border: 1px solid var(--line);
+}
+
+.week__day--strong {
+  background: var(--strong-tint);
+  border-color: rgba(124, 150, 115, 0.4);
+}
+
+.week__day--struggling {
+  background: var(--struggling-tint);
+  border-color: rgba(195, 154, 92, 0.4);
+}
+
+.week__day--slipped {
+  background: var(--slipped-tint);
+  border-color: rgba(181, 127, 114, 0.4);
+}
+
+.week__day--today {
+  box-shadow: 0 0 0 2px var(--paper-mid), 0 0 0 3px var(--line-strong);
+}
+
+.week__caption {
+  text-align: center;
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 1rem 0 0;
+}
+
+/* Pushes the action to the bottom of the screen, whatever the height. */
+.spacer {
+  flex: 1;
+  min-height: 2.5rem;
+}
+
+/* --------------------------------------------------------------- answers */
+
+.answers {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin: clamp(2rem, 6vh, 3rem) 0 0;
+}
+
+.answer {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  width: 100%;
+  padding: 1.15rem 1.3rem;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+  transition: transform 240ms ease, box-shadow 240ms ease, border-color 240ms ease, opacity 240ms ease;
+}
+
+.answer:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lift);
+  border-color: var(--line-strong);
+}
+
+.answer:active {
+  transform: translateY(0);
+}
+
+.answer:focus-visible {
+  outline: 2px solid var(--ink-faint);
+  outline-offset: 3px;
+}
+
+/* While one answer is being saved, the others step back rather than vanish. */
+.answer--dimmed {
+  opacity: 0.4;
+}
+
+.answer__mark {
+  flex: none;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 38%;
+  display: grid;
+  place-items: center;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.answer__mark--strong {
+  background: var(--strong-tint);
+  color: var(--strong);
+}
+
+.answer__mark--struggling {
+  background: var(--struggling-tint);
+  color: var(--struggling);
+}
+
+.answer__mark--slipped {
+  background: var(--slipped-tint);
+  color: var(--slipped);
+}
+
+.answer__label {
+  font-family: var(--serif);
+  font-size: 1.25rem;
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.answer__note {
+  font-size: 0.83rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  margin: 0.25rem 0 0;
+}
+
+/* --------------------------------------------------------------- buttons */
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 1.05rem 1.5rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  transition: transform 240ms ease, box-shadow 240ms ease, background 240ms ease;
+}
+
+.button--primary {
+  background: linear-gradient(180deg, #4a413a, #372f28);
+  color: var(--paper-high);
+  box-shadow: 0 18px 34px -22px rgba(55, 47, 40, 0.9);
+}
+
+.button--primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 22px 38px -20px rgba(55, 47, 40, 0.95);
+}
+
+.button--quiet {
+  background: transparent;
+  color: var(--ink-soft);
+  border-color: var(--line-strong);
+}
+
+.button--quiet:hover {
+  background: rgba(255, 252, 247, 0.6);
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--ink-faint);
+  outline-offset: 3px;
+}
+
+.button--bare {
+  width: auto;
+  padding: 0.5rem 0;
+  background: none;
+  border: none;
+  color: var(--ink-faint);
+  font-size: 0.85rem;
+  text-decoration: underline;
+  text-decoration-color: var(--line-strong);
+  text-underline-offset: 4px;
+}
+
+.button--bare:hover {
+  color: var(--ink-soft);
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+  margin-top: 2rem;
+}
+
+/* Small round back control, top-left of the check-in screen. */
+.back {
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+  margin-bottom: 1.75rem;
+  transition: transform 240ms ease, border-color 240ms ease;
+}
+
+.back:hover {
+  transform: translateX(-2px);
+  border-color: var(--line-strong);
+}
+
+/* --------------------------------------------- today's answer, and states */
+
+.today-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.1rem 1.3rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+}
+
+.today-card__label {
+  display: block;
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.today-card__value {
+  display: block;
+  font-family: var(--serif);
+  font-size: 1.2rem;
+  margin-top: 0.15rem;
+}
+
+.confirmation {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin: clamp(3rem, 14vh, 6rem) 0 0;
+}
+
+.confirmation__mark {
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: 38%;
+  display: grid;
+  place-items: center;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.confirmation__line {
+  font-family: var(--serif);
+  font-weight: 300;
+  font-size: 1.6rem;
+  line-height: 1.35;
+  margin: 1.75rem 0 0;
+  max-width: 20ch;
+}
+
+.confirmation__note {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--ink-soft);
+  margin: 0.75rem 0 0;
+  max-width: 26ch;
+}
+
+.state {
+  margin: auto 0;
+  text-align: center;
+  color: var(--ink-faint);
+  font-size: 0.9rem;
+}
+
+.state__error {
+  color: var(--slipped);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .answer:hover,
+  .button--primary:hover,
+  .back:hover {
+    transform: none;
+  }
+}
