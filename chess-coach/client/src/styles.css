@@ -59,6 +59,17 @@
   --platinum: #9dc4e8;
   --diamond: #4fd6c0;
 
+  /* Board. Both shades are lifted from the near-black they used to be:
+     black pieces on a near-black square measured 2.1:1 against white's
+     13.1:1, i.e. one colour was doing almost all the work. */
+  --sq-light: #3a3a3a;
+  --sq-dark: #242424;
+  --sq-last: #3d3927;
+  /* Every piece is drawn with a ring in the opposite tone, so a black piece
+     reads as a black object with a bright edge rather than as a hole. */
+  --piece-edge-light: #e2e2e2;
+  --piece-edge-dark: #050505;
+
   --ring-track: rgba(255, 255, 255, 0.09);
   --panel: #0b0b0b;
 
@@ -801,9 +812,9 @@ body {
   line-height: 1;
 }
 
-.sq--light { background: #262626; }
-.sq--dark  { background: #161616; }
-.sq--last  { background: #2c2a22; }
+.sq--light { background: var(--sq-light); }
+.sq--dark  { background: var(--sq-dark); }
+.sq--last  { background: var(--sq-last); }
 .sq--from  { box-shadow: inset 0 0 0 2px var(--green-lift); }
 
 .sq--target::after {
@@ -822,14 +833,32 @@ body {
   user-select: none;
 }
 
+/* White needs no outline: a white glyph already sits 10:1 clear of both
+   square shades. Giving it one as well was tried and measured — it pulled
+   the two colours towards each other (white-vs-black fell from 5.9:1 to
+   2.9:1), which trades "can't see the black pieces" for "can't tell them
+   apart". A plain drop shadow keeps the shape defined. */
 .piece--w {
   color: #ffffff;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75);
 }
 
+/* Black is the one that needs help, and a ring is the only way to give it:
+   a near-black glyph cannot out-contrast a dark square by fill alone. A 1px
+   ring at eight compass points, because text-shadow is the only way to
+   outline a filled glyph — -webkit-text-stroke strokes down the centre of
+   the outline and eats into the shape instead of surrounding it.
+
+   The filled glyphs are used for both colours on purpose: the outline set
+   (U+2654-2659) renders filled on some platform fonts and hollow on others. */
 .piece--b {
-  color: #0a0a0a;
-  text-shadow: 0 0 1px rgba(255, 255, 255, 0.4);
+  --edge: var(--piece-edge-light);
+  color: #0b0b0b;
+  text-shadow:
+    0 -1px 0 var(--edge), 0.7px -0.7px 0 var(--edge),
+    1px 0 0 var(--edge), 0.7px 0.7px 0 var(--edge),
+    0 1px 0 var(--edge), -0.7px 0.7px 0 var(--edge),
+    -1px 0 0 var(--edge), -0.7px -0.7px 0 var(--edge);
 }
 
 .dot {
@@ -1268,11 +1297,18 @@ body {
   padding-left: 0.15rem;
 }
 
+/* Fixed line-height and whole-pixel padding, so a row is exactly 34px and a
+   row plus its rule is exactly 35. With the rem-derived padding and the
+   font's own "normal" line-height it came to 32.38px, and a fractional row
+   height means consecutive rows round to different device pixels — every
+   seventh row painted a device pixel taller than its neighbours, which is
+   what read as rows being intermittently thinner. */
 .moverow__cell {
   font-family: var(--mono);
   font-size: 0.82rem;
+  line-height: 18px;
   text-align: left;
-  padding: 0.45rem 0.5rem;
+  padding: 8px 0.5rem;
   background: none;
   border: 0;
   border-left: 1px solid var(--rule);
