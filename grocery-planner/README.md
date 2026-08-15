@@ -84,6 +84,21 @@ npm run dev       # http://localhost:5174, hot reload
 `npm run dev` is the one to use if you're editing code. After changes, `npm run
 build:pages` refreshes `/grocery` so the no-install route above shows them too.
 
+### Share a link — one self-contained file
+
+```bash
+npm run build:preview     # → client/dist-preview/preview.html
+```
+
+Bundles the whole app into a single HTML file (~290 kB) that runs with no
+server and no second request, for hosting somewhere a reviewer can just tap a
+link. Two things differ from the real build, both deliberate: the file is page
+*content* with no `<html>`/`<head>` wrapper, since hosts supply their own, and
+the Anthropic SDK is swapped for a stub — a sandboxed preview can't reach the
+API, so shipping 280 kB of client for a call that would fail is worse than
+failing immediately with an explanation. Recipes come from the built-in bank
+there; everything else behaves identically.
+
 ## Recipes: with or without an API key
 
 Both paths produce a complete plan; only who writes the recipes changes.

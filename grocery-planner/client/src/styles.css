@@ -23,6 +23,10 @@
   --brick: #9c3b2e;
   --brick-soft: #f7e3df;
 
+  /* Text on an accent fill. White on the light theme's deep green; near-black
+     on the dark theme's lighter green, which white would glare against. */
+  --on-accent: #ffffff;
+
   --shadow: 0 1px 2px rgba(30, 27, 22, 0.06), 0 6px 20px rgba(30, 27, 22, 0.06);
   --radius: 14px;
   --radius-sm: 9px;
@@ -32,8 +36,14 @@
   --mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
 }
 
+/* Dark palette. Written as a token block that three states share:
+   the OS preference, and an explicit choice stamped as data-theme on the root
+   element by a host that offers its own light/dark toggle. The media query is
+   guarded so an explicit "light" beats a dark OS, and the attribute rule
+   repeats the tokens so an explicit "dark" beats a light one. Components only
+   ever read the tokens, never redeclare a colour inside either block. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
     --paper: #14120f;
     --paper-raised: #1d1a16;
     --ink: #f4efe6;
@@ -51,8 +61,31 @@
     --brick: #e5806e;
     --brick-soft: rgba(229, 128, 110, 0.14);
 
+    --on-accent: #10231a;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 20px rgba(0, 0, 0, 0.3);
   }
+}
+
+:root[data-theme='dark'] {
+  --paper: #14120f;
+  --paper-raised: #1d1a16;
+  --ink: #f4efe6;
+  --ink-70: rgba(244, 239, 230, 0.7);
+  --ink-45: rgba(244, 239, 230, 0.48);
+  --ink-25: rgba(244, 239, 230, 0.26);
+
+  --rule: rgba(244, 239, 230, 0.14);
+  --rule-strong: rgba(244, 239, 230, 0.3);
+
+  --green: #6cbf94;
+  --green-soft: rgba(108, 191, 148, 0.14);
+  --amber: #e0b357;
+  --amber-soft: rgba(224, 179, 87, 0.14);
+  --brick: #e5806e;
+  --brick-soft: rgba(229, 128, 110, 0.14);
+
+  --on-accent: #10231a;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 20px rgba(0, 0, 0, 0.3);
 }
 
 * { box-sizing: border-box; }
@@ -185,12 +218,8 @@ a { color: inherit; }
 .btn--primary {
   background: var(--green);
   border-color: var(--green);
-  color: #fff;
+  color: var(--on-accent);
 }
-@media (prefers-color-scheme: dark) {
-  .btn--primary { color: #10231a; }
-}
-
 .btn--ghost { background: transparent; border-color: transparent; color: var(--ink-70); }
 .btn--ghost:hover { color: var(--ink); }
 
@@ -261,14 +290,10 @@ select:focus-visible,
 .chip[aria-pressed='true'] {
   background: var(--green);
   border-color: var(--green);
-  color: #fff;
+  color: var(--on-accent);
 }
-@media (prefers-color-scheme: dark) {
-  .chip[aria-pressed='true'] { color: #10231a; }
-}
-
 /* An allergy chip is a hard constraint, so it reads as one when selected. */
-.chip--hard[aria-pressed='true'] { background: var(--brick); border-color: var(--brick); color: #fff; }
+.chip--hard[aria-pressed='true'] { background: var(--brick); border-color: var(--brick); color: var(--on-accent); }
 
 .chip__note { font-size: 0.78rem; opacity: 0.75; }
 
@@ -470,7 +495,7 @@ select:focus-visible,
   padding: 0;
   color: transparent;
 }
-.listrow__check[aria-checked='true'] { background: var(--green); border-color: var(--green); color: #fff; }
+.listrow__check[aria-checked='true'] { background: var(--green); border-color: var(--green); color: var(--on-accent); }
 
 .listrow__body { flex: 1; min-width: 0; }
 .listrow__name { font-weight: 600; }
