@@ -48,7 +48,29 @@ function of the questionnaire answers, the food table and the catalog, which is
 why the tests can generate whole weeks and assert on them without mocking
 anything.
 
-## Setup
+## Run it locally
+
+Two ways, depending on whether you want to *look at it* or *work on it*.
+
+### Just review it — no install
+
+Nothing to install beyond Node.js; the built app is committed to `/grocery`.
+
+On a Mac, double-click **`Start Grocery Planner.command`** in the repo root. It
+starts a local server and opens your browser.
+
+Or from a terminal, anywhere in the repo:
+
+```bash
+node grocery-planner/serve.mjs      # → http://localhost:5180
+```
+
+Keep the terminal open while you're using it; Control-C stops it. The server
+listens on localhost only, so nothing is exposed to your network. (Opening
+`grocery/index.html` straight off the disk won't work — browsers refuse to load
+ES modules over `file://`.)
+
+### Work on it — dev server and tests
 
 Requires Node.js 18+ (tested on 22).
 
@@ -56,8 +78,11 @@ Requires Node.js 18+ (tested on 22).
 cd grocery-planner
 npm run install:all
 npm test          # 59 tests over the planning engine
-npm run dev       # http://localhost:5174
+npm run dev       # http://localhost:5174, hot reload
 ```
+
+`npm run dev` is the one to use if you're editing code. After changes, `npm run
+build:pages` refreshes `/grocery` so the no-install route above shows them too.
 
 ## Recipes: with or without an API key
 
